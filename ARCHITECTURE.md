@@ -288,7 +288,7 @@ UI
 Les implémentations concrètes et services applicatifs sont fournis via Riverpod dans `infrastructure/providers/` :
 
 ```dart
-// infrastructure/providers/source_repository.provider.dart
+// infrastructure/providers/source.repository_provider.dart
 @riverpod
 SourceRepository sourceRepository(Ref ref) {
   if (DependencyInjection.isProduction) {
@@ -299,7 +299,7 @@ SourceRepository sourceRepository(Ref ref) {
 ```
 
 ```dart
-// infrastructure/providers/source_service.provider.dart
+// infrastructure/providers/source.service_provider.dart
 @riverpod
 SourceApplicationService sourceService(Ref ref) {
   final repo = ref.watch(sourceRepositoryProvider);
@@ -330,8 +330,8 @@ SourceApplicationService sourceService(Ref ref) {
   * Services : `nom_application.service.dart` (ex : `source_application.service.dart`)
 * **Infrastructure** : `type.nom.repository.dart`
   ex : `http.source.repository.dart`
-* **Providers** : `provider.nom.dart`
-  ex : `provider.source.repository.dart`
+* **Providers** : `nom.what_provider.dart`
+  ex : `source.repository_provider.dart`
 
 ### 🧱 Classes
 
