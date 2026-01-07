@@ -51,207 +51,210 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           constraints: const BoxConstraints(maxWidth: 600),
           child: ListView(
             children: [
-          // Titre section
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              'Apparence',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ),
+              // Titre section
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Apparence',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
 
-          // Sélecteur de thème avec SegmentedButton
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: themeModeAsync.when(
-              data: (currentThemeMode) => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Thème',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 8),
-                  SegmentedButton<AppThemeMode>(
-                    segments: const [
-                      ButtonSegment<AppThemeMode>(
-                        value: AppThemeMode.light,
-                        label: Text('Clair'),
-                        icon: Icon(Icons.light_mode),
+              // Sélecteur de thème avec SegmentedButton
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: themeModeAsync.when(
+                  data: (currentThemeMode) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Thème',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                      ButtonSegment<AppThemeMode>(
-                        value: AppThemeMode.dark,
-                        label: Text('Sombre'),
-                        icon: Icon(Icons.dark_mode),
-                      ),
-                      ButtonSegment<AppThemeMode>(
-                        value: AppThemeMode.system,
-                        label: Text('Auto'),
-                        icon: Icon(Icons.smartphone),
+                      const SizedBox(height: 8),
+                      SegmentedButton<AppThemeMode>(
+                        segments: const [
+                          ButtonSegment<AppThemeMode>(
+                            value: AppThemeMode.light,
+                            label: Text('Clair'),
+                            icon: Icon(Icons.light_mode),
+                          ),
+                          ButtonSegment<AppThemeMode>(
+                            value: AppThemeMode.dark,
+                            label: Text('Sombre'),
+                            icon: Icon(Icons.dark_mode),
+                          ),
+                          ButtonSegment<AppThemeMode>(
+                            value: AppThemeMode.system,
+                            label: Text('Auto'),
+                            icon: Icon(Icons.smartphone),
+                          ),
+                        ],
+                        selected: {currentThemeMode},
+                        onSelectionChanged: (Set<AppThemeMode> newSelection) {
+                          final selectedMode = newSelection.first;
+                          themeNotifier.setThemeMode(selectedMode);
+                        },
                       ),
                     ],
-                    selected: {currentThemeMode},
-                    onSelectionChanged: (Set<AppThemeMode> newSelection) {
-                      final selectedMode = newSelection.first;
-                      themeNotifier.setThemeMode(selectedMode);
-                    },
                   ),
-                ],
+                  loading: () => const SizedBox(
+                    height: 60,
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  error: (error, stack) => SizedBox(
+                    height: 60,
+                    child: Center(child: Text('Erreur: $error')),
+                  ),
+                ),
               ),
-              loading: () => const SizedBox(
-                height: 60,
-                child: Center(child: CircularProgressIndicator()),
+
+              const SizedBox(height: 32),
+
+              // Section Backend
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Backend',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
               ),
-              error: (error, stack) => SizedBox(
-                height: 60,
-                child: Center(child: Text('Erreur: $error')),
-              ),
-            ),
-          ),
 
-          const SizedBox(height: 32),
-
-          // Section Backend
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              'Backend',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ),
-
-          // URL du Backend
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // URL du Backend
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'URL du backend',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    if (!_isBackendUrlEditable)
-                      TextButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            _isBackendUrlEditable = true;
-                            _originalBackendUrl = _backendUrlController.text;
-                            _isBackendUrlModified = false;
-                          });
-                        },
-                        icon: const Icon(Icons.edit, size: 18),
-                        label: const Text('Modifier'),
-                      )
-                    else
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'URL du backend',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        if (!_isBackendUrlEditable)
                           TextButton.icon(
                             onPressed: () {
                               setState(() {
-                                _backendUrlController.text =
-                                    _originalBackendUrl;
+                                _isBackendUrlEditable = true;
+                                _originalBackendUrl =
+                                    _backendUrlController.text;
                                 _isBackendUrlModified = false;
-                                _isBackendUrlEditable = false;
                               });
                             },
-                            icon: const Icon(Icons.close, size: 18),
-                            label: const Text('Annuler'),
-                          ),
-                          TextButton.icon(
-                            onPressed: _isBackendUrlModified
-                                ? () async {
-                                    final url = _backendUrlController.text
-                                        .trim();
-                                    if (url.isNotEmpty) {
-                                      await backendUrlNotifier.setBackendUrl(
-                                        url,
-                                      );
-                                      setState(() {
-                                        _isBackendUrlModified = false;
-                                        _isBackendUrlEditable = false;
-                                        _originalBackendUrl = url;
-                                      });
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'URL du backend sauvegardée',
-                                            ),
-                                            duration: Duration(seconds: 2),
-                                          ),
-                                        );
+                            icon: const Icon(Icons.edit, size: 18),
+                            label: const Text('Modifier'),
+                          )
+                        else
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TextButton.icon(
+                                onPressed: () {
+                                  setState(() {
+                                    _backendUrlController.text =
+                                        _originalBackendUrl;
+                                    _isBackendUrlModified = false;
+                                    _isBackendUrlEditable = false;
+                                  });
+                                },
+                                icon: const Icon(Icons.close, size: 18),
+                                label: const Text('Annuler'),
+                              ),
+                              TextButton.icon(
+                                onPressed: _isBackendUrlModified
+                                    ? () async {
+                                        final url = _backendUrlController.text
+                                            .trim();
+                                        if (url.isNotEmpty) {
+                                          await backendUrlNotifier
+                                              .setBackendUrl(url);
+                                          setState(() {
+                                            _isBackendUrlModified = false;
+                                            _isBackendUrlEditable = false;
+                                            _originalBackendUrl = url;
+                                          });
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'URL du backend sauvegardée',
+                                                ),
+                                                duration: Duration(seconds: 2),
+                                              ),
+                                            );
+                                          }
+                                        }
                                       }
-                                    }
-                                  }
-                                : null,
-                            icon: const Icon(Icons.save, size: 18),
-                            label: const Text('Sauvegarder'),
+                                    : null,
+                                icon: const Icon(Icons.save, size: 18),
+                                label: const Text('Sauvegarder'),
+                              ),
+                            ],
                           ),
-                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _backendUrlController,
+                      readOnly: !_isBackendUrlEditable,
+                      decoration: InputDecoration(
+                        hintText: 'https://api.example.com',
+                        border: const OutlineInputBorder(),
+                        filled: !_isBackendUrlEditable,
+                        fillColor: !_isBackendUrlEditable
+                            ? Theme.of(
+                                context,
+                              ).disabledColor.withValues(alpha: 0.05)
+                            : null,
+                        suffixIcon: !_isBackendUrlEditable
+                            ? Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: IconButton(
+                                  icon: const Icon(Icons.sync),
+                                  tooltip: 'Synchroniser',
+                                  onPressed: () {
+                                    debugPrint('Synchroniser');
+                                    // TODO: Implémenter la synchronisation avec le backend
+                                  },
+                                ),
+                              )
+                            : null,
                       ),
+                      keyboardType: TextInputType.url,
+                      onChanged: (value) {
+                        setState(() {
+                          _isBackendUrlModified = true;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Configurez l\'URL de votre serveur backend',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _backendUrlController,
-                  readOnly: !_isBackendUrlEditable,
-                  decoration: InputDecoration(
-                    hintText: 'https://api.example.com',
-                    border: const OutlineInputBorder(),
-                    filled: !_isBackendUrlEditable,
-                    fillColor: !_isBackendUrlEditable
-                        ? Theme.of(
-                            context,
-                          ).disabledColor.withValues(alpha: 0.05)
-                        : null,
-                    suffixIcon: !_isBackendUrlEditable
-                        ? Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: IconButton(
-                              icon: const Icon(Icons.sync),
-                              tooltip: 'Synchroniser',
-                              onPressed: () {
-                                debugPrint('Synchroniser');
-                                // TODO: Implémenter la synchronisation avec le backend
-                              },
-                            ),
-                          )
-                        : null,
-                  ),
-                  keyboardType: TextInputType.url,
-                  onChanged: (value) {
-                    setState(() {
-                      _isBackendUrlModified = true;
-                    });
-                  },
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Configurez l\'URL de votre serveur backend',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
-                  ),
-                ),
-              ],
-            ),
-          ),
+              ),
 
-          const SizedBox(height: 32),
+              const SizedBox(height: 32),
             ],
           ),
         ),
