@@ -1,21 +1,40 @@
 import 'package:flutter/material.dart';
-import 'ui/pages/home/home_page.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:songbook/infrastructure/theme/app_theme_data.dart';
+import 'package:songbook/infrastructure/theme/providers/theme.usecases_provider.dart';
+import 'package:songbook/ui/pages/home/home_page.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Songbook',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Observer le mode de thème actuel
+    final themeModeAsync = ref.watch(themeModeProvider);
+
+    return themeModeAsync.when(
+      data: (appThemeMode) => MaterialApp(
+        title: 'Songbook',
+        theme: AppThemeData.buildLightTheme(),
+        darkTheme: AppThemeData.buildDarkTheme(),
+        themeMode: AppThemeData.toFlutterThemeMode(appThemeMode),
+        home: const HomePage(),
       ),
-      home: const HomePage(),
+      loading: () => const MaterialApp(
+        title: 'Songbook',
+        home: Scaffold(body: Center(child: CircularProgressIndicator())),
+      ),
+      error: (error, stack) => MaterialApp(
+        title: 'Songbook',
+        theme: AppThemeData.buildLightTheme(),
+        home: Scaffold(
+          body: Center(child: Text('Erreur de chargement du thème: $error')),
+        ),
+      ),
     );
   }
 }
