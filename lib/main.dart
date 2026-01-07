@@ -24,13 +24,19 @@ class MyApp extends ConsumerWidget {
         themeMode: AppThemeData.toFlutterThemeMode(appThemeMode),
         home: const HomePage(),
       ),
-      loading: () => const MaterialApp(
+      loading: () => MaterialApp(
         title: 'Songbook',
-        home: Scaffold(body: Center(child: CircularProgressIndicator())),
+        theme: AppThemeData.buildLightTheme(),
+        darkTheme: AppThemeData.buildDarkTheme(),
+        themeMode:
+            ThemeMode.system, // Utilise le thème système pendant le chargement
+        home: const Scaffold(body: Center(child: CircularProgressIndicator())),
       ),
       error: (error, stack) => MaterialApp(
         title: 'Songbook',
         theme: AppThemeData.buildLightTheme(),
+        darkTheme: AppThemeData.buildDarkTheme(),
+        themeMode: ThemeMode.system, // Utilise le thème système en cas d'erreur
         home: Scaffold(
           body: Center(child: Text('Erreur de chargement du thème: $error')),
         ),
