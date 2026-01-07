@@ -2,19 +2,55 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/domain/model/theme_mode.dart';
 import 'package:songbook/infrastructure/theme/providers/theme.usecases_provider.dart';
+import 'package:songbook/infrastructure/settings/providers/settings.usecases_provider.dart';
 
-class SettingsPage extends ConsumerWidget {
+class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends ConsumerState<SettingsPage> {
+  late TextEditingController _backendUrlController;
+  bool _isBackendUrlModified = false;
+  bool _isBackendUrlEditable = false;
+  String _originalBackendUrl = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _backendUrlController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _backendUrlController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final themeModeAsync = ref.watch(themeModeProvider);
     final themeNotifier = ref.read(themeModeProvider.notifier);
+    final backendUrlAsync = ref.watch(backendUrlProvider);
+    final backendUrlNotifier = ref.read(backendUrlProvider.notifier);
+
+    // Mettre à jour le contrôleur quand les données sont chargées
+    backendUrlAsync.whenData((url) {
+      if (!_isBackendUrlModified && _backendUrlController.text.isEmpty) {
+        _backendUrlController.text = url ?? '';
+        _originalBackendUrl = url ?? '';
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(title: const Text('Paramètres')),
-      body: ListView(
-        children: [
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: ListView(
+            children: [
           // Titre section
           Padding(
             padding: const EdgeInsets.all(16),
@@ -76,7 +112,149 @@ class SettingsPage extends ConsumerWidget {
           ),
 
           const SizedBox(height: 32),
-        ],
+
+          // Section Backend
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              'Backend',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ),
+
+          // URL du Backend
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'URL du backend',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (!_isBackendUrlEditable)
+                      TextButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _isBackendUrlEditable = true;
+                            _originalBackendUrl = _backendUrlController.text;
+                            _isBackendUrlModified = false;
+                          });
+                        },
+                        icon: const Icon(Icons.edit, size: 18),
+                        label: const Text('Modifier'),
+                      )
+                    else
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _backendUrlController.text =
+                                    _originalBackendUrl;
+                                _isBackendUrlModified = false;
+                                _isBackendUrlEditable = false;
+                              });
+                            },
+                            icon: const Icon(Icons.close, size: 18),
+                            label: const Text('Annuler'),
+                          ),
+                          TextButton.icon(
+                            onPressed: _isBackendUrlModified
+                                ? () async {
+                                    final url = _backendUrlController.text
+                                        .trim();
+                                    if (url.isNotEmpty) {
+                                      await backendUrlNotifier.setBackendUrl(
+                                        url,
+                                      );
+                                      setState(() {
+                                        _isBackendUrlModified = false;
+                                        _isBackendUrlEditable = false;
+                                        _originalBackendUrl = url;
+                                      });
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'URL du backend sauvegardée',
+                                            ),
+                                            duration: Duration(seconds: 2),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  }
+                                : null,
+                            icon: const Icon(Icons.save, size: 18),
+                            label: const Text('Sauvegarder'),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _backendUrlController,
+                  readOnly: !_isBackendUrlEditable,
+                  decoration: InputDecoration(
+                    hintText: 'https://api.example.com',
+                    border: const OutlineInputBorder(),
+                    filled: !_isBackendUrlEditable,
+                    fillColor: !_isBackendUrlEditable
+                        ? Theme.of(
+                            context,
+                          ).disabledColor.withValues(alpha: 0.05)
+                        : null,
+                    suffixIcon: !_isBackendUrlEditable
+                        ? Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: IconButton(
+                              icon: const Icon(Icons.sync),
+                              tooltip: 'Synchroniser',
+                              onPressed: () {
+                                debugPrint('Synchroniser');
+                                // TODO: Implémenter la synchronisation avec le backend
+                              },
+                            ),
+                          )
+                        : null,
+                  ),
+                  keyboardType: TextInputType.url,
+                  onChanged: (value) {
+                    setState(() {
+                      _isBackendUrlModified = true;
+                    });
+                  },
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Configurez l\'URL de votre serveur backend',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 32),
+            ],
+          ),
+        ),
       ),
     );
   }
