@@ -9,22 +9,16 @@ part of 'song.repository_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// Provider pour l'implémentation du SongRepository.
-/// En développement/debug: utilise InMemorySongRepository avec données d'exemple.
-/// En production: utilise DriftSongRepository avec la base de données SQLite.
 
 @ProviderFor(songRepository)
 final songRepositoryProvider = SongRepositoryProvider._();
 
 /// Provider pour l'implémentation du SongRepository.
-/// En développement/debug: utilise InMemorySongRepository avec données d'exemple.
-/// En production: utilise DriftSongRepository avec la base de données SQLite.
 
 final class SongRepositoryProvider
     extends $FunctionalProvider<SongRepository, SongRepository, SongRepository>
     with $Provider<SongRepository> {
   /// Provider pour l'implémentation du SongRepository.
-  /// En développement/debug: utilise InMemorySongRepository avec données d'exemple.
-  /// En production: utilise DriftSongRepository avec la base de données SQLite.
   SongRepositoryProvider._()
     : super(
         from: null,
@@ -58,4 +52,4 @@ final class SongRepositoryProvider
   }
 }
 
-String _$songRepositoryHash() => r'11e6c0ef77dba72b1bd33152e8ed1d4a5268f447';
+String _$songRepositoryHash() => r'3a59da0ad44225b8b5da7db2aa4d1336c777be6c';

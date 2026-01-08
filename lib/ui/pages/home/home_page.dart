@@ -36,9 +36,12 @@ class HomePage extends ConsumerWidget {
             child: filteredSongsAsync.when(
               data: (songs) => _buildSongGrid(songs),
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => Center(
-                child: Text('Erreur lors du chargement des chants: $error'),
-              ),
+              error: (error, stack) {
+                debugPrint('Error: $error');
+                return Center(
+                  child: Text('Erreur lors du chargement des chants: $error'),
+                );
+              },
             ),
           ),
         ],

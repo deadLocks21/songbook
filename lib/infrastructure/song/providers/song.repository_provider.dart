@@ -7,5 +7,5 @@ part 'song.repository_provider.g.dart';
 /// Provider pour l'implémentation du SongRepository.
 @riverpod
 SongRepository songRepository(Ref ref) {
-  return DriftSongRepository();
+  return const DriftSongRepository();
 }
