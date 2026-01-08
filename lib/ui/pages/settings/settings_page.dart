@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/domain/model/theme_mode.dart';
 import 'package:songbook/infrastructure/theme/providers/theme.usecases_provider.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.usecases_provider.dart';
+import 'package:songbook/infrastructure/song/providers/clear_database.provider.dart';
+import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
 import 'package:songbook/ui/pages/sync/sync_page.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
@@ -121,7 +123,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
-                  'Backend',
+                  'Gestion des données',
                   style: Theme.of(
                     context,
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -255,6 +257,105 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     const SizedBox(height: 8),
                     Text(
                       'Configurez l\'URL de votre serveur backend',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Bouton pour vider la base de données
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Base de données',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Vider la base de données'),
+                            content: const Text(
+                              'Êtes-vous sûr de vouloir supprimer tous les chants locaux ? '
+                              'Cette action est irréversible.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.of(context).pop(false),
+                                child: const Text('Annuler'),
+                              ),
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.of(context).pop(true),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.red,
+                                ),
+                                child: const Text('Supprimer'),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (confirmed == true && context.mounted) {
+                          try {
+                            final clearDatabaseUseCase = await ref.read(
+                              clearDatabaseUseCaseProvider.future,
+                            );
+                            await clearDatabaseUseCase.execute();
+
+                            // Invalider le cache des chants pour forcer le rechargement
+                            ref.invalidate(songsProvider);
+
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Base de données vidée avec succès',
+                                  ),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            debugPrint('Error: $e');
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Erreur lors du vidage: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.delete_forever, color: Colors.red),
+                      label: const Text(
+                        'Vider la base de données',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.red),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Supprime tous les chants stockés localement. Utilisez cette option si vous voulez recommencer avec une base vide.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(
                           context,

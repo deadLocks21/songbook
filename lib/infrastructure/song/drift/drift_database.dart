@@ -64,4 +64,34 @@ class AppDatabase {
       _database = null;
     }
   }
+
+  /// Vide complètement la base de données
+  static Future<void> clearDatabase() async {
+    final db = await database;
+
+    // Supprimer toutes les tables
+    await db.delete('resources');
+    await db.delete('songs');
+
+    // Réinitialiser les auto-increments si nécessaire
+    await db.execute('VACUUM');
+  }
+
+  /// Supprime complètement le fichier de base de données
+  static Future<void> deleteDatabaseFile() async {
+    final documentsDirectory = await getApplicationDocumentsDirectory();
+    final path = p.join(documentsDirectory.path, 'songbook.db');
+
+    final file = File(path);
+    if (await file.exists()) {
+      await file.delete();
+    }
+
+    // Fermer la connexion actuelle
+    await close();
+
+    // Réinitialiser l'état pour forcer une recréation
+    _database = null;
+    _isInitialized = false;
+  }
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/usecases/compute_sync_diff.usecase.dart';
 import 'package:songbook/core/application/usecases/execute_sync.usecase.dart';
@@ -68,6 +69,7 @@ class SyncStateNotifier extends Notifier<SyncState> {
         state = SyncDiffComputed(diff);
       }
     } catch (e) {
+      debugPrint('Error: $e');
       state = SyncError(e.toString());
     }
   }
@@ -80,6 +82,7 @@ class SyncStateNotifier extends Notifier<SyncState> {
       await executeUseCase.execute(diff);
       state = const SyncSuccess();
     } catch (e) {
+      debugPrint('Error: $e');
       state = SyncError(e.toString());
     }
   }

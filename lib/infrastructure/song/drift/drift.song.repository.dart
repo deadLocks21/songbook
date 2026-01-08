@@ -108,16 +108,22 @@ class DriftSongRepository implements SongRepository {
   Future<void> deleteSong(UuidValue id) async {
     final db = await _database;
 
-    // La suppression en cascade supprimera automatiquement les ressources
+    // La suppression en cascade supprimera automatiquement les ressources (si foreign keys activées)
     await db.delete('songs', where: 'id = ?', whereArgs: [id.value]);
+
+    // Au cas où les foreign keys ne sont pas activées, supprimer aussi manuellement les ressources
+    await db.delete('resources', where: 'songId = ?', whereArgs: [id.value]);
   }
 
   @override
   Future<void> deleteAllSongs() async {
     final db = await _database;
 
-    // Supprimer tous les chants (les ressources seront supprimées en cascade)
+    // Supprimer tous les chants (les ressources seront supprimées en cascade si foreign keys activées)
     await db.delete('songs');
+
+    // Au cas où les foreign keys ne sont pas activées, supprimer aussi manuellement les ressources
+    await db.delete('resources');
   }
 
   /// Convertit une ligne de ressource en objet Resource du domaine

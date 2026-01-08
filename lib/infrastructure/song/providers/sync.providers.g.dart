@@ -104,7 +104,7 @@ final class RemoteSongRepositoryProvider
 }
 
 String _$remoteSongRepositoryHash() =>
-    r'6b4b4a9c5a46a70e941f67c041e16dc2d39940bd';
+    r'95ec608c1ebf71cf34bd3feafa66bcd1c1f2fa69';
 
 /// Provider pour le repository des ressources distantes.
 /// Retourne un Future car nécessite le chemin du répertoire de l'application.
