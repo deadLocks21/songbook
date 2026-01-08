@@ -10,30 +10,36 @@ class InMemoryRemoteSongRepository implements RemoteSongRepository {
   Future<List<RemoteSong>> fetchSongs(String baseUrl) async {
     const jsonList = [
       {
-        'id': '1',
-        'code': '123456',
-        'name': 'Song 1',
+        'id': '7cba49da-a9d1-4b7f-8e46-bf4ea27570cc',
+        'code': 'JEM799',
+        'name': 'Nous annonçons le Roi',
         'updatedAt': '2026-01-08T10:00:00Z',
         'resources': [
           {
-            'id': '1',
-            'name': 'Resource 1',
+            'id': '33fe9c36-2124-48c3-b6b4-43796e885f0d',
+            'name': 'Partition',
             'type': 'image',
-            'imageUrls': ['https://example.com/image1.jpg'],
+            'imageUrls': [
+              'https://timothe.hofmann.fr/Partitions/JEM/jem799/0001.jpg',
+              'https://timothe.hofmann.fr/Partitions/JEM/jem799/0002.jpg',
+            ],
           },
         ],
       },
       {
-        'id': '2',
-        'code': '123456',
-        'name': 'Song 2',
+        'id': '1eef82e2-4ead-4c2b-90c9-adf3af3fe09b',
+        'code': 'JEM876',
+        'name': 'Mon rédempteur vit',
         'updatedAt': '2026-01-08T10:00:00Z',
         'resources': [
           {
-            'id': '2',
-            'name': 'Resource 2',
+            'id': '58ed430f-4ca9-4fec-9bee-addf92ff2c9e',
+            'name': 'Partition',
             'type': 'image',
-            'imageUrls': ['https://example.com/image2.jpg'],
+            'imageUrls': [
+              'https://timothe.hofmann.fr/Partitions/JEM/jem876/0001.jpg',
+              'https://timothe.hofmann.fr/Partitions/JEM/jem876/0002.jpg',
+            ],
           },
         ],
       },

@@ -6,7 +6,6 @@ import 'package:songbook/core/application/usecases/execute_sync.usecase.dart';
 import 'package:songbook/core/domain/services/remote_resource.repository.dart';
 import 'package:songbook/core/domain/services/remote_song.repository.dart';
 import 'package:songbook/infrastructure/resource/dio.remote_resource.repository.dart';
-import 'package:songbook/infrastructure/song/dio.remote_song.repository.dart';
 import 'package:songbook/infrastructure/song/in_memory.remote_song.repository.dart';
 import 'package:songbook/infrastructure/song/providers/song.repository_provider.dart';
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/domain/model/theme_mode.dart';
 import 'package:songbook/infrastructure/theme/providers/theme.usecases_provider.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.usecases_provider.dart';
+import 'package:songbook/ui/pages/sync/sync_page.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -227,8 +228,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                   icon: const Icon(Icons.sync),
                                   tooltip: 'Synchroniser',
                                   onPressed: () {
-                                    debugPrint('Synchroniser');
-                                    // TODO: Implémenter la synchronisation avec le backend
+                                    final backendUrl = _backendUrlController
+                                        .text
+                                        .trim();
+                                    if (backendUrl.isNotEmpty) {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              SyncPage(backendUrl: backendUrl),
+                                        ),
+                                      );
+                                    }
                                   },
                                 ),
                               )
