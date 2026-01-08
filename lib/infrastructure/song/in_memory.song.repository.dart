@@ -17,14 +17,39 @@ class InMemorySongRepository implements SongRepository {
     return List.unmodifiable(_songs);
   }
 
+  @override
+  Future<void> addSong(Song song) async {
+    _songs.add(song);
+  }
+
+  @override
+  Future<void> updateSong(Song song) async {
+    final index = _songs.indexWhere((s) => s.id == song.id);
+    if (index != -1) {
+      _songs[index] = song;
+    }
+  }
+
+  @override
+  Future<void> deleteSong(UuidValue id) async {
+    _songs.removeWhere((s) => s.id == id);
+  }
+
+  @override
+  Future<void> deleteAllSongs() async {
+    _songs.clear();
+  }
+
   /// Crée des données d'exemple pour le développement.
   static List<Song> _createSampleData() {
+    final now = DateTime.now();
     return [
       // Chant 1: Avec ImageResource (3 images)
       Song(
         id: UuidValue.parse('550e8400-e29b-41d4-a716-446655440001'),
         code: 'ABC123',
         name: 'Chant d\'exemple 1',
+        updatedAt: now.subtract(const Duration(days: 10)),
         resources: [
           ImageResource(
             id: UuidValue.parse('550e8400-e29b-41d4-a716-446655440011'),
@@ -43,6 +68,7 @@ class InMemorySongRepository implements SongRepository {
         id: UuidValue.parse('550e8400-e29b-41d4-a716-446655440002'),
         code: 'DEF456',
         name: 'Chant d\'exemple 2',
+        updatedAt: now.subtract(const Duration(days: 5)),
         resources: [
           PdfResource(
             id: UuidValue.parse('550e8400-e29b-41d4-a716-446655440021'),
@@ -57,6 +83,7 @@ class InMemorySongRepository implements SongRepository {
         id: UuidValue.parse('550e8400-e29b-41d4-a716-446655440003'),
         code: 'GHI789',
         name: 'Chant d\'exemple 3',
+        updatedAt: now.subtract(const Duration(days: 1)),
         resources: [
           ImageResource(
             id: UuidValue.parse('550e8400-e29b-41d4-a716-446655440031'),

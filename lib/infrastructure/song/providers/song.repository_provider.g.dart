@@ -58,4 +58,4 @@ final class SongRepositoryProvider
   }
 }
 
-String _$songRepositoryHash() => r'f0ed2da32ddc682513a990b3a57ab18dee2c4e32';
+String _$songRepositoryHash() => r'11e6c0ef77dba72b1bd33152e8ed1d4a5268f447';

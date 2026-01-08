@@ -2,17 +2,20 @@ import 'package:songbook/core/domain/model/resource.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
 
 /// Entité métier représentant un chant.
-/// Chaque chant a un UUID unique, un code unique, un nom et une liste de ressources.
+/// Chaque chant a un UUID unique, un code unique, un nom, une date de mise à jour
+/// et une liste de ressources.
 class Song {
   final UuidValue id;
   final String code;
   final String name;
+  final DateTime updatedAt;
   final List<Resource> resources;
 
   Song({
     required this.id,
     required this.code,
     required this.name,
+    required this.updatedAt,
     required this.resources,
   }) : assert(code.trim().isNotEmpty, 'code cannot be empty'),
        assert(name.trim().isNotEmpty, 'name cannot be empty');
@@ -21,12 +24,14 @@ class Song {
     UuidValue? id,
     String? code,
     String? name,
+    DateTime? updatedAt,
     List<Resource>? resources,
   }) {
     return Song(
       id: id ?? this.id,
       code: code ?? this.code,
       name: name ?? this.name,
+      updatedAt: updatedAt ?? this.updatedAt,
       resources: resources ?? this.resources,
     );
   }
