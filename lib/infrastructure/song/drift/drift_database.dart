@@ -27,7 +27,7 @@ class AppDatabase {
       _isInitialized = true;
     }
 
-    final documentsDirectory = await getApplicationDocumentsDirectory();
+    final documentsDirectory = await getApplicationSupportDirectory();
     final path = p.join(documentsDirectory.path, 'songbook.db');
 
     return await openDatabase(path, version: 1, onCreate: _onCreate);
@@ -79,7 +79,7 @@ class AppDatabase {
 
   /// Supprime complètement le fichier de base de données
   static Future<void> deleteDatabaseFile() async {
-    final documentsDirectory = await getApplicationDocumentsDirectory();
+    final documentsDirectory = await getApplicationSupportDirectory();
     final path = p.join(documentsDirectory.path, 'songbook.db');
 
     final file = File(path);

@@ -30,7 +30,7 @@ RemoteSongRepository remoteSongRepository(Ref ref) {
 @riverpod
 Future<RemoteResourceRepository> remoteResourceRepository(Ref ref) async {
   final dio = ref.watch(dioProvider);
-  final appDir = await getApplicationDocumentsDirectory();
+  final appDir = await getApplicationSupportDirectory();
   final resourcesPath = '${appDir.path}/resources';
   return DioRemoteResourceRepository(dio, resourcesPath);
 }
