@@ -215,8 +215,25 @@ class SourceApplicationService {
 
 **Responsabilité** : Interface utilisateur Flutter.
 
+#### 📁 Structure recommandée
+
+```
+ui/
+└── pages/
+    └── nom_feature/              # Dossier par feature (snake_case)
+        ├── nom.page.dart         # Page principale
+        ├── widgets/              # Widgets spécifiques à cette page
+        │   ├── nom_widget.widget.dart
+        │   └── autre.widget.dart
+        └── providers/            # Providers UI locaux (si nécessaire)
+            └── nom.provider.dart
+```
+
 **Contenu** :
-- Pages, widgets, composants
+- `pages/` : Dossiers organisés par feature/page
+- `nom.page.dart` : Pages (écrans complets)
+- `widgets/` : Widgets réutilisables spécifiques à une page
+- `providers/` : Providers UI locaux (état de l'écran)
 
 **Caractéristiques** :
 - **Ne dépend que de la couche Application**
@@ -227,6 +244,8 @@ class SourceApplicationService {
 **Règles strictes** :
 - ✅ Appelle uniquement des usecases ou ApplicationService
 - ✅ Contient de la logique d'affichage seulement
+- ✅ Les pages sont nommées `nom.page.dart`
+- ✅ Les widgets sont dans un sous-dossier `widgets/` et nommés `nom.widget.dart`
 - ❌ Ne connaît pas Domain (ou très peu)
 
 ---
@@ -332,6 +351,10 @@ SourceApplicationService sourceService(Ref ref) {
   ex : `http.source.repository.dart`
 * **Providers** : `nom.what_provider.dart`
   ex : `source.repository_provider.dart`
+* **UI** :
+  * Pages : `nom.page.dart` (ex : `home.page.dart`, `settings.page.dart`)
+  * Widgets : `nom.widget.dart` dans un dossier `widgets/` (ex : `widgets/song_card.widget.dart`)
+  * Providers UI : `nom.provider.dart` (ex : `search.provider.dart`)
 
 ### 🧱 Classes
 

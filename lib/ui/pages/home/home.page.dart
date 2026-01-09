@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/ui/pages/home/providers/search_provider.dart';
-import 'package:songbook/ui/pages/home/song_card.dart';
-import 'package:songbook/ui/pages/settings/settings_page.dart';
+import 'package:songbook/ui/pages/home/widgets/song_card.widget.dart';
+import 'package:songbook/ui/pages/settings/settings.page.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});

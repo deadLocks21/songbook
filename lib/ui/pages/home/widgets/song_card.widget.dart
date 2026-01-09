@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:songbook/core/application/dtos/resource.dto.dart';
 import 'package:songbook/core/application/dtos/song.dto.dart';
-import 'package:songbook/ui/pages/song_viewer/song_viewer_page.dart';
+import 'package:songbook/ui/pages/song_viewer/song_viewer.page.dart';
 
 /// Extension pour ajouter des propriétés calculées à SongDto.
 extension SongDtoExtension on SongDto {

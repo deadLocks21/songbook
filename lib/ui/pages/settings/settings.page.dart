@@ -5,7 +5,7 @@ import 'package:songbook/infrastructure/theme/providers/theme.usecases_provider.
 import 'package:songbook/infrastructure/settings/providers/settings.usecases_provider.dart';
 import 'package:songbook/infrastructure/song/providers/clear_database.provider.dart';
 import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
-import 'package:songbook/ui/pages/sync/sync_page.dart';
+import 'package:songbook/ui/pages/sync/sync.page.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});

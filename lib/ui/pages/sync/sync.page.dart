@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.usecases_provider.dart';
-import 'package:songbook/ui/pages/home/home_page.dart';
+import 'package:songbook/ui/pages/home/home.page.dart';
 import 'package:songbook/ui/pages/sync/providers/sync_state.provider.dart';
-import 'package:songbook/ui/pages/sync/widgets/diff_summary.dart';
+import 'package:songbook/ui/pages/sync/widgets/diff_summary.widget.dart';
 
 /// Page de synchronisation avec le serveur
 class SyncPage extends ConsumerStatefulWidget {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:songbook/core/application/dtos/resource.dto.dart';
 import 'package:songbook/core/application/dtos/song.dto.dart';
-import 'package:songbook/ui/pages/song_viewer/zoomable_image_viewer.dart';
+import 'package:songbook/ui/pages/song_viewer/widgets/zoomable_image_viewer.widget.dart';
 
 /// Page de visualisation des partitions d'un chant.
 class SongViewerPage extends StatelessWidget {
@@ -11,26 +11,23 @@ class SongViewerPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imageResource =
-        song.resources.whereType<ImageResourceDto>().firstOrNull;
+    final imageResource = song.resources
+        .whereType<ImageResourceDto>()
+        .firstOrNull;
 
     return Scaffold(
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              song.code,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text(song.code, style: Theme.of(context).textTheme.titleLarge),
             Text(
               song.name,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.7),
-                  ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
             ),
           ],
         ),

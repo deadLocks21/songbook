@@ -53,10 +53,9 @@ class _ZoomableImageViewerState extends State<ZoomableImageViewer> {
         final bytes = await File(path).readAsBytes();
         final codec = await ui.instantiateImageCodec(bytes);
         final frame = await codec.getNextFrame();
-        sizes.add(Size(
-          frame.image.width.toDouble(),
-          frame.image.height.toDouble(),
-        ));
+        sizes.add(
+          Size(frame.image.width.toDouble(), frame.image.height.toDouble()),
+        );
         codec.dispose();
       } catch (e) {
         // En cas d'erreur, on utilise une taille par défaut
