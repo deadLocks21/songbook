@@ -36,13 +36,6 @@ class _SyncPageState extends ConsumerState<SyncPage> {
   Widget build(BuildContext context) {
     final syncState = ref.watch(syncStateProvider);
 
-    // En mode startup, si tout est à jour, naviguer automatiquement vers HomePage
-    if (widget.isStartupSync && syncState is SyncUpToDate) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _navigateToHome();
-      });
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Synchronisation'),
@@ -126,6 +119,34 @@ class _SyncPageState extends ConsumerState<SyncPage> {
   }
 
   Widget _buildUpToDateState() {
+    // En mode startup, naviguer immédiatement sans afficher le message
+    if (widget.isStartupSync) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navigateToHome();
+      });
+      // Afficher un état de chargement pendant la navigation
+      return Card(
+        elevation: 2,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Chargement...',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // En mode normal, afficher le message "Tout est à jour"
     return Card(
       elevation: 2,
       child: Padding(
@@ -274,13 +295,6 @@ class _SyncPageState extends ConsumerState<SyncPage> {
   }
 
   Widget _buildSuccessState() {
-    // En mode startup, naviguer automatiquement vers HomePage
-    if (widget.isStartupSync) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _navigateToHome();
-      });
-    }
-
     return Card(
       elevation: 2,
       child: Padding(
@@ -319,12 +333,11 @@ class _SyncPageState extends ConsumerState<SyncPage> {
             ),
             const SizedBox(height: 24),
             // En mode startup, pas de bouton, navigation automatique
-            if (!widget.isStartupSync)
-              FilledButton.icon(
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.arrow_back),
-                label: const Text('Retour'),
-              ),
+            FilledButton.icon(
+              onPressed: () => _navigateToHome(),
+              icon: const Icon(Icons.home),
+              label: const Text('Voir les chants'),
+            ),
           ],
         ),
       ),
