@@ -81,82 +81,146 @@ class _SyncPageState extends ConsumerState<SyncPage> {
 
   Widget _buildInitialState() {
     // État temporaire, devrait rapidement passer à computing
-    return const Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        CircularProgressIndicator(),
-        SizedBox(height: 16),
-        Text('Initialisation...'),
-      ],
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Initialisation...',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildComputingState() {
-    return const Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        CircularProgressIndicator(),
-        SizedBox(height: 16),
-        Text(
-          'Vérification des modifications...',
-          style: TextStyle(fontSize: 16),
-          textAlign: TextAlign.center,
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Vérification des modifications...',
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            LinearProgressIndicator(
+              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
   Widget _buildDiffComputedState(SyncDiffComputed state) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.info_outline, size: 64, color: Colors.blue),
-        const SizedBox(height: 16),
-        const Text(
-          'Modifications détectées',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 24),
-        DiffSummary(diff: state.diff),
-        const SizedBox(height: 32),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            OutlinedButton(
-              onPressed: widget.isStartupSync
-                  ? _navigateToHome
-                  : () => Navigator.of(context).pop(),
-              child: Text(
-                widget.isStartupSync
-                    ? 'Continuer sans synchroniser'
-                    : 'Annuler',
+            Icon(
+              Icons.sync_outlined,
+              size: 64,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Modifications détectées',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
-            const SizedBox(width: 16),
-            ElevatedButton(
-              onPressed: () => ref
-                  .read(syncStateNotifierProvider.notifier)
-                  .executeSync(state.diff),
-              child: const Text('Synchroniser'),
+            const SizedBox(height: 8),
+            Text(
+              'Des changements nécessitent une synchronisation',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            DiffSummary(diff: state.diff),
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: widget.isStartupSync
+                      ? _navigateToHome
+                      : () => Navigator.of(context).pop(),
+                  child: Text(
+                    widget.isStartupSync
+                        ? 'Continuer sans synchroniser'
+                        : 'Annuler',
+                  ),
+                ),
+                const SizedBox(width: 16),
+                FilledButton.icon(
+                  onPressed: () => ref
+                      .read(syncStateNotifierProvider.notifier)
+                      .executeSync(state.diff),
+                  icon: const Icon(Icons.sync),
+                  label: const Text('Synchroniser'),
+                ),
+              ],
             ),
           ],
         ),
-      ],
+      ),
     );
   }
 
   Widget _buildExecutingState() {
-    return const Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        CircularProgressIndicator(),
-        SizedBox(height: 16),
-        Text(
-          'Synchronisation en cours...',
-          style: TextStyle(fontSize: 16),
-          textAlign: TextAlign.center,
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Synchronisation en cours...',
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Veuillez patienter',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            LinearProgressIndicator(
+              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -168,73 +232,136 @@ class _SyncPageState extends ConsumerState<SyncPage> {
       });
     }
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.check_circle, size: 64, color: Colors.green),
-        const SizedBox(height: 16),
-        const Text(
-          'Synchronisation terminée avec succès',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-          textAlign: TextAlign.center,
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.check_circle_outline,
+                size: 48,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Synchronisation réussie',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Toutes les modifications ont été synchronisées',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            // En mode startup, pas de bouton, navigation automatique
+            if (!widget.isStartupSync)
+              FilledButton.icon(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('Retour'),
+              ),
+          ],
         ),
-        const SizedBox(height: 24),
-        // En mode startup, pas de bouton, navigation automatique
-        if (!widget.isStartupSync)
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Retour'),
-          ),
-      ],
+      ),
     );
   }
 
   Widget _buildErrorState(SyncError state) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.error, size: 64, color: Colors.red),
-        const SizedBox(height: 16),
-        const Text(
-          'Erreur de synchronisation',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          state.message,
-          style: const TextStyle(fontSize: 14, color: Colors.grey),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 24),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            OutlinedButton(
-              onPressed: widget.isStartupSync
-                  ? _navigateToHome
-                  : () => Navigator.of(context).pop(),
-              child: Text(
-                widget.isStartupSync
-                    ? 'Continuer sans synchroniser'
-                    : 'Annuler',
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.errorContainer,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.error_outline,
+                size: 48,
+                color: Theme.of(context).colorScheme.onErrorContainer,
               ),
             ),
-            const SizedBox(width: 16),
-            ElevatedButton(
-              onPressed: () async {
-                // Récupérer l'URL depuis le provider pour le retry
-                final backendUrl = await ref.read(backendUrlProvider.future);
-                if (backendUrl != null && backendUrl.isNotEmpty) {
-                  ref
-                      .read(syncStateNotifierProvider.notifier)
-                      .computeDiff(backendUrl);
-                }
-              },
-              child: const Text('Réessayer'),
+            const SizedBox(height: 24),
+            Text(
+              'Erreur de synchronisation',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.errorContainer.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                state.message,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: widget.isStartupSync
+                      ? _navigateToHome
+                      : () => Navigator.of(context).pop(),
+                  child: Text(
+                    widget.isStartupSync
+                        ? 'Continuer sans synchroniser'
+                        : 'Annuler',
+                  ),
+                ),
+                const SizedBox(width: 16),
+                FilledButton.icon(
+                  onPressed: () async {
+                    // Récupérer l'URL depuis le provider pour le retry
+                    final backendUrl = await ref.read(
+                      backendUrlProvider.future,
+                    );
+                    if (backendUrl != null && backendUrl.isNotEmpty) {
+                      ref
+                          .read(syncStateNotifierProvider.notifier)
+                          .computeDiff(backendUrl);
+                    }
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Réessayer'),
+                ),
+              ],
             ),
           ],
         ),
-      ],
+      ),
     );
   }
 
