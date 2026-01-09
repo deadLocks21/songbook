@@ -20,6 +20,11 @@ class SyncComputing extends SyncState {
   const SyncComputing();
 }
 
+/// Aucune modification détectée, tout est à jour
+class SyncUpToDate extends SyncState {
+  const SyncUpToDate();
+}
+
 /// Diff calculé et prêt à afficher
 class SyncDiffComputed extends SyncState {
   final SyncDiff diff;
@@ -63,8 +68,8 @@ class SyncStateNotifier extends Notifier<SyncState> {
       final diff = await _computeSyncDiffUseCase.execute(baseUrl);
 
       if (diff.isEmpty) {
-        // Si aucun changement, on reste en état initial pour permettre le retour automatique
-        state = const SyncInitial();
+        // Si aucun changement, on passe à l'état "à jour"
+        state = const SyncUpToDate();
       } else {
         state = SyncDiffComputed(diff);
       }

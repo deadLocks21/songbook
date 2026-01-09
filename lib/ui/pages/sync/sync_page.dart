@@ -19,9 +19,6 @@ class SyncPage extends ConsumerStatefulWidget {
 }
 
 class _SyncPageState extends ConsumerState<SyncPage> {
-  // Flag pour savoir si le calcul initial du diff a été lancé
-  bool _initialComputeStarted = false;
-
   @override
   void initState() {
     super.initState();
@@ -30,7 +27,6 @@ class _SyncPageState extends ConsumerState<SyncPage> {
       // Récupérer l'URL depuis le provider
       final backendUrl = await ref.read(backendUrlProvider.future);
       if (backendUrl != null && backendUrl.isNotEmpty) {
-        _initialComputeStarted = true;
         ref.read(syncStateNotifierProvider.notifier).computeDiff(backendUrl);
       }
     });
@@ -40,11 +36,8 @@ class _SyncPageState extends ConsumerState<SyncPage> {
   Widget build(BuildContext context) {
     final syncState = ref.watch(syncStateProvider);
 
-    // En mode startup, si le calcul initial a été fait ET qu'il n'y a pas de différence (SyncInitial),
-    // naviguer automatiquement vers HomePage
-    if (widget.isStartupSync &&
-        syncState is SyncInitial &&
-        _initialComputeStarted) {
+    // En mode startup, si tout est à jour, naviguer automatiquement vers HomePage
+    if (widget.isStartupSync && syncState is SyncUpToDate) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _navigateToHome();
       });
@@ -72,6 +65,7 @@ class _SyncPageState extends ConsumerState<SyncPage> {
     return switch (state) {
       SyncInitial() => _buildInitialState(),
       SyncComputing() => _buildComputingState(),
+      SyncUpToDate() => _buildUpToDateState(),
       SyncDiffComputed() => _buildDiffComputedState(state),
       SyncExecuting() => _buildExecutingState(),
       SyncSuccess() => _buildSuccessState(),
@@ -121,8 +115,61 @@ class _SyncPageState extends ConsumerState<SyncPage> {
             ),
             const SizedBox(height: 16),
             LinearProgressIndicator(
-              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest,
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUpToDateState() {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.check_circle_outline,
+                size: 48,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Tout est à jour !',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Aucune modification à synchroniser',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            // En mode startup, pas de bouton, navigation automatique
+            if (!widget.isStartupSync)
+              FilledButton.icon(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('Retour'),
+              ),
           ],
         ),
       ),
@@ -216,7 +263,9 @@ class _SyncPageState extends ConsumerState<SyncPage> {
             ),
             const SizedBox(height: 16),
             LinearProgressIndicator(
-              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest,
             ),
           ],
         ),
@@ -316,7 +365,7 @@ class _SyncPageState extends ConsumerState<SyncPage> {
               decoration: BoxDecoration(
                 color: Theme.of(
                   context,
-                ).colorScheme.errorContainer.withOpacity(0.3),
+                ).colorScheme.errorContainer.withAlpha(30),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
