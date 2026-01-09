@@ -429,9 +429,10 @@ class _SyncPageState extends ConsumerState<SyncPage> {
 
   void _navigateToHome() {
     if (mounted) {
-      Navigator.pushReplacement(
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const HomePage()),
+        (route) => false, // Supprime toutes les routes précédentes
       );
     }
   }
