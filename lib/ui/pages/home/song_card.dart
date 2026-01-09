@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:songbook/core/application/dtos/resource.dto.dart';
 import 'package:songbook/core/application/dtos/song.dto.dart';
+import 'package:songbook/ui/pages/song_viewer/song_viewer_page.dart';
 
 /// Extension pour ajouter des propriétés calculées à SongDto.
 extension SongDtoExtension on SongDto {
@@ -23,7 +24,10 @@ class SongCard extends StatelessWidget {
     return Card(
       child: InkWell(
         onTap: () {
-          // TODO: Naviguer vers SongViewerPage quand elle sera créée
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => SongViewerPage(song: song)),
+          );
         },
         borderRadius: BorderRadius.circular(12.0),
         child: Padding(
