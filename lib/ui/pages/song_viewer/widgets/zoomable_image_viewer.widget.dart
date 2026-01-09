@@ -68,6 +68,10 @@ class _ZoomableImageViewerState extends State<ZoomableImageViewer> {
         _imageSizes = sizes;
         _isLoading = false;
       });
+      // Centrer le contenu après le premier rendu
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _clampTranslation();
+      });
     }
   }
 
