@@ -238,7 +238,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                         context,
                                         MaterialPageRoute(
                                           builder: (context) =>
-                                              SyncPage(backendUrl: backendUrl),
+                                              const SyncPage(), // isStartupSync = false par défaut
                                         ),
                                       );
                                     }

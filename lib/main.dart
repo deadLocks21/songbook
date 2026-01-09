@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/infrastructure/theme/app_theme_data.dart';
 import 'package:songbook/infrastructure/theme/providers/theme.usecases_provider.dart';
-import 'package:songbook/ui/pages/home/home_page.dart';
+import 'package:songbook/ui/pages/sync/sync_page.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
@@ -22,7 +22,7 @@ class MyApp extends ConsumerWidget {
         theme: AppThemeData.buildLightTheme(),
         darkTheme: AppThemeData.buildDarkTheme(),
         themeMode: AppThemeData.toFlutterThemeMode(appThemeMode),
-        home: const HomePage(),
+        home: const SyncPage(isStartupSync: true),
       ),
       loading: () => MaterialApp(
         title: 'Songbook',
