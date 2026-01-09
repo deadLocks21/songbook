@@ -95,8 +95,12 @@ class RemoteImageResourceDto extends RemoteResourceDto {
   factory RemoteImageResourceDto.fromJson(Map<String, dynamic> json) {
     return RemoteImageResourceDto(
       id: json['id'] as String,
-      name: json['name'] as String,
-      imageUrls: (json['imageUrls'] as List<dynamic>).cast<String>(),
+      // L'API ne fournit pas de name, on utilise l'id par défaut
+      name: json['name'] as String? ?? json['id'] as String,
+      // L'API utilise 'data' au lieu de 'imageUrls'
+      imageUrls: (json['data'] as List<dynamic>?)?.cast<String>() ??
+          (json['imageUrls'] as List<dynamic>?)?.cast<String>() ??
+          [],
     );
   }
 

@@ -11,8 +11,14 @@ class DioRemoteSongRepository implements RemoteSongRepository {
 
   @override
   Future<List<RemoteSong>> fetchSongs(String baseUrl) async {
-    final response = await _dio.get<List<dynamic>>(baseUrl);
-    final jsonList = response.data;
+    final response = await _dio.get<Map<String, dynamic>>(baseUrl);
+    final responseData = response.data;
+
+    if (responseData == null) {
+      return [];
+    }
+
+    final jsonList = responseData['data'] as List<dynamic>?;
 
     if (jsonList == null) {
       return [];

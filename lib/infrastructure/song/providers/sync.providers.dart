@@ -6,6 +6,7 @@ import 'package:songbook/core/application/usecases/execute_sync.usecase.dart';
 import 'package:songbook/core/domain/services/remote_resource.repository.dart';
 import 'package:songbook/core/domain/services/remote_song.repository.dart';
 import 'package:songbook/infrastructure/resource/dio.remote_resource.repository.dart';
+import 'package:songbook/infrastructure/song/dio.remote_song.repository.dart';
 import 'package:songbook/infrastructure/song/in_memory.remote_song.repository.dart';
 import 'package:songbook/infrastructure/song/providers/song.repository_provider.dart';
 
@@ -20,9 +21,9 @@ Dio dio(Ref ref) {
 /// Provider pour le repository des songs distants.
 @riverpod
 RemoteSongRepository remoteSongRepository(Ref ref) {
-  return InMemoryRemoteSongRepository();
-  // final dio = ref.watch(dioProvider);
-  // return DioRemoteSongRepository(dio);
+  // return InMemoryRemoteSongRepository();
+  final dio = ref.watch(dioProvider);
+  return DioRemoteSongRepository(dio);
 }
 
 /// Provider pour le repository des ressources distantes.
