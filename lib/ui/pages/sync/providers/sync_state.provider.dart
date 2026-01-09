@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/usecases/compute_sync_diff.usecase.dart';
 import 'package:songbook/core/application/usecases/execute_sync.usecase.dart';
 import 'package:songbook/core/domain/model/sync_diff.dart';
+import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
 import 'package:songbook/infrastructure/song/providers/sync.providers.dart';
 
 /// État de la synchronisation
@@ -85,6 +86,10 @@ class SyncStateNotifier extends Notifier<SyncState> {
       state = const SyncExecuting();
       final executeUseCase = await _executeSyncUseCase;
       await executeUseCase.execute(diff);
+
+      // Invalider le cache des chants pour forcer le rechargement
+      ref.invalidate(songsProvider);
+
       state = const SyncSuccess();
     } catch (e) {
       debugPrint('Error: $e');
