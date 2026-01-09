@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Permission requise pour les appels réseau (synchronisation des partitions) -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
         android:label="songbook"
         android:name="${applicationName}"
