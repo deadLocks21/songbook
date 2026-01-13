@@ -194,14 +194,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                             _originalBackendUrl = url;
                                           });
                                           if (context.mounted) {
-                                            ScaffoldMessenger.of(
+                                            Navigator.push(
                                               context,
-                                            ).showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                  'URL du backend sauvegardée',
-                                                ),
-                                                duration: Duration(seconds: 2),
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    const SyncPage(), // isStartupSync = false par défaut
                                               ),
                                             );
                                           }
