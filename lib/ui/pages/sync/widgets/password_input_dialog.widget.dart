@@ -16,6 +16,7 @@ class _PasswordInputDialogState extends ConsumerState<PasswordInputDialog> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   bool _rememberPassword = true;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -39,12 +40,25 @@ class _PasswordInputDialogState extends ConsumerState<PasswordInputDialog> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
+              obscureText: _obscurePassword,
+              decoration: InputDecoration(
                 labelText: 'Mot de passe',
                 hintText: 'Entrez votre mot de passe',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock),
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.lock),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
+                  tooltip: _obscurePassword
+                      ? 'Afficher le mot de passe'
+                      : 'Masquer le mot de passe',
+                ),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
