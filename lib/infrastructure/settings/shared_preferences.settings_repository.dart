@@ -6,7 +6,8 @@ class SharedPreferencesSettingsRepository implements SettingsRepository {
   static const String _backendUrlKey = 'backend_url';
 
   /// URL par défaut du backend au premier démarrage
-  static const String defaultBackendUrl = 'https://songbook.dtfh.fr/example';
+  static const String defaultBackendUrl =
+      'https://songbook.dtfh.fr/api/songs/examples';
 
   /// Instance de SharedPreferences - nullable pour gérer l'initialisation
   SharedPreferences? _preferences;
