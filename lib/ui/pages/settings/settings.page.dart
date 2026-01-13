@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:songbook/core/application/services/error_message.service.dart';
 import 'package:songbook/core/domain/model/theme_mode.dart';
 import 'package:songbook/infrastructure/theme/providers/theme.usecases_provider.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.usecases_provider.dart';
@@ -112,7 +113,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   ),
                   error: (error, stack) => SizedBox(
                     height: 60,
-                    child: Center(child: Text('Erreur: $error')),
+                    child: Center(
+                      child: Text(
+                        'Erreur: ${ErrorMessageService.getNetworkErrorMessage(error)}',
+                      ),
+                    ),
                   ),
                 ),
               ),

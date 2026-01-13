@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:songbook/core/application/services/error_message.service.dart';
 import 'package:songbook/ui/pages/home/providers/search_provider.dart';
 import 'package:songbook/ui/pages/home/widgets/song_card.widget.dart';
 import 'package:songbook/ui/pages/settings/settings.page.dart';
@@ -37,9 +38,14 @@ class HomePage extends ConsumerWidget {
               data: (songs) => _buildSongGrid(songs),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, stack) {
-                debugPrint('Error: $error');
+                debugPrint('Error loading songs: $error\n$stack');
+                final userMessage = ErrorMessageService.getNetworkErrorMessage(
+                  error,
+                );
                 return Center(
-                  child: Text('Erreur lors du chargement des chants: $error'),
+                  child: Text(
+                    'Erreur lors du chargement des chants: $userMessage',
+                  ),
                 );
               },
             ),

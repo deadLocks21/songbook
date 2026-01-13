@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:songbook/core/application/services/error_message.service.dart';
 import 'package:songbook/core/application/usecases/compute_sync_diff.usecase.dart';
 import 'package:songbook/core/application/usecases/execute_sync.usecase.dart';
 import 'package:songbook/core/domain/model/sync_diff.dart';
@@ -74,9 +75,10 @@ class SyncStateNotifier extends Notifier<SyncState> {
       } else {
         state = SyncDiffComputed(diff);
       }
-    } catch (e) {
-      debugPrint('Error: $e');
-      state = SyncError(e.toString());
+    } catch (e, stackTrace) {
+      debugPrint('Error during sync: $e\n$stackTrace');
+      final userMessage = ErrorMessageService.getNetworkErrorMessage(e);
+      state = SyncError(userMessage);
     }
   }
 
@@ -91,9 +93,10 @@ class SyncStateNotifier extends Notifier<SyncState> {
       ref.invalidate(songsProvider);
 
       state = const SyncSuccess();
-    } catch (e) {
-      debugPrint('Error: $e');
-      state = SyncError(e.toString());
+    } catch (e, stackTrace) {
+      debugPrint('Error during sync: $e\n$stackTrace');
+      final userMessage = ErrorMessageService.getNetworkErrorMessage(e);
+      state = SyncError(userMessage);
     }
   }
 
