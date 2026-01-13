@@ -98,7 +98,8 @@ class RemoteImageResourceDto extends RemoteResourceDto {
       // L'API ne fournit pas de name, on utilise l'id par défaut
       name: json['name'] as String? ?? json['id'] as String,
       // L'API utilise 'data' au lieu de 'imageUrls'
-      imageUrls: (json['data'] as List<dynamic>?)?.cast<String>() ??
+      imageUrls:
+          (json['data'] as List<dynamic>?)?.cast<String>() ??
           (json['imageUrls'] as List<dynamic>?)?.cast<String>() ??
           [],
     );
