@@ -186,6 +186,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                         final url = _backendUrlController.text
                                             .trim();
                                         if (url.isNotEmpty) {
+                                          // Le mot de passe est automatiquement supprimé par le use case
                                           await backendUrlNotifier
                                               .setBackendUrl(url);
                                           setState(() {
