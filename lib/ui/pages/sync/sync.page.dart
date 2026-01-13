@@ -4,6 +4,7 @@ import 'package:songbook/infrastructure/settings/providers/settings.usecases_pro
 import 'package:songbook/ui/pages/home/home.page.dart';
 import 'package:songbook/ui/pages/sync/providers/sync_state.provider.dart';
 import 'package:songbook/ui/pages/sync/widgets/diff_summary.widget.dart';
+import 'package:songbook/ui/pages/sync/widgets/password_input_dialog.widget.dart';
 
 /// Page de synchronisation avec le serveur
 class SyncPage extends ConsumerStatefulWidget {
@@ -63,6 +64,7 @@ class _SyncPageState extends ConsumerState<SyncPage> {
       SyncExecuting() => _buildExecutingState(),
       SyncSuccess() => _buildSuccessState(),
       SyncError() => _buildErrorState(state),
+      SyncPasswordRequired() => _buildPasswordRequiredState(),
     };
   }
 
@@ -420,6 +422,53 @@ class _SyncPageState extends ConsumerState<SyncPage> {
                   label: const Text('Réessayer'),
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPasswordRequiredState() {
+    // Afficher la modal de saisie du mot de passe
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showDialog(
+        context: context,
+        barrierDismissible:
+            false, // Empêcher la fermeture en cliquant à l'extérieur
+        builder: (context) => const PasswordInputDialog(),
+      );
+    });
+
+    // Afficher un état de chargement pendant que la modal s'affiche
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.lock_outline,
+              size: 64,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Authentification requise',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Un mot de passe est nécessaire pour accéder aux données.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

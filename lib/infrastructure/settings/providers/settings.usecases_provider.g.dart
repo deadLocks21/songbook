@@ -114,6 +114,112 @@ final class SetBackendUrlUseCaseProvider
 String _$setBackendUrlUseCaseHash() =>
     r'779abaa90600b1a100d10f83004ce18eaf163776';
 
+/// Provider pour le use case de récupération du mot de passe.
+
+@ProviderFor(getPasswordUseCase)
+final getPasswordUseCaseProvider = GetPasswordUseCaseProvider._();
+
+/// Provider pour le use case de récupération du mot de passe.
+
+final class GetPasswordUseCaseProvider
+    extends
+        $FunctionalProvider<
+          GetPasswordUseCase,
+          GetPasswordUseCase,
+          GetPasswordUseCase
+        >
+    with $Provider<GetPasswordUseCase> {
+  /// Provider pour le use case de récupération du mot de passe.
+  GetPasswordUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'getPasswordUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$getPasswordUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<GetPasswordUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  GetPasswordUseCase create(Ref ref) {
+    return getPasswordUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GetPasswordUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GetPasswordUseCase>(value),
+    );
+  }
+}
+
+String _$getPasswordUseCaseHash() =>
+    r'e58c80aef81ae8efa488790f79a099b3b90181a9';
+
+/// Provider pour le use case de stockage du mot de passe.
+
+@ProviderFor(setPasswordUseCase)
+final setPasswordUseCaseProvider = SetPasswordUseCaseProvider._();
+
+/// Provider pour le use case de stockage du mot de passe.
+
+final class SetPasswordUseCaseProvider
+    extends
+        $FunctionalProvider<
+          SetPasswordUseCase,
+          SetPasswordUseCase,
+          SetPasswordUseCase
+        >
+    with $Provider<SetPasswordUseCase> {
+  /// Provider pour le use case de stockage du mot de passe.
+  SetPasswordUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'setPasswordUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$setPasswordUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<SetPasswordUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  SetPasswordUseCase create(Ref ref) {
+    return setPasswordUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SetPasswordUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SetPasswordUseCase>(value),
+    );
+  }
+}
+
+String _$setPasswordUseCaseHash() =>
+    r'b0bd59aabe170a9547afe74bef1ce52cc62c691e';
+
 /// Notifier pour gérer l'état de l'URL du backend avec la nouvelle API Riverpod
 
 @ProviderFor(BackendUrlNotifier)

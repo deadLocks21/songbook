@@ -1,6 +1,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:songbook/core/application/usecases/get_backend_url.usecase.dart';
+import 'package:songbook/core/application/usecases/get_password.usecase.dart';
 import 'package:songbook/core/application/usecases/set_backend_url.usecase.dart';
+import 'package:songbook/core/application/usecases/set_password.usecase.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.repository_provider.dart';
 
 part 'settings.usecases_provider.g.dart';
@@ -17,6 +19,20 @@ GetBackendUrlUseCase getBackendUrlUseCase(Ref ref) {
 SetBackendUrlUseCase setBackendUrlUseCase(Ref ref) {
   final repository = ref.watch(settingsRepositoryProvider);
   return SetBackendUrlUseCase(repository);
+}
+
+/// Provider pour le use case de récupération du mot de passe.
+@riverpod
+GetPasswordUseCase getPasswordUseCase(Ref ref) {
+  final repository = ref.watch(settingsRepositoryProvider);
+  return GetPasswordUseCase(repository);
+}
+
+/// Provider pour le use case de stockage du mot de passe.
+@riverpod
+SetPasswordUseCase setPasswordUseCase(Ref ref) {
+  final repository = ref.watch(settingsRepositoryProvider);
+  return SetPasswordUseCase(repository);
 }
 
 /// Notifier pour gérer l'état de l'URL du backend avec la nouvelle API Riverpod

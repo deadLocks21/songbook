@@ -51,7 +51,7 @@ final class DioProvider extends $FunctionalProvider<Dio, Dio, Dio>
   }
 }
 
-String _$dioHash() => r'a03da399b44b3740dc4fcfc6716203041d66ff01';
+String _$dioHash() => r'd51a28ec0408e366d63c628a7283c1f6348b096e';
 
 /// Provider pour le repository des songs distants.
 
@@ -104,7 +104,7 @@ final class RemoteSongRepositoryProvider
 }
 
 String _$remoteSongRepositoryHash() =>
-    r'95ec608c1ebf71cf34bd3feafa66bcd1c1f2fa69';
+    r'6b4b4a9c5a46a70e941f67c041e16dc2d39940bd';
 
 /// Provider pour le repository des ressources distantes.
 /// Retourne un Future car nécessite le chemin du répertoire de l'application.
@@ -154,7 +154,7 @@ final class RemoteResourceRepositoryProvider
 }
 
 String _$remoteResourceRepositoryHash() =>
-    r'2da5055f31d0e73b639497b2b98750c5afa0d86f';
+    r'ee005c32e6a1eaaa45886b4b8abf2e3ed5ce278d';
 
 /// Provider pour le use case de calcul des différences de synchronisation.
 
