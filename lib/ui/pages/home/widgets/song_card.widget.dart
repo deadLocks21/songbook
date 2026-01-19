@@ -22,6 +22,7 @@ class SongCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      key: Key('songCard_${song.id}'),
       child: InkWell(
         onTap: () {
           Navigator.push(

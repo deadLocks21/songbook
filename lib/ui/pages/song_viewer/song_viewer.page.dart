@@ -20,9 +20,14 @@ class SongViewerPage extends StatelessWidget {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(song.code, style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              song.code,
+              key: const Key('songCode'),
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             Text(
               song.name,
+              key: const Key('songName'),
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 color: Theme.of(
                   context,
@@ -39,10 +44,14 @@ class SongViewerPage extends StatelessWidget {
   Widget _buildBody(ImageResourceDto? imageResource) {
     if (imageResource == null || imageResource.imagePaths.isEmpty) {
       return const Center(
+        key: Key('noImageMessage'),
         child: Text('Aucune partition disponible pour ce chant'),
       );
     }
 
-    return ZoomableImageViewer(imagePaths: imageResource.imagePaths);
+    return ZoomableImageViewer(
+      key: const Key('imageViewer'),
+      imagePaths: imageResource.imagePaths,
+    );
   }
 }

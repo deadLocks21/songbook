@@ -17,6 +17,7 @@ class HomePage extends ConsumerWidget {
         title: const Text('Songbook'),
         actions: [
           IconButton(
+            key: const Key('settingsButton'),
             icon: const Icon(Icons.settings),
             onPressed: () {
               Navigator.push(
@@ -36,13 +37,17 @@ class HomePage extends ConsumerWidget {
           Expanded(
             child: filteredSongsAsync.when(
               data: (songs) => _buildSongGrid(songs),
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(
+                key: Key('loadingIndicator'),
+                child: CircularProgressIndicator(),
+              ),
               error: (error, stack) {
                 debugPrint('Error loading songs: $error\n$stack');
                 final userMessage = ErrorMessageService.getNetworkErrorMessage(
                   error,
                 );
                 return Center(
+                  key: const Key('errorMessage'),
                   child: Text(
                     'Erreur lors du chargement des chants: $userMessage',
                   ),
@@ -59,6 +64,7 @@ class HomePage extends ConsumerWidget {
     final searchQuery = ref.watch(searchQueryProvider);
 
     return TextField(
+      key: const Key('searchField'),
       decoration: InputDecoration(
         hintText: 'Rechercher par code ou titre...',
         prefixIcon: const Icon(Icons.search),
@@ -82,6 +88,7 @@ class HomePage extends ConsumerWidget {
   Widget _buildSongGrid(List<dynamic> songs) {
     if (songs.isEmpty) {
       return const Center(
+        key: Key('emptyMessage'),
         child: Text(
           'Aucun chant trouvé',
           style: TextStyle(fontSize: 18.0, color: Colors.grey),
