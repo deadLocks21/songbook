@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:songbook/core/application/usecases/compute_sync_diff.usecase.dart';
@@ -57,6 +58,24 @@ class _AuthInterceptor extends Interceptor {
   }
 }
 
+/// Intercepteur Dio pour ajouter la version de l'application dans les headers
+class _VersionInterceptor extends Interceptor {
+  @override
+  Future<void> onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
+    // Récupérer les informations de l'application
+    final packageInfo = await PackageInfo.fromPlatform();
+
+    // Ajouter la version complète (version + buildNumber) au header X-App-Version
+    final appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
+    options.headers['X-App-Version'] = appVersion;
+
+    handler.next(options);
+  }
+}
+
 /// Provider pour l'instance Dio utilisée pour les requêtes HTTP.
 @riverpod
 Dio dio(Ref ref) {
@@ -64,6 +83,9 @@ Dio dio(Ref ref) {
 
   // Ajouter l'intercepteur d'authentification
   dio.interceptors.add(_AuthInterceptor(ref));
+
+  // Ajouter l'intercepteur de version
+  dio.interceptors.add(_VersionInterceptor());
 
   return dio;
 }
