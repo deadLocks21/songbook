@@ -20,11 +20,28 @@ class ExecuteSyncUseCase {
   /// Exécute la synchronisation.
   ///
   /// [diff] contient les actions à effectuer (ajout, mise à jour, suppression).
-  Future<void> execute(SyncDiff diff) async {
+  /// [onProgress] callback optionnel pour rapporter la progression (0.0 à 1.0).
+  Future<void> execute(
+    SyncDiff diff, {
+    void Function(double progress)? onProgress,
+  }) async {
+    // Calculer le nombre total d'opérations pour la progression
+    final totalOperations =
+        diff.toDelete.length + diff.toUpdate.length + diff.toAdd.length;
+    if (totalOperations == 0) {
+      onProgress?.call(1.0);
+      return;
+    }
+
+    var completedOperations = 0;
+    onProgress?.call(0.0);
+
     // 1. Supprimer les songs disparus du serveur
     for (final toDelete in diff.toDelete) {
       await _resourceRepository.deleteResourcesForSong(toDelete.localSong.id);
       await _songRepository.deleteSong(toDelete.localSong.id);
+      completedOperations++;
+      onProgress?.call(completedOperations / totalOperations);
     }
 
     // 2. Mettre à jour les songs modifiés
@@ -37,6 +54,8 @@ class ExecuteSyncUseCase {
         localResources,
       );
       await _songRepository.updateSong(updatedSong);
+      completedOperations++;
+      onProgress?.call(completedOperations / totalOperations);
     }
 
     // 3. Ajouter les nouveaux songs
@@ -44,7 +63,11 @@ class ExecuteSyncUseCase {
       final localResources = await _downloadResources(toAdd.remoteSong);
       final newSong = _createSongFromRemote(toAdd.remoteSong, localResources);
       await _songRepository.addSong(newSong);
+      completedOperations++;
+      onProgress?.call(completedOperations / totalOperations);
     }
+
+    onProgress?.call(1.0);
   }
 
   /// Télécharge toutes les ressources d'un song distant.

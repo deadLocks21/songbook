@@ -58,10 +58,10 @@ class _SyncPageState extends ConsumerState<SyncPage> {
   Widget _buildContent(SyncState state) {
     return switch (state) {
       SyncInitial() => _buildInitialState(),
-      SyncComputing() => _buildComputingState(),
+      SyncComputing() => _buildComputingState(state),
       SyncUpToDate() => _buildUpToDateState(),
       SyncDiffComputed() => _buildDiffComputedState(state),
-      SyncExecuting() => _buildExecutingState(),
+      SyncExecuting() => _buildExecutingState(state),
       SyncSuccess() => _buildSuccessState(),
       SyncError() => _buildErrorState(state),
       SyncPasswordRequired() => _buildPasswordRequiredState(),
@@ -91,7 +91,8 @@ class _SyncPageState extends ConsumerState<SyncPage> {
     );
   }
 
-  Widget _buildComputingState() {
+  Widget _buildComputingState(SyncComputing state) {
+    final progressPercent = (state.progress * 100).round();
     return Card(
       elevation: 2,
       child: Padding(
@@ -101,6 +102,7 @@ class _SyncPageState extends ConsumerState<SyncPage> {
           children: [
             CircularProgressIndicator(
               color: Theme.of(context).colorScheme.primary,
+              value: state.progress > 0 ? state.progress : null,
             ),
             const SizedBox(height: 24),
             Text(
@@ -110,9 +112,17 @@ class _SyncPageState extends ConsumerState<SyncPage> {
             ),
             const SizedBox(height: 16),
             LinearProgressIndicator(
+              value: state.progress,
               backgroundColor: Theme.of(
                 context,
               ).colorScheme.surfaceContainerHighest,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '$progressPercent%',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -260,7 +270,8 @@ class _SyncPageState extends ConsumerState<SyncPage> {
     );
   }
 
-  Widget _buildExecutingState() {
+  Widget _buildExecutingState(SyncExecuting state) {
+    final progressPercent = (state.progress * 100).round();
     return Card(
       elevation: 2,
       child: Padding(
@@ -270,6 +281,7 @@ class _SyncPageState extends ConsumerState<SyncPage> {
           children: [
             CircularProgressIndicator(
               color: Theme.of(context).colorScheme.primary,
+              value: state.progress > 0 ? state.progress : null,
             ),
             const SizedBox(height: 24),
             Text(
@@ -286,9 +298,17 @@ class _SyncPageState extends ConsumerState<SyncPage> {
             ),
             const SizedBox(height: 16),
             LinearProgressIndicator(
+              value: state.progress,
               backgroundColor: Theme.of(
                 context,
               ).colorScheme.surfaceContainerHighest,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '$progressPercent%',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),

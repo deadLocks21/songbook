@@ -23,7 +23,9 @@ class SyncInitial extends SyncState {
 
 /// Calcul du diff en cours
 class SyncComputing extends SyncState {
-  const SyncComputing();
+  final double progress;
+
+  const SyncComputing({this.progress = 0.0});
 }
 
 /// Aucune modification détectée, tout est à jour
@@ -40,7 +42,9 @@ class SyncDiffComputed extends SyncState {
 
 /// Exécution de la synchronisation en cours
 class SyncExecuting extends SyncState {
-  const SyncExecuting();
+  final double progress;
+
+  const SyncExecuting({this.progress = 0.0});
 }
 
 /// Synchronisation terminée avec succès
@@ -80,9 +84,12 @@ class SyncStateNotifier extends Notifier<SyncState> {
   /// Calcule le diff entre les données locales et distantes
   Future<void> computeDiff(String baseUrl) async {
     try {
-      state = const SyncComputing();
+      state = const SyncComputing(progress: 0.0);
       _currentUrl = baseUrl; // Stocker l'URL pour les retry
-      final diff = await _computeSyncDiffUseCase.execute(baseUrl);
+      final diff = await _computeSyncDiffUseCase.execute(
+        baseUrl,
+        onProgress: (progress) => state = SyncComputing(progress: progress),
+      );
 
       if (diff.isEmpty) {
         // Si aucun changement, on passe à l'état "à jour"
@@ -112,9 +119,12 @@ class SyncStateNotifier extends Notifier<SyncState> {
   /// Exécute la synchronisation avec le diff fourni
   Future<void> executeSync(SyncDiff diff) async {
     try {
-      state = const SyncExecuting();
+      state = const SyncExecuting(progress: 0.0);
       final executeUseCase = await _executeSyncUseCase;
-      await executeUseCase.execute(diff);
+      await executeUseCase.execute(
+        diff,
+        onProgress: (progress) => state = SyncExecuting(progress: progress),
+      );
 
       // Invalider le cache des chants pour forcer le rechargement
       ref.invalidate(songsProvider);
