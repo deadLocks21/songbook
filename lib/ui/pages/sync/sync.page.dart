@@ -102,7 +102,6 @@ class _SyncPageState extends ConsumerState<SyncPage> {
           children: [
             CircularProgressIndicator(
               color: Theme.of(context).colorScheme.primary,
-              value: state.progress > 0 ? state.progress : null,
             ),
             const SizedBox(height: 24),
             Text(
@@ -281,7 +280,6 @@ class _SyncPageState extends ConsumerState<SyncPage> {
           children: [
             CircularProgressIndicator(
               color: Theme.of(context).colorScheme.primary,
-              value: state.progress > 0 ? state.progress : null,
             ),
             const SizedBox(height: 24),
             Text(
