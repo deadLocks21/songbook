@@ -4,6 +4,7 @@ import 'package:songbook/core/application/dtos/song_list.dto.dart';
 import 'package:songbook/core/domain/model/song_list.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
+import 'package:songbook/ui/pages/song_list_detail/song_list_detail.page.dart';
 import 'package:songbook/ui/pages/song_list_edit/song_list_edit.page.dart';
 import 'package:songbook/ui/pages/song_list_viewer/song_list_viewer.page.dart';
 import 'package:songbook/ui/pages/song_lists/widgets/song_list_card.widget.dart';
@@ -52,7 +53,7 @@ class SongListsPage extends ConsumerWidget {
         final songList = songLists[index];
         return SongListCard(
           songList: songList,
-          onTap: () => _editList(context, ref, songList),
+          onTap: () => _showDetail(context, ref, songList),
           onView: () => _viewList(context, songList),
           onEdit: () => _editList(context, ref, songList),
           onDelete: () => _confirmDelete(context, ref, songList),
@@ -73,6 +74,15 @@ class SongListsPage extends ConsumerWidget {
       context,
       MaterialPageRoute(
         builder: (context) => SongListEditPage(songList: newList),
+      ),
+    ).then((_) => ref.invalidate(songListsProvider));
+  }
+
+  void _showDetail(BuildContext context, WidgetRef ref, SongListDto songList) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SongListDetailPage(songListId: songList.id),
       ),
     ).then((_) => ref.invalidate(songListsProvider));
   }
