@@ -16,19 +16,19 @@ class SongListEntryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: ReorderableDragStartListener(
-        index: index,
-        child: const Icon(Icons.drag_handle),
-      ),
-      title: Text(
-        '${entry.songCode} - ${entry.songName}',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      trailing: IconButton(
-        icon: const Icon(Icons.delete_outline),
-        onPressed: onRemove,
+    return ReorderableDragStartListener(
+      index: index,
+      child: ListTile(
+        leading: const Icon(Icons.drag_handle),
+        title: Text(
+          '${entry.songCode} - ${entry.songName}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: IconButton(
+          icon: const Icon(Icons.delete_outline),
+          onPressed: onRemove,
+        ),
       ),
     );
   }
