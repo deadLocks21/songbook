@@ -67,14 +67,15 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
               onPressed: _isSaving ? null : _save,
               tooltip: 'Enregistrer',
             ),
-            if (!_isNew && _entries.isNotEmpty)
-              IconButton(
-                icon: const Icon(Icons.play_arrow),
-                onPressed: _presentSongList,
-                tooltip: 'Présenter',
-              ),
           ],
         ),
+        floatingActionButton: (!_isNew && _entries.isNotEmpty)
+            ? FloatingActionButton(
+                onPressed: _presentSongList,
+                tooltip: 'Présenter',
+                child: const Icon(Icons.play_arrow),
+              )
+            : null,
         body: Column(
           children: [
             Padding(
