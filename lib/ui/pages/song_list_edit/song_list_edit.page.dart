@@ -46,9 +46,9 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
   Widget build(BuildContext context) {
     ref.watch(songsProvider);
     return PopScope(
-      canPop: !_hasChanges,
+      canPop: !_hasChanges || _isSaving,
       onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
+        if (didPop || _isSaving) return;
         final shouldPop = await _showDiscardDialog();
         if (shouldPop == true && context.mounted) {
           Navigator.pop(context);
@@ -57,6 +57,7 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(_isNew ? 'Nouvelle liste' : 'Modifier la liste'),
+          leading: _isSaving ? const SizedBox.shrink() : null,
           actions: [
             IconButton(
               icon: _isSaving
@@ -71,12 +72,17 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
             ),
           ],
         ),
-        floatingActionButton: FloatingActionButton(
+        floatingActionButton: _isSaving ? null : FloatingActionButton(
           onPressed: _addSongs,
           tooltip: 'Ajouter un chant',
           child: const Icon(Icons.add),
         ),
-        body: Column(
+        body: IgnorePointer(
+          ignoring: _isSaving,
+          child: AnimatedOpacity(
+            opacity: _isSaving ? 0.5 : 1.0,
+            duration: const Duration(milliseconds: 200),
+            child: Column(
           children: [
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -137,6 +143,8 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
                     ),
             ),
           ],
+        ),
+          ),
         ),
       ),
     );
@@ -250,6 +258,7 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
       final service = ref.read(songListServiceProvider);
       await service.saveSongList.execute(dto);
       ref.invalidate(songListsProvider);
+      await ref.read(songListsProvider.future);
 
       if (mounted) Navigator.pop(context);
     } finally {
