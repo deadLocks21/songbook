@@ -6,8 +6,9 @@ import 'package:songbook/ui/pages/song_viewer/widgets/zoomable_image_viewer.widg
 /// Page de visualisation des partitions d'un chant.
 class SongViewerPage extends StatelessWidget {
   final SongDto song;
+  final List<Widget>? actions;
 
-  const SongViewerPage({super.key, required this.song});
+  const SongViewerPage({super.key, required this.song, this.actions});
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +37,7 @@ class SongViewerPage extends StatelessWidget {
             ),
           ],
         ),
+        actions: actions,
       ),
       body: _buildBody(imageResource),
     );

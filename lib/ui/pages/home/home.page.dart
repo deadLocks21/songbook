@@ -1,119 +1,52 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:songbook/core/application/services/error_message.service.dart';
-import 'package:songbook/ui/pages/home/providers/search_provider.dart';
-import 'package:songbook/ui/pages/home/widgets/song_card.widget.dart';
+import 'package:songbook/ui/pages/home/widgets/songs_tab.widget.dart';
 import 'package:songbook/ui/pages/settings/settings.page.dart';
+import 'package:songbook/ui/pages/song_lists/song_lists.page.dart';
 
-class HomePage extends ConsumerWidget {
+/// Page d'accueil avec BottomNavigationBar pour naviguer
+/// entre les chants et les listes de chants.
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final filteredSongsAsync = ref.watch(filteredSongsProvider);
+  State<HomePage> createState() => _HomePageState();
+}
 
+class _HomePageState extends State<HomePage> {
+  int _currentIndex = 0;
+
+  static const _tabs = <Widget>[SongsTab(), SongListsPage(), SettingsPage()];
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Songbook'),
-        actions: [
-          IconButton(
-            key: const Key('settingsButton'),
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SettingsPage()),
-              );
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: _buildSearchField(ref),
-          ),
-          Expanded(
-            child: filteredSongsAsync.when(
-              data: (songs) => _buildSongGrid(songs),
-              loading: () => const Center(
-                key: Key('loadingIndicator'),
-                child: CircularProgressIndicator(),
+      appBar: AppBar(title: const Text('Songbook')),
+      body: _tabs[_currentIndex],
+      bottomNavigationBar: Align(
+        alignment: Alignment.bottomCenter,
+        heightFactor: 1,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (index) => setState(() => _currentIndex = index),
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.music_note),
+                label: 'Chants',
               ),
-              error: (error, stack) {
-                debugPrint('Error loading songs: $error\n$stack');
-                final userMessage = ErrorMessageService.getNetworkErrorMessage(
-                  error,
-                );
-                return Center(
-                  key: const Key('errorMessage'),
-                  child: Text(
-                    'Erreur lors du chargement des chants: $userMessage',
-                  ),
-                );
-              },
-            ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.queue_music),
+                label: 'Listes',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.settings),
+                label: 'Paramètres',
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchField(WidgetRef ref) {
-    final searchQuery = ref.watch(searchQueryProvider);
-
-    return TextField(
-      key: const Key('searchField'),
-      decoration: InputDecoration(
-        hintText: 'Rechercher par code ou titre...',
-        prefixIcon: const Icon(Icons.search),
-        suffixIcon: searchQuery.isNotEmpty
-            ? IconButton(
-                icon: const Icon(Icons.clear),
-                onPressed: () => ref.read(searchQueryProvider.notifier).clear(),
-              )
-            : null,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16.0,
-          vertical: 12.0,
         ),
       ),
-      onChanged: (value) =>
-          ref.read(searchQueryProvider.notifier).update(value),
-    );
-  }
-
-  Widget _buildSongGrid(List<dynamic> songs) {
-    if (songs.isEmpty) {
-      return const Center(
-        key: Key('emptyMessage'),
-        child: Text(
-          'Aucun chant trouvé',
-          style: TextStyle(fontSize: 18.0, color: Colors.grey),
-        ),
-      );
-    }
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = (constraints.maxWidth / 360).floor().clamp(1, 5);
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: GridView.builder(
-            key: const Key('songGridView'),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: crossAxisCount,
-              mainAxisExtent: 114.0,
-              crossAxisSpacing: 8.0,
-              mainAxisSpacing: 8.0,
-            ),
-            itemCount: songs.length,
-            itemBuilder: (context, index) => SongCard(song: songs[index]),
-          ),
-        );
-      },
     );
   }
 }

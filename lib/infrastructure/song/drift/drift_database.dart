@@ -30,7 +30,12 @@ class AppDatabase {
     final documentsDirectory = await getApplicationSupportDirectory();
     final path = p.join(documentsDirectory.path, 'songbook.db');
 
-    return await openDatabase(path, version: 1, onCreate: _onCreate);
+    return await openDatabase(
+      path,
+      version: 2,
+      onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
+    );
   }
 
   static Future<void> _onCreate(Database db, int version) async {
@@ -55,6 +60,40 @@ class AppDatabase {
         FOREIGN KEY (songId) REFERENCES songs (id) ON DELETE CASCADE
       )
     ''');
+
+    // Créer les tables des listes de chants
+    await _createSongListTables(db);
+  }
+
+  static Future<void> _onUpgrade(
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    if (oldVersion < 2) {
+      await _createSongListTables(db);
+    }
+  }
+
+  static Future<void> _createSongListTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE song_lists (
+        id TEXT PRIMARY KEY,
+        scheduledAt TEXT NOT NULL,
+        createdAt TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE song_list_entries (
+        id TEXT PRIMARY KEY,
+        songListId TEXT NOT NULL,
+        songId TEXT NOT NULL,
+        position INTEGER NOT NULL,
+        FOREIGN KEY (songListId) REFERENCES song_lists (id) ON DELETE CASCADE,
+        FOREIGN KEY (songId) REFERENCES songs (id) ON DELETE CASCADE
+      )
+    ''');
   }
 
   /// Ferme la base de données
@@ -70,6 +109,8 @@ class AppDatabase {
     final db = await database;
 
     // Supprimer toutes les tables
+    await db.delete('song_list_entries');
+    await db.delete('song_lists');
     await db.delete('resources');
     await db.delete('songs');
 

@@ -46,6 +46,45 @@ class DriftSongRepository implements SongRepository {
   }
 
   @override
+  Future<List<domain_song.Song>> getSongsByIds(List<UuidValue> ids) async {
+    if (ids.isEmpty) return [];
+    final db = await _database;
+
+    final placeholders = List.filled(ids.length, '?').join(', ');
+    final idValues = ids.map((id) => id.value).toList();
+
+    final songRows = await db.query(
+      'songs',
+      where: 'id IN ($placeholders)',
+      whereArgs: idValues,
+    );
+
+    final songs = <domain_song.Song>[];
+
+    for (final songRow in songRows) {
+      final resourceRows = await db.query(
+        'resources',
+        where: 'songId = ?',
+        whereArgs: [songRow['id']],
+      );
+
+      final resources = resourceRows.map(_resourceRowToDomain).toList();
+
+      songs.add(
+        domain_song.Song(
+          id: UuidValue.parse(songRow['id'] as String),
+          code: songRow['code'] as String,
+          name: songRow['name'] as String,
+          updatedAt: DateTime.parse(songRow['updatedAt'] as String),
+          resources: resources,
+        ),
+      );
+    }
+
+    return songs;
+  }
+
+  @override
   Future<void> addSong(domain_song.Song song) async {
     final db = await _database;
 

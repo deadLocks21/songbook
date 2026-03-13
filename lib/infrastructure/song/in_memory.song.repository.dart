@@ -17,6 +17,12 @@ class InMemorySongRepository implements SongRepository {
   }
 
   @override
+  Future<List<Song>> getSongsByIds(List<UuidValue> ids) async {
+    final idSet = ids.toSet();
+    return List.unmodifiable(_songs.where((s) => idSet.contains(s.id)));
+  }
+
+  @override
   Future<void> addSong(Song song) async {
     _songs.add(song);
   }
@@ -38,5 +44,4 @@ class InMemorySongRepository implements SongRepository {
   Future<void> deleteAllSongs() async {
     _songs.clear();
   }
-
 }

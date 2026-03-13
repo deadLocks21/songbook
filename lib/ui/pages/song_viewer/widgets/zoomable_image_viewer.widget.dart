@@ -65,10 +65,7 @@ class _ZoomableImageViewerState extends State<ZoomableImageViewer> {
           final codec = await ui.instantiateImageCodec(bytes);
           final frame = await codec.getNextFrame();
           sizes.add(
-            Size(
-              frame.image.width.toDouble(),
-              frame.image.height.toDouble(),
-            ),
+            Size(frame.image.width.toDouble(), frame.image.height.toDouble()),
           );
           codec.dispose();
         }
@@ -83,10 +80,6 @@ class _ZoomableImageViewerState extends State<ZoomableImageViewer> {
         _imageSizes = sizes;
         _isLoading = false;
       });
-      // Centrer le contenu après le premier rendu
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _clampTranslation();
-      });
     }
   }
 
@@ -99,10 +92,7 @@ class _ZoomableImageViewerState extends State<ZoomableImageViewer> {
     listener = ImageStreamListener(
       (info, _) {
         completer.complete(
-          Size(
-            info.image.width.toDouble(),
-            info.image.height.toDouble(),
-          ),
+          Size(info.image.width.toDouble(), info.image.height.toDouble()),
         );
         stream.removeListener(listener);
       },
@@ -205,6 +195,10 @@ class _ZoomableImageViewerState extends State<ZoomableImageViewer> {
         _viewportWidth = constraints.maxWidth;
         _viewportHeight = constraints.maxHeight;
         _contentWidth = _calculateTotalWidth(_viewportHeight);
+        // Assurer une largeur minimale = viewport pour centrer via le layout
+        if (_contentWidth < _viewportWidth) {
+          _contentWidth = _viewportWidth;
+        }
         final minScale = _calculateMinScale(_viewportWidth, _contentWidth);
 
         return GestureDetector(
@@ -216,9 +210,11 @@ class _ZoomableImageViewerState extends State<ZoomableImageViewer> {
             boundaryMargin: const EdgeInsets.all(double.infinity),
             builder: (context, quad) {
               return SizedBox(
+                width: _contentWidth,
                 height: _viewportHeight,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: _buildImageWidgets(_viewportHeight),
                 ),
               );

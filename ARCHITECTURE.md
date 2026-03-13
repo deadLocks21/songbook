@@ -399,6 +399,30 @@ SourceApplicationService sourceService(Ref ref) {
 7. **Créer ou modifier le provider** dans `infrastructure/providers/`
 8. **Utiliser dans l'UI** via Riverpod
 
+### 🚀 Lancer l'application
+
+#### Web (développement)
+
+```bash
+flutter run -d web-server --web-port=8080
+```
+
+L'app sera accessible sur `http://localhost:8080`.
+
+> **Note** : Pour désactiver les restrictions CORS (utile pour le développement), ajouter le flag `--web-browser-flag="--disable-web-security"`.
+
+#### Android
+
+```bash
+flutter run -d <device_id>
+```
+
+#### Lister les devices disponibles
+
+```bash
+flutter devices
+```
+
 ### 🧪 Tests
 
-L'application n'est pas testé pour le moment.
+L'application n'est pas testée pour le moment.

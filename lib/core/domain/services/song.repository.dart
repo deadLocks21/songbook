@@ -8,6 +8,9 @@ abstract interface class SongRepository {
   /// Retourne une liste non modifiable.
   Future<List<Song>> getAllSongs();
 
+  /// Récupère les chants correspondant aux identifiants fournis.
+  Future<List<Song>> getSongsByIds(List<UuidValue> ids);
+
   /// Ajoute un nouveau chant à la base de données.
   Future<void> addSong(Song song);
 
