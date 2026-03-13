@@ -8,22 +8,21 @@ part of 'theme.repository_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Provider pour l'implémentation du repository de thème
+/// Provider pour l'implémentation du repository de thème.
+/// Utilise InMemoryThemeRepository sur le web, SharedPreferencesThemeRepository sinon.
 
 @ProviderFor(themeRepository)
 final themeRepositoryProvider = ThemeRepositoryProvider._();
 
-/// Provider pour l'implémentation du repository de thème
+/// Provider pour l'implémentation du repository de thème.
+/// Utilise InMemoryThemeRepository sur le web, SharedPreferencesThemeRepository sinon.
 
 final class ThemeRepositoryProvider
     extends
-        $FunctionalProvider<
-          SharedPreferencesThemeRepository,
-          SharedPreferencesThemeRepository,
-          SharedPreferencesThemeRepository
-        >
-    with $Provider<SharedPreferencesThemeRepository> {
-  /// Provider pour l'implémentation du repository de thème
+        $FunctionalProvider<ThemeRepository, ThemeRepository, ThemeRepository>
+    with $Provider<ThemeRepository> {
+  /// Provider pour l'implémentation du repository de thème.
+  /// Utilise InMemoryThemeRepository sur le web, SharedPreferencesThemeRepository sinon.
   ThemeRepositoryProvider._()
     : super(
         from: null,
@@ -40,24 +39,21 @@ final class ThemeRepositoryProvider
 
   @$internal
   @override
-  $ProviderElement<SharedPreferencesThemeRepository> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
+  $ProviderElement<ThemeRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
 
   @override
-  SharedPreferencesThemeRepository create(Ref ref) {
+  ThemeRepository create(Ref ref) {
     return themeRepository(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(SharedPreferencesThemeRepository value) {
+  Override overrideWithValue(ThemeRepository value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<SharedPreferencesThemeRepository>(
-        value,
-      ),
+      providerOverride: $SyncValueProvider<ThemeRepository>(value),
     );
   }
 }
 
-String _$themeRepositoryHash() => r'2629d5fee626f8171d8a9f229f60b3159efe0196';
+String _$themeRepositoryHash() => r'26d16dcc6b8209d2cd8b2e121482049a6d9c2627';

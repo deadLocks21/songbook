@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -8,7 +9,10 @@ import 'package:songbook/core/domain/exceptions/password_required.exception.dart
 import 'package:songbook/core/domain/services/remote_resource.repository.dart';
 import 'package:songbook/core/domain/services/remote_song.repository.dart';
 import 'package:songbook/infrastructure/resource/dio.remote_resource.repository.dart';
+import 'package:songbook/infrastructure/resource/in_memory.remote_resource.repository.dart';
 import 'package:songbook/infrastructure/song/dio.remote_song.repository.dart';
+import 'package:songbook/infrastructure/song/in_memory.remote_song.repository.dart';
+
 import 'package:songbook/infrastructure/song/providers/song.repository_provider.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.repository_provider.dart';
 
@@ -91,17 +95,24 @@ Dio dio(Ref ref) {
 }
 
 /// Provider pour le repository des songs distants.
+/// Utilise InMemoryRemoteSongRepository sur le web (CORS empêche les appels Dio directs).
 @riverpod
 RemoteSongRepository remoteSongRepository(Ref ref) {
-  // return InMemoryRemoteSongRepository();
+  if (kIsWeb) {
+    return InMemoryRemoteSongRepository();
+  }
   final dio = ref.watch(dioProvider);
   return DioRemoteSongRepository(dio);
 }
 
 /// Provider pour le repository des ressources distantes.
-/// Retourne un Future car nécessite le chemin du répertoire de l'application.
+/// Utilise InMemoryRemoteResourceRepository sur le web.
+/// Retourne un Future car nécessite le chemin du répertoire de l'application (hors web).
 @riverpod
 Future<RemoteResourceRepository> remoteResourceRepository(Ref ref) async {
+  if (kIsWeb) {
+    return InMemoryRemoteResourceRepository();
+  }
   final dio = ref.watch(dioProvider);
   final appDir = await getApplicationSupportDirectory();
   final resourcesPath = '${appDir.path}/resources';

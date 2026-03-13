@@ -51,14 +51,16 @@ final class DioProvider extends $FunctionalProvider<Dio, Dio, Dio>
   }
 }
 
-String _$dioHash() => r'd51a28ec0408e366d63c628a7283c1f6348b096e';
+String _$dioHash() => r'831fb3837c329739dd14ae421d4633397223c156';
 
 /// Provider pour le repository des songs distants.
+/// Utilise InMemoryRemoteSongRepository sur le web (CORS empêche les appels Dio directs).
 
 @ProviderFor(remoteSongRepository)
 final remoteSongRepositoryProvider = RemoteSongRepositoryProvider._();
 
 /// Provider pour le repository des songs distants.
+/// Utilise InMemoryRemoteSongRepository sur le web (CORS empêche les appels Dio directs).
 
 final class RemoteSongRepositoryProvider
     extends
@@ -69,6 +71,7 @@ final class RemoteSongRepositoryProvider
         >
     with $Provider<RemoteSongRepository> {
   /// Provider pour le repository des songs distants.
+  /// Utilise InMemoryRemoteSongRepository sur le web (CORS empêche les appels Dio directs).
   RemoteSongRepositoryProvider._()
     : super(
         from: null,
@@ -104,16 +107,18 @@ final class RemoteSongRepositoryProvider
 }
 
 String _$remoteSongRepositoryHash() =>
-    r'6b4b4a9c5a46a70e941f67c041e16dc2d39940bd';
+    r'fec5963f9ce7dc008262f642d1f7d14c39276f75';
 
 /// Provider pour le repository des ressources distantes.
-/// Retourne un Future car nécessite le chemin du répertoire de l'application.
+/// Utilise InMemoryRemoteResourceRepository sur le web.
+/// Retourne un Future car nécessite le chemin du répertoire de l'application (hors web).
 
 @ProviderFor(remoteResourceRepository)
 final remoteResourceRepositoryProvider = RemoteResourceRepositoryProvider._();
 
 /// Provider pour le repository des ressources distantes.
-/// Retourne un Future car nécessite le chemin du répertoire de l'application.
+/// Utilise InMemoryRemoteResourceRepository sur le web.
+/// Retourne un Future car nécessite le chemin du répertoire de l'application (hors web).
 
 final class RemoteResourceRepositoryProvider
     extends
@@ -126,7 +131,8 @@ final class RemoteResourceRepositoryProvider
         $FutureModifier<RemoteResourceRepository>,
         $FutureProvider<RemoteResourceRepository> {
   /// Provider pour le repository des ressources distantes.
-  /// Retourne un Future car nécessite le chemin du répertoire de l'application.
+  /// Utilise InMemoryRemoteResourceRepository sur le web.
+  /// Retourne un Future car nécessite le chemin du répertoire de l'application (hors web).
   RemoteResourceRepositoryProvider._()
     : super(
         from: null,
@@ -154,7 +160,7 @@ final class RemoteResourceRepositoryProvider
 }
 
 String _$remoteResourceRepositoryHash() =>
-    r'ee005c32e6a1eaaa45886b4b8abf2e3ed5ce278d';
+    r'd9578069155d63a4784ef1a4c8952c211e29d1fd';
 
 /// Provider pour le use case de calcul des différences de synchronisation.
 

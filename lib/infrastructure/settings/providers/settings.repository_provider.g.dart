@@ -8,22 +8,25 @@ part of 'settings.repository_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Provider pour l'implémentation du repository de paramètres
+/// Provider pour l'implémentation du repository de paramètres.
+/// Utilise InMemorySettingsRepository sur le web, SharedPreferencesSettingsRepository sinon.
 
 @ProviderFor(settingsRepository)
 final settingsRepositoryProvider = SettingsRepositoryProvider._();
 
-/// Provider pour l'implémentation du repository de paramètres
+/// Provider pour l'implémentation du repository de paramètres.
+/// Utilise InMemorySettingsRepository sur le web, SharedPreferencesSettingsRepository sinon.
 
 final class SettingsRepositoryProvider
     extends
         $FunctionalProvider<
-          SharedPreferencesSettingsRepository,
-          SharedPreferencesSettingsRepository,
-          SharedPreferencesSettingsRepository
+          SettingsRepository,
+          SettingsRepository,
+          SettingsRepository
         >
-    with $Provider<SharedPreferencesSettingsRepository> {
-  /// Provider pour l'implémentation du repository de paramètres
+    with $Provider<SettingsRepository> {
+  /// Provider pour l'implémentation du repository de paramètres.
+  /// Utilise InMemorySettingsRepository sur le web, SharedPreferencesSettingsRepository sinon.
   SettingsRepositoryProvider._()
     : super(
         from: null,
@@ -40,25 +43,23 @@ final class SettingsRepositoryProvider
 
   @$internal
   @override
-  $ProviderElement<SharedPreferencesSettingsRepository> $createElement(
+  $ProviderElement<SettingsRepository> $createElement(
     $ProviderPointer pointer,
   ) => $ProviderElement(pointer);
 
   @override
-  SharedPreferencesSettingsRepository create(Ref ref) {
+  SettingsRepository create(Ref ref) {
     return settingsRepository(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(SharedPreferencesSettingsRepository value) {
+  Override overrideWithValue(SettingsRepository value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<SharedPreferencesSettingsRepository>(
-        value,
-      ),
+      providerOverride: $SyncValueProvider<SettingsRepository>(value),
     );
   }
 }
 
 String _$settingsRepositoryHash() =>
-    r'4490161265f0c290b197a8eab54d144bf8b9a691';
+    r'7c953b97d17e564548def036f840ad38a6ecee58';

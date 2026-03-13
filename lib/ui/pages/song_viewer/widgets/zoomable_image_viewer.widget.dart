@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 /// Widget de visualisation d'images avec zoom et pan.
@@ -40,6 +42,11 @@ class _ZoomableImageViewerState extends State<ZoomableImageViewer> {
     super.dispose();
   }
 
+  /// Vérifie si un chemin est une URL réseau.
+  bool _isNetworkPath(String path) {
+    return path.startsWith('http://') || path.startsWith('https://');
+  }
+
   /// Charge les dimensions de toutes les images de manière asynchrone.
   Future<void> _loadImageSizes() async {
     if (widget.imagePaths.isEmpty) {
@@ -50,13 +57,21 @@ class _ZoomableImageViewerState extends State<ZoomableImageViewer> {
     final sizes = <Size>[];
     for (final path in widget.imagePaths) {
       try {
-        final bytes = await File(path).readAsBytes();
-        final codec = await ui.instantiateImageCodec(bytes);
-        final frame = await codec.getNextFrame();
-        sizes.add(
-          Size(frame.image.width.toDouble(), frame.image.height.toDouble()),
-        );
-        codec.dispose();
+        if (kIsWeb || _isNetworkPath(path)) {
+          final size = await _getNetworkImageSize(path);
+          sizes.add(size);
+        } else {
+          final bytes = await File(path).readAsBytes();
+          final codec = await ui.instantiateImageCodec(bytes);
+          final frame = await codec.getNextFrame();
+          sizes.add(
+            Size(
+              frame.image.width.toDouble(),
+              frame.image.height.toDouble(),
+            ),
+          );
+          codec.dispose();
+        }
       } catch (e) {
         // En cas d'erreur, on utilise une taille par défaut
         sizes.add(const Size(1, 1));
@@ -73,6 +88,31 @@ class _ZoomableImageViewerState extends State<ZoomableImageViewer> {
         _clampTranslation();
       });
     }
+  }
+
+  /// Obtient les dimensions d'une image réseau via ImageProvider.
+  Future<Size> _getNetworkImageSize(String url) async {
+    final completer = Completer<Size>();
+    final imageProvider = NetworkImage(url);
+    final stream = imageProvider.resolve(ImageConfiguration.empty);
+    late ImageStreamListener listener;
+    listener = ImageStreamListener(
+      (info, _) {
+        completer.complete(
+          Size(
+            info.image.width.toDouble(),
+            info.image.height.toDouble(),
+          ),
+        );
+        stream.removeListener(listener);
+      },
+      onError: (error, _) {
+        completer.complete(const Size(1, 1));
+        stream.removeListener(listener);
+      },
+    );
+    stream.addListener(listener);
+    return completer.future;
   }
 
   /// Calcule la largeur totale du contenu à scale 1.0
@@ -204,27 +244,39 @@ class _ZoomableImageViewerState extends State<ZoomableImageViewer> {
       return SizedBox(
         width: imageWidth,
         height: height,
-        child: Image.file(
-          File(path),
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 48),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Erreur lors du chargement',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
+        child: kIsWeb || _isNetworkPath(path)
+            ? Image.network(
+                path,
+                fit: BoxFit.contain,
+                errorBuilder: _buildErrorWidget,
+              )
+            : Image.file(
+                File(path),
+                fit: BoxFit.contain,
+                errorBuilder: _buildErrorWidget,
               ),
-            );
-          },
-        ),
       );
     }).toList();
+  }
+
+  Widget _buildErrorWidget(
+    BuildContext context,
+    Object error,
+    StackTrace? stackTrace,
+  ) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 48),
+          const SizedBox(height: 16),
+          Text(
+            'Erreur lors du chargement',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ],
+      ),
+    );
   }
 }

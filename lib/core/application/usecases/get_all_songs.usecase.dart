@@ -10,7 +10,7 @@ class GetAllSongsUseCase {
 
   /// Exécute le cas d'usage et retourne tous les chants sous forme de DTOs.
   Future<List<SongDto>> execute() async {
-    final songs = await repository.getAllSongs();
+    final songs = List.of(await repository.getAllSongs());
     songs.sort((a, b) => a.code.compareTo(b.code));
     return songs.map(SongDto.fromDomain).toList();
   }

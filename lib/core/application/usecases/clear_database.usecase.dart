@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:songbook/core/domain/services/song.repository.dart';
 import 'package:songbook/core/domain/services/remote_resource.repository.dart';
 
@@ -12,8 +13,10 @@ class ClearDatabaseUseCase {
 
   /// Vide complètement la base de données et supprime tous les fichiers de ressources
   Future<void> execute() async {
-    // D'abord supprimer tous les fichiers physiques
-    await _deleteAllResourceFiles();
+    // Supprimer les fichiers physiques (sauf sur le web)
+    if (!kIsWeb) {
+      await _deleteAllResourceFiles();
+    }
 
     // Puis supprimer les données de la base
     await _songRepository.deleteAllSongs();
