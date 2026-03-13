@@ -5,6 +5,7 @@ import 'package:songbook/core/domain/model/uuid_value.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
 import 'package:songbook/ui/pages/song_list_edit/widgets/song_list_entry_tile.widget.dart';
 import 'package:songbook/ui/pages/song_list_edit/widgets/song_picker.widget.dart';
+import 'package:songbook/ui/pages/song_list_viewer/song_list_viewer.page.dart';
 import 'package:songbook/ui/utils/date_format.dart';
 
 /// Page d'edition ou de creation d'une liste de chants.
@@ -56,10 +57,38 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
           title: Text(_isNew ? 'Nouvelle liste' : 'Modifier la liste'),
           actions: [
             IconButton(
-              icon: const Icon(Icons.save),
+              icon: _isSaving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.save),
               onPressed: _isSaving ? null : _save,
               tooltip: 'Enregistrer',
             ),
+            if (!_isNew && _entries.isNotEmpty)
+              IconButton(
+                icon: const Icon(Icons.play_arrow),
+                onPressed: _presentSongList,
+                tooltip: 'Présenter',
+              ),
+            if (!_isNew)
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'delete') _confirmDelete();
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: ListTile(
+                      leading: Icon(Icons.delete_outline),
+                      title: Text('Supprimer'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
         body: Column(
@@ -210,6 +239,45 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
       final entry = _entries.removeAt(oldIndex);
       _entries.insert(newIndex, entry);
     });
+  }
+
+  void _presentSongList() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            SongListViewerPage(songListId: widget.songList.id),
+      ),
+    );
+  }
+
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer la liste'),
+        content: Text(
+          'Voulez-vous supprimer la liste du ${formatDate(widget.songList.scheduledAt)} ?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final service = ref.read(songListServiceProvider);
+      await service.deleteSongList.execute(widget.songList.id);
+      ref.invalidate(songListsProvider);
+      if (mounted) Navigator.pop(context);
+    }
   }
 
   Future<void> _save() async {

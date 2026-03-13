@@ -9,11 +9,13 @@ part of 'song_list.repository_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// Provider pour l'implementation du SongListRepository.
+/// Utilise InMemorySongListRepository sur le web, DriftSongListRepository sinon.
 
 @ProviderFor(songListRepository)
 final songListRepositoryProvider = SongListRepositoryProvider._();
 
 /// Provider pour l'implementation du SongListRepository.
+/// Utilise InMemorySongListRepository sur le web, DriftSongListRepository sinon.
 
 final class SongListRepositoryProvider
     extends
@@ -24,6 +26,7 @@ final class SongListRepositoryProvider
         >
     with $Provider<SongListRepository> {
   /// Provider pour l'implementation du SongListRepository.
+  /// Utilise InMemorySongListRepository sur le web, DriftSongListRepository sinon.
   SongListRepositoryProvider._()
     : super(
         from: null,
@@ -59,4 +62,4 @@ final class SongListRepositoryProvider
 }
 
 String _$songListRepositoryHash() =>
-    r'ab65890316b5560caf0bd4fac4c89ccf1c547e9e';
+    r'1a47db6d5ab74711a9ac52ace448754436314ef0';

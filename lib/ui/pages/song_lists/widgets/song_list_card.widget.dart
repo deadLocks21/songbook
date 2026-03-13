@@ -3,18 +3,15 @@ import 'package:songbook/core/application/dtos/song_list.dto.dart';
 import 'package:songbook/ui/utils/date_format.dart';
 
 /// Carte affichant une liste de chants dans la liste d'apercu.
+/// Le tap mène à la page d'édition/détail.
 class SongListCard extends StatelessWidget {
   final SongListDto songList;
   final VoidCallback onTap;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
 
   const SongListCard({
     super.key,
     required this.songList,
     required this.onTap,
-    required this.onEdit,
-    required this.onDelete,
   });
 
   @override
@@ -45,15 +42,9 @@ class SongListCard extends StatelessWidget {
                   ],
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: onEdit,
-                tooltip: 'Modifier',
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline),
-                onPressed: onDelete,
-                tooltip: 'Supprimer',
+              Icon(
+                Icons.chevron_right,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ],
           ),

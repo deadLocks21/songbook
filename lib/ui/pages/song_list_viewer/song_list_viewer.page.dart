@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/dtos/resource.dto.dart';
 import 'package:songbook/core/application/dtos/song.dto.dart';
-import 'package:songbook/core/application/dtos/song_list.dto.dart';
-import 'package:songbook/ui/pages/song_list_edit/song_list_edit.page.dart';
 import 'package:songbook/ui/pages/song_list_viewer/providers/song_list_viewer.provider.dart';
 import 'package:songbook/ui/pages/song_list_viewer/widgets/song_list_overview_sheet.widget.dart';
 import 'package:songbook/ui/pages/song_viewer/widgets/zoomable_image_viewer.widget.dart';
@@ -71,11 +69,6 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () => _editSongList(data.songList, currentSong.id),
-                tooltip: 'Modifier la liste',
               ),
               IconButton(
                 icon: const Icon(Icons.list),
@@ -181,25 +174,6 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
     final totalSongs = data.value?.songs.length ?? 0;
     if (_currentIndex < totalSongs - 1) {
       setState(() => _currentIndex++);
-    }
-  }
-
-  Future<void> _editSongList(SongListDto songList, String currentSongId) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => SongListEditPage(songList: songList),
-      ),
-    );
-    ref.invalidate(songListViewerDataProvider(widget.songListId));
-    final newData = await ref.read(
-      songListViewerDataProvider(widget.songListId).future,
-    );
-    if (newData != null && mounted) {
-      final idx = newData.songs.indexWhere((s) => s.id == currentSongId);
-      if (idx >= 0) {
-        setState(() => _currentIndex = idx);
-      }
     }
   }
 

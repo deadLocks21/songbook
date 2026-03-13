@@ -76,44 +76,14 @@ class _SongPickerSheetState extends ConsumerState<_SongPickerSheet> {
                     return ListTile(
                       title: Text(song.name),
                       subtitle: Text(song.code),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.visibility_outlined),
-                            tooltip: 'Prévisualiser',
-                            onPressed: () async {
-                              final added = await Navigator.push<bool>(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (viewerContext) => SongViewerPage(
-                                    song: song,
-                                    actions: [
-                                      IconButton(
-                                        icon: const Icon(Icons.add),
-                                        tooltip: 'Ajouter',
-                                        onPressed: () =>
-                                            Navigator.pop(viewerContext, true),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                              if (added == true && context.mounted) {
-                                widget.onSongAdded(song);
-                                Navigator.pop(context);
-                              }
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.add),
-                            tooltip: 'Ajouter',
-                            onPressed: () {
-                              widget.onSongAdded(song);
-                              Navigator.pop(context);
-                            },
-                          ),
-                        ],
+                      onLongPress: () => _previewSong(song),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.add),
+                        tooltip: 'Ajouter',
+                        onPressed: () {
+                          widget.onSongAdded(song);
+                          Navigator.pop(context);
+                        },
                       ),
                     );
                   },
@@ -124,6 +94,15 @@ class _SongPickerSheetState extends ConsumerState<_SongPickerSheet> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _previewSong(SongDto song) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SongViewerPage(song: song),
       ),
     );
   }
