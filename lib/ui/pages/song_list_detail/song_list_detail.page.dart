@@ -44,12 +44,14 @@ class SongListDetailPage extends ConsumerWidget {
     WidgetRef ref,
     SongListDto songList,
   ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(formatDate(songList.scheduledAt)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit),
+            icon: const Icon(Icons.edit_outlined),
             onPressed: () => _editList(context, ref, songList),
             tooltip: 'Modifier',
           ),
@@ -61,41 +63,147 @@ class SongListDetailPage extends ConsumerWidget {
         ],
       ),
       floatingActionButton: songList.entries.isNotEmpty
-          ? FloatingActionButton(
+          ? FloatingActionButton.extended(
               onPressed: () => _viewList(context, songList),
-              tooltip: 'Présenter',
-              child: const Icon(Icons.play_arrow),
+              icon: const Icon(Icons.play_arrow_rounded),
+              label: const Text('Présenter'),
             )
           : null,
       body: songList.entries.isEmpty
-          ? const Center(
-              child: Text(
-                'Aucun chant dans cette liste',
-                style: TextStyle(fontSize: 16.0, color: Colors.grey),
-              ),
-            )
+          ? _buildEmptyState(context, colorScheme)
           : ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              itemCount: songList.entries.length,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+              itemCount: songList.entries.length + 1,
               itemBuilder: (context, index) {
-                final entry = songList.entries[index];
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor:
-                        Theme.of(context).colorScheme.primaryContainer,
-                    child: Text(
-                      '${index + 1}',
-                      style: TextStyle(
-                        color:
-                            Theme.of(context).colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                  ),
-                  title: Text(entry.songCode),
-                  subtitle: Text(entry.songName),
-                );
+                if (index == 0) {
+                  return _buildHeader(context, songList);
+                }
+                final entry = songList.entries[index - 1];
+                return _buildSongTile(context, entry, index - 1);
               },
             ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, SongListDto songList) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final entryCount = songList.entries.length;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            formatDate(songList.scheduledAt),
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$entryCount chant${entryCount > 1 ? 's' : ''}',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Divider(color: colorScheme.outlineVariant, height: 1),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context, ColorScheme colorScheme) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.queue_music_rounded,
+            size: 64,
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Aucun chant dans cette liste',
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Appuyez sur modifier pour ajouter des chants',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color:
+                      colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSongTile(
+    BuildContext context,
+    SongListEntryDto entry,
+    int index,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                '${index + 1}',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    entry.songName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    entry.songCode,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
