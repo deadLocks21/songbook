@@ -73,61 +73,66 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
           tooltip: 'Ajouter un chant',
           child: const Icon(Icons.add),
         ),
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: InkWell(
-                    onTap: _pickDateTime,
-                    borderRadius: BorderRadius.circular(12.0),
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        labelText: 'Date et heure',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.0),
-                        ),
-                        suffixIcon: const Icon(Icons.calendar_today),
-                      ),
-                      child: Text(formatDate(_scheduledAt)),
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: InkWell(
+                onTap: _pickDateTime,
+                borderRadius: BorderRadius.circular(12.0),
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: 'Date et heure',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12.0),
                     ),
+                    suffixIcon: const Icon(Icons.calendar_today),
                   ),
+                  child: Text(formatDate(_scheduledAt)),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Text(
-                    'Chants (${_entries.length})',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                ),
-                Expanded(
-                  child: _entries.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'Aucun chant dans la liste',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        )
-                      : ReorderableListView.builder(
-                          buildDefaultDragHandles: false,
-                          itemCount: _entries.length,
-                          onReorder: _onReorder,
-                          itemBuilder: (context, index) {
-                            final entry = _entries[index];
-                            return SongListEntryTile(
-                              key: ValueKey(entry.id),
-                              entry: entry,
-                              index: index,
-                              onRemove: () => _removeEntry(index),
-                            );
-                          },
-                        ),
-                ),
-              ],
+              ),
             ),
-          ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Chants (${_entries.length})',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+            ),
+            Expanded(
+              child: _entries.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'Aucun chant dans la liste',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    )
+                  : ReorderableListView.builder(
+                      buildDefaultDragHandles: false,
+                      itemCount: _entries.length,
+                      onReorder: _onReorder,
+                      itemBuilder: (context, index) {
+                        final entry = _entries[index];
+                        return SongListEntryTile(
+                          key: ValueKey(entry.id),
+                          entry: entry,
+                          index: index,
+                          totalCount: _entries.length,
+                          onRemove: () => _removeEntry(index),
+                          onMoveUp: index > 0
+                              ? () => _onReorder(index, index - 1)
+                              : null,
+                          onMoveDown: index < _entries.length - 1
+                              ? () => _onReorder(index, index + 2)
+                              : null,
+                        );
+                      },
+                    ),
+            ),
+          ],
         ),
       ),
     );
