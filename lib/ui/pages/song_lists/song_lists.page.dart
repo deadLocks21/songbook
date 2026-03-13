@@ -5,7 +5,9 @@ import 'package:songbook/core/domain/model/song_list.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
 import 'package:songbook/ui/pages/song_list_edit/song_list_edit.page.dart';
+import 'package:songbook/ui/pages/song_list_viewer/song_list_viewer.page.dart';
 import 'package:songbook/ui/pages/song_lists/widgets/song_list_card.widget.dart';
+import 'package:songbook/ui/utils/date_format.dart';
 
 /// Page affichant la liste de toutes les listes de chants.
 class SongListsPage extends ConsumerWidget {
@@ -51,6 +53,9 @@ class SongListsPage extends ConsumerWidget {
         return SongListCard(
           songList: songList,
           onTap: () => _editList(context, ref, songList),
+          onView: () => _viewList(context, songList),
+          onEdit: () => _editList(context, ref, songList),
+          onDelete: () => _confirmDelete(context, ref, songList),
         );
       },
     );
@@ -72,6 +77,15 @@ class SongListsPage extends ConsumerWidget {
     ).then((_) => ref.invalidate(songListsProvider));
   }
 
+  void _viewList(BuildContext context, SongListDto songList) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SongListViewerPage(songListId: songList.id),
+      ),
+    );
+  }
+
   void _editList(BuildContext context, WidgetRef ref, SongListDto songList) {
     Navigator.push(
       context,
@@ -79,5 +93,37 @@ class SongListsPage extends ConsumerWidget {
         builder: (context) => SongListEditPage(songList: songList),
       ),
     ).then((_) => ref.invalidate(songListsProvider));
+  }
+
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    SongListDto songList,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer la liste'),
+        content: Text(
+          'Voulez-vous supprimer la liste du ${formatDate(songList.scheduledAt)} ?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      final service = ref.read(songListServiceProvider);
+      await service.deleteSongList.execute(songList.id);
+      ref.invalidate(songListsProvider);
+    }
   }
 }

@@ -73,22 +73,6 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
                 onPressed: _presentSongList,
                 tooltip: 'Présenter',
               ),
-            if (!_isNew)
-              PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'delete') _confirmDelete();
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: ListTile(
-                      leading: Icon(Icons.delete_outline),
-                      title: Text('Supprimer'),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                ],
-              ),
           ],
         ),
         body: Column(
@@ -249,35 +233,6 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
             SongListViewerPage(songListId: widget.songList.id),
       ),
     );
-  }
-
-  Future<void> _confirmDelete() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Supprimer la liste'),
-        content: Text(
-          'Voulez-vous supprimer la liste du ${formatDate(widget.songList.scheduledAt)} ?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Supprimer'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && mounted) {
-      final service = ref.read(songListServiceProvider);
-      await service.deleteSongList.execute(widget.songList.id);
-      ref.invalidate(songListsProvider);
-      if (mounted) Navigator.pop(context);
-    }
   }
 
   Future<void> _save() async {
