@@ -21,7 +21,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Songbook')),
-      body: _tabs[_currentIndex],
+      body: IndexedStack(index: _currentIndex, children: _tabs),
       bottomNavigationBar: Align(
         alignment: Alignment.bottomCenter,
         heightFactor: 1,
