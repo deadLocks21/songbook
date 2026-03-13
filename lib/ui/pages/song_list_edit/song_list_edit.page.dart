@@ -5,7 +5,6 @@ import 'package:songbook/core/domain/model/uuid_value.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
 import 'package:songbook/ui/pages/song_list_edit/widgets/song_list_entry_tile.widget.dart';
 import 'package:songbook/ui/pages/song_list_edit/widgets/song_picker.widget.dart';
-import 'package:songbook/ui/pages/song_list_viewer/song_list_viewer.page.dart';
 import 'package:songbook/ui/utils/date_format.dart';
 
 /// Page d'edition ou de creation d'une liste de chants.
@@ -56,12 +55,6 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
         appBar: AppBar(
           title: Text(_isNew ? 'Nouvelle liste' : 'Modifier la liste'),
           actions: [
-            if (!_isNew && _entries.isNotEmpty)
-              IconButton(
-                icon: const Icon(Icons.play_arrow),
-                onPressed: _presentSongList,
-                tooltip: 'Présenter',
-              ),
             IconButton(
               icon: _isSaving
                   ? const SizedBox(
@@ -80,14 +73,14 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
           tooltip: 'Ajouter un chant',
           child: const Icon(Icons.add),
         ),
-        body: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  InkWell(
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: InkWell(
                     onTap: _pickDateTime,
                     borderRadius: BorderRadius.circular(12.0),
                     child: InputDecorator(
@@ -101,40 +94,40 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
                       child: Text(formatDate(_scheduledAt)),
                     ),
                   ),
-                ],
-              ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text(
+                    'Chants (${_entries.length})',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+                Expanded(
+                  child: _entries.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'Aucun chant dans la liste',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        )
+                      : ReorderableListView.builder(
+                          buildDefaultDragHandles: false,
+                          itemCount: _entries.length,
+                          onReorder: _onReorder,
+                          itemBuilder: (context, index) {
+                            final entry = _entries[index];
+                            return SongListEntryTile(
+                              key: ValueKey(entry.id),
+                              entry: entry,
+                              index: index,
+                              onRemove: () => _removeEntry(index),
+                            );
+                          },
+                        ),
+                ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                'Chants (${_entries.length})',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-            ),
-            Expanded(
-              child: _entries.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'Aucun chant dans la liste',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    )
-                  : ReorderableListView.builder(
-                      buildDefaultDragHandles: false,
-                      itemCount: _entries.length,
-                      onReorder: _onReorder,
-                      itemBuilder: (context, index) {
-                        final entry = _entries[index];
-                        return SongListEntryTile(
-                          key: ValueKey(entry.id),
-                          entry: entry,
-                          index: index,
-                          onRemove: () => _removeEntry(index),
-                        );
-                      },
-                    ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -219,16 +212,6 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
       final entry = _entries.removeAt(oldIndex);
       _entries.insert(newIndex, entry);
     });
-  }
-
-  void _presentSongList() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            SongListViewerPage(songListId: widget.songList.id),
-      ),
-    );
   }
 
   Future<void> _save() async {
