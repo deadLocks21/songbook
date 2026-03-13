@@ -26,7 +26,7 @@ class SongListEntryTile extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         trailing: IconButton(
-          icon: const Icon(Icons.delete_outline),
+          icon: const Icon(Icons.remove_circle_outline),
           onPressed: onRemove,
         ),
       ),
