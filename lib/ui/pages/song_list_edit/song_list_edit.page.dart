@@ -120,6 +120,7 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
                       ),
                     )
                   : ReorderableListView.builder(
+                      buildDefaultDragHandles: false,
                       itemCount: _entries.length,
                       onReorder: _onReorder,
                       itemBuilder: (context, index) {
