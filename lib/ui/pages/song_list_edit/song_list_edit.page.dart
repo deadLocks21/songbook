@@ -56,6 +56,12 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
         appBar: AppBar(
           title: Text(_isNew ? 'Nouvelle liste' : 'Modifier la liste'),
           actions: [
+            if (!_isNew && _entries.isNotEmpty)
+              IconButton(
+                icon: const Icon(Icons.play_arrow),
+                onPressed: _presentSongList,
+                tooltip: 'Présenter',
+              ),
             IconButton(
               icon: _isSaving
                   ? const SizedBox(
@@ -69,13 +75,11 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
             ),
           ],
         ),
-        floatingActionButton: (!_isNew && _entries.isNotEmpty)
-            ? FloatingActionButton(
-                onPressed: _presentSongList,
-                tooltip: 'Présenter',
-                child: const Icon(Icons.play_arrow),
-              )
-            : null,
+        floatingActionButton: FloatingActionButton(
+          onPressed: _addSongs,
+          tooltip: 'Ajouter un chant',
+          child: const Icon(Icons.add),
+        ),
         body: Column(
           children: [
             Padding(
@@ -102,19 +106,9 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Chants (${_entries.length})',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  TextButton.icon(
-                    onPressed: _addSongs,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Ajouter'),
-                  ),
-                ],
+              child: Text(
+                'Chants (${_entries.length})',
+                style: Theme.of(context).textTheme.titleSmall,
               ),
             ),
             Expanded(
