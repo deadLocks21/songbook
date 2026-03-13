@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/dtos/song_list.dto.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
+import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
 import 'package:songbook/ui/pages/song_list_edit/widgets/song_list_entry_tile.widget.dart';
 import 'package:songbook/ui/pages/song_list_edit/widgets/song_picker.widget.dart';
+import 'package:songbook/ui/pages/song_viewer/song_viewer.page.dart';
 import 'package:songbook/ui/utils/date_format.dart';
 
 /// Page d'edition ou de creation d'une liste de chants.
@@ -42,6 +44,7 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(songsProvider);
     return PopScope(
       canPop: !_hasChanges,
       onPopInvokedWithResult: (didPop, result) async {
@@ -122,6 +125,7 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
                           index: index,
                           totalCount: _entries.length,
                           onRemove: () => _removeEntry(index),
+                          onTap: () => _viewSong(entry),
                           onMoveUp: index > 0
                               ? () => _onReorder(index, index - 1)
                               : null,
@@ -202,6 +206,19 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
           );
         });
       },
+    );
+  }
+
+  void _viewSong(SongListEntryDto entry) {
+    final songs = ref.read(songsProvider).value;
+    if (songs == null) return;
+    final song = songs.where((s) => s.id == entry.songId).firstOrNull;
+    if (song == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SongViewerPage(song: song),
+      ),
     );
   }
 

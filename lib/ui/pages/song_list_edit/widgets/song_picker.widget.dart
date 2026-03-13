@@ -76,7 +76,7 @@ class _SongPickerSheetState extends ConsumerState<_SongPickerSheet> {
                     return ListTile(
                       title: Text(song.name),
                       subtitle: Text(song.code),
-                      onLongPress: () => _previewSong(song),
+                      onTap: () => _previewSong(song),
                       trailing: IconButton(
                         icon: const Icon(Icons.add),
                         tooltip: 'Ajouter',
@@ -102,7 +102,21 @@ class _SongPickerSheetState extends ConsumerState<_SongPickerSheet> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => SongViewerPage(song: song),
+        builder: (context) => SongViewerPage(
+          song: song,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.add),
+              tooltip: 'Ajouter à la liste',
+              onPressed: () {
+                widget.onSongAdded(song);
+                // Ferme la preview puis le bottom sheet
+                Navigator.pop(context);
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
