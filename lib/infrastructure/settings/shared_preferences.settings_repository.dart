@@ -5,6 +5,7 @@ import 'package:songbook/core/domain/services/settings.repository.dart';
 /// Implémentation du repository de paramètres utilisant SharedPreferences
 class SharedPreferencesSettingsRepository implements SettingsRepository {
   static const String _backendUrlKey = 'backend_url';
+  static const String _syncDirectoryKey = 'sync_directory';
 
   /// URL par défaut du backend au premier démarrage
   static const String defaultBackendUrl =
@@ -46,5 +47,21 @@ class SharedPreferencesSettingsRepository implements SettingsRepository {
   @override
   Future<void> clearPassword() async {
     await _secureStorage.delete(key: 'api_password');
+  }
+
+  @override
+  Future<String?> getSyncDirectory() async {
+    await _ensureInitialized();
+    return _preferences!.getString(_syncDirectoryKey);
+  }
+
+  @override
+  Future<void> setSyncDirectory(String? path) async {
+    await _ensureInitialized();
+    if (path == null) {
+      await _preferences!.remove(_syncDirectoryKey);
+    } else {
+      await _preferences!.setString(_syncDirectoryKey, path);
+    }
   }
 }

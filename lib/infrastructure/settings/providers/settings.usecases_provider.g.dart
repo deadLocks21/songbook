@@ -220,6 +220,112 @@ final class SetPasswordUseCaseProvider
 String _$setPasswordUseCaseHash() =>
     r'b0bd59aabe170a9547afe74bef1ce52cc62c691e';
 
+/// Provider pour le use case de récupération du répertoire de synchronisation.
+
+@ProviderFor(getSyncDirectoryUseCase)
+final getSyncDirectoryUseCaseProvider = GetSyncDirectoryUseCaseProvider._();
+
+/// Provider pour le use case de récupération du répertoire de synchronisation.
+
+final class GetSyncDirectoryUseCaseProvider
+    extends
+        $FunctionalProvider<
+          GetSyncDirectoryUseCase,
+          GetSyncDirectoryUseCase,
+          GetSyncDirectoryUseCase
+        >
+    with $Provider<GetSyncDirectoryUseCase> {
+  /// Provider pour le use case de récupération du répertoire de synchronisation.
+  GetSyncDirectoryUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'getSyncDirectoryUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$getSyncDirectoryUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<GetSyncDirectoryUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  GetSyncDirectoryUseCase create(Ref ref) {
+    return getSyncDirectoryUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GetSyncDirectoryUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GetSyncDirectoryUseCase>(value),
+    );
+  }
+}
+
+String _$getSyncDirectoryUseCaseHash() =>
+    r'1e801104440a0b35f42a80ee057e03c9e288e18f';
+
+/// Provider pour le use case de définition du répertoire de synchronisation.
+
+@ProviderFor(setSyncDirectoryUseCase)
+final setSyncDirectoryUseCaseProvider = SetSyncDirectoryUseCaseProvider._();
+
+/// Provider pour le use case de définition du répertoire de synchronisation.
+
+final class SetSyncDirectoryUseCaseProvider
+    extends
+        $FunctionalProvider<
+          SetSyncDirectoryUseCase,
+          SetSyncDirectoryUseCase,
+          SetSyncDirectoryUseCase
+        >
+    with $Provider<SetSyncDirectoryUseCase> {
+  /// Provider pour le use case de définition du répertoire de synchronisation.
+  SetSyncDirectoryUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'setSyncDirectoryUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$setSyncDirectoryUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<SetSyncDirectoryUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  SetSyncDirectoryUseCase create(Ref ref) {
+    return setSyncDirectoryUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SetSyncDirectoryUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SetSyncDirectoryUseCase>(value),
+    );
+  }
+}
+
+String _$setSyncDirectoryUseCaseHash() =>
+    r'3c009311a0f3df0b80cff4bc8fc1cd67c0984332';
+
 /// Notifier pour gérer l'état de l'URL du backend avec la nouvelle API Riverpod
 
 @ProviderFor(BackendUrlNotifier)
@@ -254,6 +360,57 @@ String _$backendUrlNotifierHash() =>
 /// Notifier pour gérer l'état de l'URL du backend avec la nouvelle API Riverpod
 
 abstract class _$BackendUrlNotifier extends $AsyncNotifier<String?> {
+  FutureOr<String?> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<String?>, String?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<String?>, String?>,
+              AsyncValue<String?>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}
+
+/// Notifier pour gérer l'état du répertoire de synchronisation
+
+@ProviderFor(SyncDirectoryNotifier)
+final syncDirectoryProvider = SyncDirectoryNotifierProvider._();
+
+/// Notifier pour gérer l'état du répertoire de synchronisation
+final class SyncDirectoryNotifierProvider
+    extends $AsyncNotifierProvider<SyncDirectoryNotifier, String?> {
+  /// Notifier pour gérer l'état du répertoire de synchronisation
+  SyncDirectoryNotifierProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'syncDirectoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$syncDirectoryNotifierHash();
+
+  @$internal
+  @override
+  SyncDirectoryNotifier create() => SyncDirectoryNotifier();
+}
+
+String _$syncDirectoryNotifierHash() =>
+    r'23ddfe3db7ee1d1ef5cb59c9d68e3e4f9d3c09b6';
+
+/// Notifier pour gérer l'état du répertoire de synchronisation
+
+abstract class _$SyncDirectoryNotifier extends $AsyncNotifier<String?> {
   FutureOr<String?> build();
   @$mustCallSuper
   @override

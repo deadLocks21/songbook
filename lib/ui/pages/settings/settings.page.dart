@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/services/error_message.service.dart';
@@ -269,6 +270,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
             const SizedBox(height: 24),
 
+            // Emplacement de synchronisation
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildSyncDirectorySection(),
+            ),
+
+            const SizedBox(height: 24),
+
             // Bouton pour vider la base de données
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -364,6 +373,171 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             const SizedBox(height: 32),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSyncDirectorySection() {
+    final syncDirAsync = ref.watch(syncDirectoryProvider);
+    final syncDirNotifier = ref.read(syncDirectoryProvider.notifier);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        syncDirAsync.when(
+          data: (currentPath) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Emplacement de synchronisation',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () async {
+                          final selectedDir =
+                              await FilePicker.platform.getDirectoryPath(
+                            dialogTitle:
+                                'Choisir le dossier de synchronisation',
+                          );
+                          if (selectedDir != null && mounted) {
+                            _showCopyProgressDialog(
+                              syncDirNotifier,
+                              selectedDir,
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.folder_open, size: 18),
+                        label: const Text('Modifier'),
+                      ),
+                      if (currentPath != null)
+                        TextButton.icon(
+                          onPressed: () {
+                            _showCopyProgressDialog(
+                              syncDirNotifier,
+                              null,
+                            );
+                          },
+                          icon: const Icon(Icons.restore, size: 18),
+                          label: const Text('Réinitialiser'),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                  borderRadius: BorderRadius.circular(4),
+                  color: Theme.of(context)
+                      .disabledColor
+                      .withValues(alpha: 0.05),
+                ),
+                child: Text(
+                  currentPath ?? 'Emplacement par défaut',
+                  style: TextStyle(
+                    color: currentPath == null
+                        ? Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.color
+                            ?.withValues(alpha: 0.5)
+                        : null,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          loading: () => const SizedBox(
+            height: 48,
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (error, stack) => Text(
+            'Erreur: ${ErrorMessageService.getNetworkErrorMessage(error)}',
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Choisissez où stocker les fichiers de chants synchronisés.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.color
+                    ?.withValues(alpha: 0.7),
+              ),
+        ),
+      ],
+    );
+  }
+
+  void _showCopyProgressDialog(
+    SyncDirectoryNotifier notifier,
+    String? newPath,
+  ) {
+    var progress = 0.0;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          // Lancer la copie une seule fois
+          if (progress == 0.0) {
+            notifier
+                .setSyncDirectory(
+              newPath,
+              onProgress: (p) {
+                setDialogState(() {
+                  progress = p;
+                });
+              },
+            )
+                .then((_) {
+              if (!mounted) return;
+              Navigator.of(dialogContext).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    newPath != null
+                        ? 'Emplacement modifié avec succès'
+                        : 'Emplacement réinitialisé',
+                  ),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }).catchError((e) {
+              if (!mounted) return;
+              Navigator.of(dialogContext).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Erreur: $e'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            });
+          }
+          return AlertDialog(
+            title: const Text('Déplacement des fichiers'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                LinearProgressIndicator(value: progress),
+                const SizedBox(height: 8),
+                Text('${(progress * 100).toStringAsFixed(0)}%'),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

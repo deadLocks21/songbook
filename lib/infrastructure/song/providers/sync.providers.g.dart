@@ -112,6 +112,7 @@ String _$remoteSongRepositoryHash() =>
 /// Provider pour le repository des ressources distantes.
 /// Utilise InMemoryRemoteResourceRepository sur le web.
 /// Retourne un Future car nécessite le chemin du répertoire de l'application (hors web).
+/// Utilise le répertoire de synchronisation personnalisé s'il est configuré.
 
 @ProviderFor(remoteResourceRepository)
 final remoteResourceRepositoryProvider = RemoteResourceRepositoryProvider._();
@@ -119,6 +120,7 @@ final remoteResourceRepositoryProvider = RemoteResourceRepositoryProvider._();
 /// Provider pour le repository des ressources distantes.
 /// Utilise InMemoryRemoteResourceRepository sur le web.
 /// Retourne un Future car nécessite le chemin du répertoire de l'application (hors web).
+/// Utilise le répertoire de synchronisation personnalisé s'il est configuré.
 
 final class RemoteResourceRepositoryProvider
     extends
@@ -133,6 +135,7 @@ final class RemoteResourceRepositoryProvider
   /// Provider pour le repository des ressources distantes.
   /// Utilise InMemoryRemoteResourceRepository sur le web.
   /// Retourne un Future car nécessite le chemin du répertoire de l'application (hors web).
+  /// Utilise le répertoire de synchronisation personnalisé s'il est configuré.
   RemoteResourceRepositoryProvider._()
     : super(
         from: null,
@@ -160,7 +163,7 @@ final class RemoteResourceRepositoryProvider
 }
 
 String _$remoteResourceRepositoryHash() =>
-    r'd9578069155d63a4784ef1a4c8952c211e29d1fd';
+    r'b1eec9f98bfd6b1dbe1e7d311a4f103cb6b79e8a';
 
 /// Provider pour le use case de calcul des différences de synchronisation.
 

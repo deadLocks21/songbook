@@ -17,4 +17,12 @@ abstract interface class SettingsRepository {
 
   /// Supprime le mot de passe stocké.
   Future<void> clearPassword();
+
+  /// Récupère le répertoire de synchronisation personnalisé.
+  /// Retourne null si l'emplacement par défaut est utilisé.
+  Future<String?> getSyncDirectory();
+
+  /// Définit le répertoire de synchronisation personnalisé.
+  /// Passer null pour revenir à l'emplacement par défaut.
+  Future<void> setSyncDirectory(String? path);
 }
