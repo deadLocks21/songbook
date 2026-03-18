@@ -1,0 +1,103 @@
+import '../../base.dart';
+import '../song_list_detail/actions.dart';
+import '../song_list_edit/actions.dart';
+import 'commands.dart';
+import 'finders.dart';
+
+/// Actions fluentes pour la SongListsPage.
+class SongListsPageActions extends FluentActionsBase {
+  final SongListsPageFinders _finders;
+
+  SongListsPageActions(super.navigation, super.tester)
+    : _finders = SongListsPageFinders(tester);
+
+  // ==================== Actions ====================
+
+  /// Tape sur une carte de liste par son ID.
+  SongListsPageActions tapSongListCard(String songListId) {
+    addCommand(TapSongListCardCommand(tester, _finders, songListId));
+    return this;
+  }
+
+  /// Tape sur le FAB de création.
+  SongListsPageActions tapCreateFab() {
+    addCommand(TapCreateFabCommand(tester, _finders));
+    return this;
+  }
+
+  /// Appui long sur une carte (menu contextuel).
+  SongListsPageActions longPressSongListCard(String songListId) {
+    addCommand(LongPressSongListCardCommand(tester, _finders, songListId));
+    return this;
+  }
+
+  /// Tape sur "Visionner" dans le menu contextuel.
+  SongListsPageActions tapContextMenuView() {
+    addCommand(TapContextMenuItemCommand(tester, _finders.contextMenuView));
+    return this;
+  }
+
+  /// Tape sur "Éditer" dans le menu contextuel.
+  SongListsPageActions tapContextMenuEdit() {
+    addCommand(TapContextMenuItemCommand(tester, _finders.contextMenuEdit));
+    return this;
+  }
+
+  /// Tape sur "Supprimer" dans le menu contextuel.
+  SongListsPageActions tapContextMenuDelete() {
+    addCommand(TapContextMenuItemCommand(tester, _finders.contextMenuDelete));
+    return this;
+  }
+
+  /// Confirme la suppression dans le dialogue.
+  SongListsPageActions confirmDelete() {
+    addCommand(TapConfirmDeleteCommand(tester, _finders));
+    return this;
+  }
+
+  /// Annule la suppression dans le dialogue.
+  SongListsPageActions cancelDelete() {
+    addCommand(TapCancelDeleteCommand(tester, _finders));
+    return this;
+  }
+
+  // ==================== Assertions ====================
+
+  /// Vérifie que la liste est visible.
+  SongListsPageActions expectListVisible() {
+    addCommand(ExpectSongListsVisibleCommand(_finders));
+    return this;
+  }
+
+  /// Vérifie que le message vide est affiché.
+  SongListsPageActions expectEmptyMessageVisible() {
+    addCommand(ExpectSongListsEmptyCommand(_finders));
+    return this;
+  }
+
+  /// Vérifie le nombre de listes affichées.
+  SongListsPageActions expectSongListCount(int count) {
+    addCommand(ExpectSongListCountCommand(_finders, count));
+    return this;
+  }
+
+  /// Vérifie qu'un texte est visible.
+  SongListsPageActions expectTextVisible(String text) {
+    addCommand(ExpectTextVisibleCommand(text));
+    return this;
+  }
+
+  // ==================== Navigation ====================
+
+  /// Navigue vers la page de détail.
+  SongListDetailPageActions goToSongListDetail() {
+    return SongListDetailPageActions(navigation, tester)
+      ..commands.addAll(commands);
+  }
+
+  /// Navigue vers la page d'édition.
+  SongListEditPageActions goToSongListEdit() {
+    return SongListEditPageActions(navigation, tester)
+      ..commands.addAll(commands);
+  }
+}

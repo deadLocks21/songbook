@@ -21,11 +21,14 @@ class SongListsPage extends ConsumerWidget {
     return Scaffold(
       body: songListsAsync.when(
         data: (songLists) => _buildList(context, ref, songLists),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(
+          child: CircularProgressIndicator(key: Key('songListsLoading')),
+        ),
         error: (error, stack) =>
             Center(child: Text('Erreur lors du chargement des listes: $error')),
       ),
       floatingActionButton: FloatingActionButton(
+        key: const Key('createSongListFab'),
         onPressed: () => _createNewList(context, ref),
         child: const Icon(Icons.add),
       ),
@@ -41,17 +44,20 @@ class SongListsPage extends ConsumerWidget {
       return const Center(
         child: Text(
           'Aucune liste de chants',
+          key: Key('songListsEmpty'),
           style: TextStyle(fontSize: 18.0, color: Colors.grey),
         ),
       );
     }
 
     return ListView.builder(
+      key: const Key('songListsListView'),
       padding: const EdgeInsets.all(16.0),
       itemCount: songLists.length,
       itemBuilder: (context, index) {
         final songList = songLists[index];
         return SongListCard(
+          key: Key('songListCard_${songList.id}'),
           songList: songList,
           onTap: () => _showDetail(context, ref, songList),
           onView: () => _viewList(context, songList),
@@ -119,10 +125,12 @@ class SongListsPage extends ConsumerWidget {
         ),
         actions: [
           TextButton(
+            key: const Key('cancelDeleteButton'),
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Annuler'),
           ),
           TextButton(
+            key: const Key('confirmDeleteButton'),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Supprimer'),
           ),

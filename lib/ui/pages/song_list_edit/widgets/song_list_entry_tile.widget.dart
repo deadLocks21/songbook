@@ -94,10 +94,7 @@ class SongListEntryTile extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                   ],
-                  _RemoveButton(
-                    onPressed: onRemove,
-                    colorScheme: colorScheme,
-                  ),
+                  _RemoveButton(onPressed: onRemove, colorScheme: colorScheme),
                 ],
               ),
             ),
@@ -169,10 +166,7 @@ class _RemoveButton extends StatelessWidget {
   final VoidCallback onPressed;
   final ColorScheme colorScheme;
 
-  const _RemoveButton({
-    required this.onPressed,
-    required this.colorScheme,
-  });
+  const _RemoveButton({required this.onPressed, required this.colorScheme});
 
   @override
   Widget build(BuildContext context) {

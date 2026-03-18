@@ -51,11 +51,13 @@ class SongListDetailPage extends ConsumerWidget {
       appBar: AppBar(
         actions: [
           IconButton(
+            key: const Key('editSongListButton'),
             icon: const Icon(Icons.edit_outlined),
             onPressed: () => _editList(context, ref, songList),
             tooltip: 'Modifier',
           ),
           IconButton(
+            key: const Key('deleteSongListButton'),
             icon: const Icon(Icons.delete_outline),
             onPressed: () => _confirmDelete(context, ref, songList),
             tooltip: 'Supprimer',
@@ -64,6 +66,7 @@ class SongListDetailPage extends ConsumerWidget {
       ),
       floatingActionButton: songList.entries.isNotEmpty
           ? FloatingActionButton.extended(
+              key: const Key('presentSongListFab'),
               onPressed: () => _viewList(context, songList),
               icon: const Icon(Icons.play_arrow_rounded),
               label: const Text('Présenter'),
@@ -72,6 +75,7 @@ class SongListDetailPage extends ConsumerWidget {
       body: songList.entries.isEmpty
           ? _buildEmptyState(context, colorScheme)
           : ListView.builder(
+              key: const Key('songListDetailListView'),
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
               itemCount: songList.entries.length + 1,
               itemBuilder: (context, index) {
@@ -91,12 +95,14 @@ class SongListDetailPage extends ConsumerWidget {
     final entryCount = songList.entries.length;
 
     return Padding(
+      key: const Key('songListDetailHeader'),
       padding: const EdgeInsets.fromLTRB(4, 0, 4, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             formatDate(songList.scheduledAt),
+            key: const Key('songListDetailDate'),
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -104,6 +110,7 @@ class SongListDetailPage extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             '$entryCount chant${entryCount > 1 ? 's' : ''}',
+            key: const Key('songListDetailCount'),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
@@ -117,6 +124,7 @@ class SongListDetailPage extends ConsumerWidget {
 
   Widget _buildEmptyState(BuildContext context, ColorScheme colorScheme) {
     return Center(
+      key: const Key('songListDetailEmpty'),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -129,16 +137,15 @@ class SongListDetailPage extends ConsumerWidget {
           Text(
             'Aucun chant dans cette liste',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             'Appuyez sur modifier pour ajouter des chants',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color:
-                      colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                ),
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+            ),
           ),
         ],
       ),
@@ -154,10 +161,9 @@ class SongListDetailPage extends ConsumerWidget {
     final colorScheme = theme.colorScheme;
 
     return Card(
+      key: Key('songListDetailEntry_$index'),
       margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
@@ -230,10 +236,12 @@ class SongListDetailPage extends ConsumerWidget {
         ),
         actions: [
           TextButton(
+            key: const Key('cancelDeleteButton'),
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Annuler'),
           ),
           TextButton(
+            key: const Key('confirmDeleteButton'),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Supprimer'),
           ),

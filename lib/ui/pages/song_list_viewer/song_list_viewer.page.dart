@@ -48,10 +48,12 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
               children: [
                 Text(
                   currentSong.code,
+                  key: const Key('viewerSongCode'),
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 Text(
                   currentSong.name,
+                  key: const Key('viewerSongName'),
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     color: Theme.of(
                       context,
@@ -66,11 +68,13 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
                   child: Text(
                     '${_currentIndex + 1}/$totalSongs',
+                    key: const Key('viewerPositionIndicator'),
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ),
               ),
               IconButton(
+                key: const Key('viewerOverviewButton'),
                 icon: const Icon(Icons.list),
                 onPressed: () => _showOverview(data),
                 tooltip: 'Liste des chants',
@@ -120,6 +124,7 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
           // Bouton precedent
           if (_currentIndex > 0)
             GestureDetector(
+              key: const Key('viewerPreviousButton'),
               onTap: _goToPrevious,
               child: Container(
                 width: 48,
@@ -141,6 +146,7 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
           // Bouton suivant
           if (_currentIndex < totalSongs - 1)
             GestureDetector(
+              key: const Key('viewerNextButton'),
               onTap: _goToNext,
               child: Container(
                 width: 48,

@@ -56,10 +56,14 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(_isNew ? 'Nouvelle liste' : 'Modifier la liste'),
+          title: Text(
+            _isNew ? 'Nouvelle liste' : 'Modifier la liste',
+            key: const Key('songListEditTitle'),
+          ),
           leading: _isSaving ? const SizedBox.shrink() : null,
           actions: [
             IconButton(
+              key: const Key('saveSongListButton'),
               icon: _isSaving
                   ? const SizedBox(
                       width: 18,
@@ -72,78 +76,88 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
             ),
           ],
         ),
-        floatingActionButton: _isSaving ? null : FloatingActionButton(
-          onPressed: _addSongs,
-          tooltip: 'Ajouter un chant',
-          child: const Icon(Icons.add),
-        ),
+        floatingActionButton: _isSaving
+            ? null
+            : FloatingActionButton(
+                key: const Key('addSongFab'),
+                onPressed: _addSongs,
+                tooltip: 'Ajouter un chant',
+                child: const Icon(Icons.add),
+              ),
         body: IgnorePointer(
           ignoring: _isSaving,
           child: AnimatedOpacity(
             opacity: _isSaving ? 0.5 : 1.0,
             duration: const Duration(milliseconds: 200),
             child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: InkWell(
-                onTap: _pickDateTime,
-                borderRadius: BorderRadius.circular(12.0),
-                child: InputDecorator(
-                  decoration: InputDecoration(
-                    labelText: 'Date et heure',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12.0),
-                    ),
-                    suffixIcon: const Icon(Icons.calendar_today),
-                  ),
-                  child: Text(formatDate(_scheduledAt)),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Chants (${_entries.length})',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-              ),
-            ),
-            Expanded(
-              child: _entries.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'Aucun chant dans la liste',
-                        style: TextStyle(color: Colors.grey),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: InkWell(
+                    key: const Key('dateTimePicker'),
+                    onTap: _pickDateTime,
+                    borderRadius: BorderRadius.circular(12.0),
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: 'Date et heure',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.0),
+                        ),
+                        suffixIcon: const Icon(Icons.calendar_today),
                       ),
-                    )
-                  : ReorderableListView.builder(
-                      buildDefaultDragHandles: false,
-                      itemCount: _entries.length,
-                      onReorder: _onReorder,
-                      itemBuilder: (context, index) {
-                        final entry = _entries[index];
-                        return SongListEntryTile(
-                          key: ValueKey(entry.id),
-                          entry: entry,
-                          index: index,
-                          totalCount: _entries.length,
-                          onRemove: () => _removeEntry(index),
-                          onTap: () => _viewSong(entry),
-                          onMoveUp: index > 0
-                              ? () => _onReorder(index, index - 1)
-                              : null,
-                          onMoveDown: index < _entries.length - 1
-                              ? () => _onReorder(index, index + 2)
-                              : null,
-                        );
-                      },
+                      child: Text(
+                        formatDate(_scheduledAt),
+                        key: const Key('scheduledAtText'),
+                      ),
                     ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Chants (${_entries.length})',
+                      key: const Key('entriesCountLabel'),
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: _entries.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'Aucun chant dans la liste',
+                            key: Key('songListEditEmpty'),
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        )
+                      : ReorderableListView.builder(
+                          key: const Key('songListEditReorderableList'),
+                          buildDefaultDragHandles: false,
+                          itemCount: _entries.length,
+                          onReorder: _onReorder,
+                          itemBuilder: (context, index) {
+                            final entry = _entries[index];
+                            return SongListEntryTile(
+                              key: ValueKey(entry.id),
+                              entry: entry,
+                              index: index,
+                              totalCount: _entries.length,
+                              onRemove: () => _removeEntry(index),
+                              onTap: () => _viewSong(entry),
+                              onMoveUp: index > 0
+                                  ? () => _onReorder(index, index - 1)
+                                  : null,
+                              onMoveDown: index < _entries.length - 1
+                                  ? () => _onReorder(index, index + 2)
+                                  : null,
+                            );
+                          },
+                        ),
+                ),
+              ],
             ),
-          ],
-        ),
           ),
         ),
       ),
@@ -160,10 +174,12 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
         ),
         actions: [
           TextButton(
+            key: const Key('cancelDiscardButton'),
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Annuler'),
           ),
           TextButton(
+            key: const Key('confirmDiscardButton'),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Quitter'),
           ),
@@ -224,9 +240,7 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
     if (song == null) return;
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => SongViewerPage(song: song),
-      ),
+      MaterialPageRoute(builder: (context) => SongViewerPage(song: song)),
     );
   }
 
