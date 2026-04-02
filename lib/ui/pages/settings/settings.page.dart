@@ -81,6 +81,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     ),
                     const SizedBox(height: 8),
                     SegmentedButton<AppThemeMode>(
+                      key: const Key('themeSegmentedButton'),
                       segments: const [
                         ButtonSegment<AppThemeMode>(
                           value: AppThemeMode.light,
@@ -143,15 +144,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'URL du backend',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
+                      const Flexible(
+                        child: Text(
+                          'URL du backend',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                       if (!_isBackendUrlEditable)
                         TextButton.icon(
+                          key: const Key('backendUrlEditButton'),
                           onPressed: () {
                             setState(() {
                               _isBackendUrlEditable = true;
@@ -167,6 +171,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             TextButton.icon(
+                              key: const Key('backendUrlCancelButton'),
                               onPressed: () {
                                 setState(() {
                                   _backendUrlController.text =
@@ -179,6 +184,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                               label: const Text('Annuler'),
                             ),
                             TextButton.icon(
+                              key: const Key('backendUrlSaveButton'),
                               onPressed: _isBackendUrlModified
                                   ? () async {
                                       final url = _backendUrlController.text
@@ -214,6 +220,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   ),
                   const SizedBox(height: 8),
                   TextField(
+                    key: const Key('backendUrlField'),
                     controller: _backendUrlController,
                     readOnly: !_isBackendUrlEditable,
                     decoration: InputDecoration(
@@ -229,6 +236,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                           ? Padding(
                               padding: const EdgeInsets.only(right: 8.0),
                               child: IconButton(
+                                key: const Key('backendUrlSyncButton'),
                                 icon: const Icon(Icons.sync),
                                 tooltip: 'Synchroniser',
                                 onPressed: () {
@@ -290,6 +298,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   ),
                   const SizedBox(height: 8),
                   OutlinedButton.icon(
+                    key: const Key('clearDatabaseButton'),
                     onPressed: () async {
                       final confirmed = await showDialog<bool>(
                         context: context,
@@ -301,10 +310,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                           ),
                           actions: [
                             TextButton(
+                              key: const Key('clearDatabaseCancelButton'),
                               onPressed: () => Navigator.of(context).pop(false),
                               child: const Text('Annuler'),
                             ),
                             TextButton(
+                              key: const Key('clearDatabaseConfirmButton'),
                               onPressed: () => Navigator.of(context).pop(true),
                               style: TextButton.styleFrom(
                                 foregroundColor: Colors.red,
@@ -391,14 +402,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Emplacement de synchronisation',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  const Flexible(
+                    child: Text(
+                      'Emplacement de synchronisation',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    ),
                   ),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       TextButton.icon(
+                        key: const Key('syncDirectoryModifyButton'),
                         onPressed: () async {
                           final selectedDir =
                               await FilePicker.platform.getDirectoryPath(
@@ -417,6 +431,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       ),
                       if (currentPath != null)
                         TextButton.icon(
+                          key: const Key('syncDirectoryResetButton'),
                           onPressed: () {
                             _showCopyProgressDialog(
                               syncDirNotifier,
@@ -432,6 +447,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
               const SizedBox(height: 8),
               Container(
+                key: const Key('syncDirectoryPath'),
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(

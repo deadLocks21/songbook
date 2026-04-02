@@ -10,6 +10,11 @@ export 'actions/home/actions.dart';
 export 'actions/home/commands.dart';
 export 'actions/home/finders.dart';
 
+// Actions SettingsPage
+export 'actions/settings/actions.dart';
+export 'actions/settings/commands.dart';
+export 'actions/settings/finders.dart';
+
 // Actions SongViewerPage
 export 'actions/song_viewer/actions.dart';
 export 'actions/song_viewer/commands.dart';

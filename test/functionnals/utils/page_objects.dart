@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'actions/home/actions.dart';
+import 'actions/settings/actions.dart';
 import 'actions/song_list_detail/actions.dart';
 import 'actions/song_list_edit/actions.dart';
 import 'actions/song_list_viewer/actions.dart';
@@ -16,6 +17,9 @@ class PageObjects implements IFluentNavigation {
 
   @override
   HomePageActions get homePage => HomePageActions(this, tester);
+
+  @override
+  SettingsPageActions get settingsPage => SettingsPageActions(this, tester);
 
   @override
   SongViewerPageActions get songViewerPage =>
