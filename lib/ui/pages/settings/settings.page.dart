@@ -41,7 +41,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
     // Mettre à jour le contrôleur quand les données sont chargées
     backendUrlAsync.whenData((url) {
-      if (!_isBackendUrlModified && _backendUrlController.text.isEmpty) {
+      if (!_isBackendUrlEditable) {
         _backendUrlController.text = url ?? '';
         _originalBackendUrl = url ?? '';
       }
