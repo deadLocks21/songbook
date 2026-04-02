@@ -13,7 +13,12 @@ class SetBackendUrlUseCase {
   /// pour le nouveau serveur.
   Future<void> execute(String url) async {
     // Supprimer le mot de passe stocké car l'URL du serveur a changé
-    await _settingsRepository.clearPassword();
+    // Non-bloquant : si le Keychain échoue, on sauvegarde quand même l'URL
+    try {
+      await _settingsRepository.clearPassword();
+    } catch (_) {
+      // Ignorer les erreurs Keychain (ex: entitlement manquant sur macOS)
+    }
 
     // Sauvegarder la nouvelle URL
     await _settingsRepository.setBackendUrl(url);
