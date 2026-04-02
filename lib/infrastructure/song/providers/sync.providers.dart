@@ -3,8 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:songbook/core/application/usecases/compute_sync_diff.usecase.dart';
-import 'package:songbook/core/application/usecases/execute_sync.usecase.dart';
+import 'package:songbook/core/application/services/sync.service.dart';
 import 'package:songbook/core/domain/exceptions/password_required.exception.dart';
 import 'package:songbook/core/domain/services/remote_resource.repository.dart';
 import 'package:songbook/core/domain/services/remote_song.repository.dart';
@@ -127,21 +126,19 @@ Future<RemoteResourceRepository> remoteResourceRepository(Ref ref) async {
   return DioRemoteResourceRepository(dio, resourcesPath);
 }
 
-/// Provider pour le use case de calcul des différences de synchronisation.
+/// Provider pour le service de synchronisation.
 @riverpod
-ComputeSyncDiffUseCase computeSyncDiffUseCase(Ref ref) {
-  final localRepository = ref.watch(songRepositoryProvider);
-  final remoteRepository = ref.watch(remoteSongRepositoryProvider);
-  return ComputeSyncDiffUseCase(localRepository, remoteRepository);
-}
-
-/// Provider pour le use case d'exécution de la synchronisation.
-/// Retourne un Future car dépend du RemoteResourceRepository async.
-@riverpod
-Future<ExecuteSyncUseCase> executeSyncUseCase(Ref ref) async {
+Future<SyncService> syncService(Ref ref) async {
   final songRepository = ref.watch(songRepositoryProvider);
+  final remoteSongRepository = ref.watch(remoteSongRepositoryProvider);
   final resourceRepository = await ref.watch(
     remoteResourceRepositoryProvider.future,
   );
-  return ExecuteSyncUseCase(songRepository, resourceRepository);
+  final settingsRepository = ref.watch(settingsRepositoryProvider);
+  return SyncService(
+    songRepository,
+    remoteSongRepository,
+    resourceRepository,
+    settingsRepository,
+  );
 }

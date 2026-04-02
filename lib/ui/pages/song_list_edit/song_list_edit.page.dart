@@ -269,8 +269,8 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
         entries: _entries,
       );
 
-      final service = ref.read(songListServiceProvider);
-      await service.saveSongList.execute(dto);
+      final service = ref.read(setlistServiceProvider);
+      await service.save(dto);
       ref.invalidate(songListsProvider);
       await ref.read(songListsProvider.future);
 

@@ -250,8 +250,8 @@ class SongListDetailPage extends ConsumerWidget {
     );
 
     if (confirmed == true && context.mounted) {
-      final service = ref.read(songListServiceProvider);
-      await service.deleteSongList.execute(songList.id);
+      final service = ref.read(setlistServiceProvider);
+      await service.delete(songList.id);
       ref.invalidate(songListsProvider);
       if (context.mounted) Navigator.pop(context);
     }

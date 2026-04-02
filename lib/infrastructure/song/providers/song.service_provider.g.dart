@@ -8,69 +8,51 @@ part of 'song.service_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Provider pour le service applicatif des chants.
-/// Assemble tous les usecases liés aux chants.
 
-@ProviderFor(songService)
-final songServiceProvider = SongServiceProvider._();
+@ProviderFor(songCatalogService)
+final songCatalogServiceProvider = SongCatalogServiceProvider._();
 
-/// Provider pour le service applicatif des chants.
-/// Assemble tous les usecases liés aux chants.
-
-final class SongServiceProvider
+final class SongCatalogServiceProvider
     extends
         $FunctionalProvider<
-          SongApplicationService,
-          SongApplicationService,
-          SongApplicationService
+          AsyncValue<SongCatalogService>,
+          SongCatalogService,
+          FutureOr<SongCatalogService>
         >
-    with $Provider<SongApplicationService> {
-  /// Provider pour le service applicatif des chants.
-  /// Assemble tous les usecases liés aux chants.
-  SongServiceProvider._()
+    with
+        $FutureModifier<SongCatalogService>,
+        $FutureProvider<SongCatalogService> {
+  SongCatalogServiceProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'songServiceProvider',
+        name: r'songCatalogServiceProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$songServiceHash();
+  String debugGetCreateSourceHash() => _$songCatalogServiceHash();
 
   @$internal
   @override
-  $ProviderElement<SongApplicationService> $createElement(
+  $FutureProviderElement<SongCatalogService> $createElement(
     $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
+  ) => $FutureProviderElement(pointer);
 
   @override
-  SongApplicationService create(Ref ref) {
-    return songService(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(SongApplicationService value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<SongApplicationService>(value),
-    );
+  FutureOr<SongCatalogService> create(Ref ref) {
+    return songCatalogService(ref);
   }
 }
 
-String _$songServiceHash() => r'a5d8d894041bb94676d43dce4d60f5fb7db97d0f';
-
-/// Provider pour récupérer tous les chants.
-/// Utilise le service applicatif pour orchestrer le cas d'usage.
+String _$songCatalogServiceHash() =>
+    r'43f4643ce1406b1ce7badfbd42ac6d1e713220af';
 
 @ProviderFor(songs)
 final songsProvider = SongsProvider._();
-
-/// Provider pour récupérer tous les chants.
-/// Utilise le service applicatif pour orchestrer le cas d'usage.
 
 final class SongsProvider
     extends
@@ -80,8 +62,6 @@ final class SongsProvider
           FutureOr<List<SongDto>>
         >
     with $FutureModifier<List<SongDto>>, $FutureProvider<List<SongDto>> {
-  /// Provider pour récupérer tous les chants.
-  /// Utilise le service applicatif pour orchestrer le cas d'usage.
   SongsProvider._()
     : super(
         from: null,
@@ -108,4 +88,4 @@ final class SongsProvider
   }
 }
 
-String _$songsHash() => r'75421aba9bb392aeb910ac259ed9a8dad7aa83e4';
+String _$songsHash() => r'e4b4e7eda052f0412ee2384d3222d84db1b4b8ea';
