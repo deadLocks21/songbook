@@ -9,8 +9,17 @@ import 'package:songbook/core/domain/services/settings.repository.dart';
 /// puis met à jour le paramètre.
 class SetSyncDirectoryUseCase {
   final SettingsRepository _settingsRepository;
+  final Future<String> Function() _defaultPathResolver;
 
-  SetSyncDirectoryUseCase(this._settingsRepository);
+  SetSyncDirectoryUseCase(
+    this._settingsRepository, {
+    Future<String> Function()? defaultPathResolver,
+  }) : _defaultPathResolver = defaultPathResolver ?? _platformDefaultPath;
+
+  static Future<String> _platformDefaultPath() async {
+    final appDir = await getApplicationSupportDirectory();
+    return '${appDir.path}/resources';
+  }
 
   /// Exécute le changement de répertoire de synchronisation.
   ///
@@ -18,7 +27,7 @@ class SetSyncDirectoryUseCase {
   /// [onProgress] : callback optionnel (0.0 à 1.0) pour suivre la progression de la copie.
   Future<void> execute(String? newPath, {void Function(double)? onProgress}) async {
     final oldPath = await _resolveCurrentPath();
-    final targetPath = newPath ?? await _defaultResourcesPath();
+    final targetPath = newPath ?? await _defaultPathResolver();
 
     // Si le chemin n'a pas changé, ne rien faire
     if (oldPath == targetPath) {
@@ -55,13 +64,7 @@ class SetSyncDirectoryUseCase {
   Future<String> _resolveCurrentPath() async {
     final customPath = await _settingsRepository.getSyncDirectory();
     if (customPath != null) return customPath;
-    return await _defaultResourcesPath();
-  }
-
-  /// Retourne le chemin par défaut des ressources
-  Future<String> _defaultResourcesPath() async {
-    final appDir = await getApplicationSupportDirectory();
-    return '${appDir.path}/resources';
+    return await _defaultPathResolver();
   }
 
   /// Liste récursivement tous les fichiers d'un répertoire
