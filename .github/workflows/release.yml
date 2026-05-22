@@ -786,17 +786,25 @@ jobs:
       - name: Create GitHub Release
         run: |
           BODY=$(jq -r '.[] | select(.language=="fr-FR") | .text' release_notes.json)
-          AAB=$(find artifacts -type f -name '*.aab' | head -1)
-          MAPPING=$(find artifacts -type f -name 'mapping.txt' | head -1)
-          # PKG=$(find artifacts -type f -name '*.pkg' | head -1)  # macOS désactivé
-          WIN_ZIP=$(find artifacts -type f -name '*.zip' | head -1)
-          APPIMAGE=$(find artifacts -type f -name '*.AppImage' | head -1)
 
+          # On n'attache que les assets réellement présents : `mapping.txt`
+          # n'existe que si R8/minify est activé (ce n'est pas le cas ici), et
+          # certaines plateformes peuvent être désactivées. Passer un argument
+          # vide à `gh release create` fait échouer la commande.
+          ASSETS=()
           echo "Releasing assets:"
-          echo "  Android AAB : $AAB"
-          echo "  Mapping     : $MAPPING"
-          echo "  Windows ZIP : $WIN_ZIP"
-          echo "  Linux AppImg: $APPIMAGE"
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            echo "  - $f"
+            ASSETS+=("$f")
+          done < <(find artifacts -type f \
+            \( -name '*.aab' -o -name 'mapping.txt' -o -name '*.pkg' \
+               -o -name '*.zip' -o -name '*.AppImage' \) | sort)
+
+          if [ ${#ASSETS[@]} -eq 0 ]; then
+            echo "ERROR: no release assets found"
+            exit 1
+          fi
 
           # Tag name : `v<version>` si on est sur un tag, sinon nom synthétique
           # avec run_number pour éviter toute collision avec un tag git existant
@@ -812,4 +820,4 @@ jobs:
           gh release create "$RELEASE_TAG" \
             --title "Songbook v$VERSION" \
             --notes "$BODY" \
-            "$AAB" "$MAPPING" "$WIN_ZIP" "$APPIMAGE"
+            "${ASSETS[@]}"
