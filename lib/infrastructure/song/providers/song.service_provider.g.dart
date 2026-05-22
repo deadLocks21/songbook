@@ -88,4 +88,4 @@ final class SongsProvider
   }
 }
 
-String _$songsHash() => r'e4b4e7eda052f0412ee2384d3222d84db1b4b8ea';
+String _$songsHash() => r'5f2f876b755093a865178e7b2eb23b3da6763735';

@@ -1,10 +1,11 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/services/error_message.service.dart';
+import 'package:songbook/core/application/services/logger_application.service.dart';
 import 'package:songbook/core/application/services/sync.service.dart';
 import 'package:songbook/core/domain/exceptions/password_required.exception.dart';
 import 'package:songbook/core/domain/model/sync_diff.dart';
+import 'package:songbook/infrastructure/logger/providers/logger.service_provider.dart';
 import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
 import 'package:songbook/infrastructure/song/providers/sync.providers.dart';
 
@@ -66,6 +67,8 @@ class SyncStateNotifier extends Notifier<SyncState> {
   Future<SyncService> get _syncService =>
       ref.watch(syncServiceProvider.future);
 
+  LoggerApplicationService get _logger => ref.read(loggerProvider);
+
   /// URL actuelle en cours de traitement (pour les retry après saisie du mot de passe)
   String? _currentUrl;
 
@@ -76,6 +79,7 @@ class SyncStateNotifier extends Notifier<SyncState> {
 
   /// Calcule le diff entre les données locales et distantes
   Future<void> computeDiff(String baseUrl) async {
+    _logger.info('sync.diff.started', attrs: {'url.host': _hostOf(baseUrl)});
     try {
       state = const SyncComputing(progress: 0.0);
       _currentUrl = baseUrl;
@@ -86,22 +90,20 @@ class SyncStateNotifier extends Notifier<SyncState> {
       );
 
       if (diff.isEmpty) {
+        _logger.info('sync.up_to_date');
         state = const SyncUpToDate();
       } else {
+        _logger.info('sync.diff.computed', attrs: _diffAttrs(diff));
         state = SyncDiffComputed(diff);
       }
     } catch (e, stackTrace) {
-      debugPrint('Error during sync: $e\n$stackTrace');
-
-      if (e is PasswordRequiredException) {
-        state = const SyncPasswordRequired();
-        return;
-      }
-      if (e is DioException && e.error is PasswordRequiredException) {
+      if (_isPasswordRequired(e)) {
+        _logger.warn('sync.auth.required');
         state = const SyncPasswordRequired();
         return;
       }
 
+      _logger.error('sync.diff.failed', error: e, stack: stackTrace);
       final userMessage = ErrorMessageService.getNetworkErrorMessage(e);
       state = SyncError(userMessage);
     }
@@ -109,6 +111,7 @@ class SyncStateNotifier extends Notifier<SyncState> {
 
   /// Exécute la synchronisation avec le diff fourni
   Future<void> executeSync(SyncDiff diff) async {
+    _logger.info('sync.started', attrs: _diffAttrs(diff));
     try {
       state = const SyncExecuting(progress: 0.0);
       final syncService = await _syncService;
@@ -119,19 +122,16 @@ class SyncStateNotifier extends Notifier<SyncState> {
 
       ref.invalidate(songsProvider);
 
+      _logger.info('sync.completed', attrs: _diffAttrs(diff));
       state = const SyncSuccess();
     } catch (e, stackTrace) {
-      debugPrint('Error during sync: $e\n$stackTrace');
-
-      if (e is PasswordRequiredException) {
-        state = const SyncPasswordRequired();
-        return;
-      }
-      if (e is DioException && e.error is PasswordRequiredException) {
+      if (_isPasswordRequired(e)) {
+        _logger.warn('sync.auth.required');
         state = const SyncPasswordRequired();
         return;
       }
 
+      _logger.error('sync.failed', error: e, stack: stackTrace);
       final userMessage = ErrorMessageService.getNetworkErrorMessage(e);
       state = SyncError(userMessage);
     }
@@ -150,7 +150,7 @@ class SyncStateNotifier extends Notifier<SyncState> {
 
       await computeDiff(_currentUrl!);
     } catch (e, stackTrace) {
-      debugPrint('Error submitting password: $e\n$stackTrace');
+      _logger.error('sync.password.failed', error: e, stack: stackTrace);
       final userMessage = ErrorMessageService.getNetworkErrorMessage(e);
       state = SyncError(userMessage);
     }
@@ -166,6 +166,19 @@ class SyncStateNotifier extends Notifier<SyncState> {
     state = const SyncInitial();
     _currentUrl = null;
   }
+
+  static bool _isPasswordRequired(Object e) =>
+      e is PasswordRequiredException ||
+      (e is DioException && e.error is PasswordRequiredException);
+
+  static Map<String, Object?> _diffAttrs(SyncDiff diff) => {
+    'add': diff.toAdd.length,
+    'update': diff.toUpdate.length,
+    'delete': diff.toDelete.length,
+    'total': diff.totalActions,
+  };
+
+  static String _hostOf(String url) => Uri.tryParse(url)?.host ?? url;
 }
 
 /// Provider pour le notifier de synchronisation

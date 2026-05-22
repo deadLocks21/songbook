@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/services/error_message.service.dart';
 import 'package:songbook/core/domain/model/theme_mode.dart';
+import 'package:songbook/infrastructure/logger/providers/logger.service_provider.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.service_provider.dart';
 import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
 import 'package:songbook/ui/pages/sync/sync.page.dart';
@@ -344,8 +345,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                               ),
                             );
                           }
-                        } catch (e) {
-                          debugPrint('Error: $e');
+                        } catch (e, stack) {
+                          ref.read(loggerProvider).error(
+                            'database.clear_failed',
+                            error: e,
+                            stack: stack,
+                          );
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(

@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:songbook/core/application/services/settings.service.dart';
 import 'package:songbook/core/domain/model/theme_mode.dart';
+import 'package:songbook/infrastructure/logger/providers/logger.service_provider.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.repository_provider.dart';
 import 'package:songbook/infrastructure/theme/providers/theme.repository_provider.dart';
 
@@ -20,7 +21,12 @@ class BackendUrlNotifier extends _$BackendUrlNotifier {
     final service = ref.watch(settingsServiceProvider);
     try {
       return await service.getBackendUrl();
-    } catch (e) {
+    } catch (e, stack) {
+      ref.read(loggerProvider).warn(
+        'settings.backend_url.load_failed',
+        error: e,
+        stack: stack,
+      );
       return null;
     }
   }
@@ -30,7 +36,12 @@ class BackendUrlNotifier extends _$BackendUrlNotifier {
     try {
       await service.setBackendUrl(url);
       state = AsyncData(url);
-    } catch (e) {
+    } catch (e, stack) {
+      ref.read(loggerProvider).error(
+        'settings.backend_url.save_failed',
+        error: e,
+        stack: stack,
+      );
       state = AsyncError(e, StackTrace.current);
     }
   }
@@ -43,7 +54,12 @@ class SyncDirectoryNotifier extends _$SyncDirectoryNotifier {
     final service = ref.watch(settingsServiceProvider);
     try {
       return await service.getSyncDirectory();
-    } catch (e) {
+    } catch (e, stack) {
+      ref.read(loggerProvider).warn(
+        'settings.sync_directory.load_failed',
+        error: e,
+        stack: stack,
+      );
       return null;
     }
   }
@@ -54,7 +70,12 @@ class SyncDirectoryNotifier extends _$SyncDirectoryNotifier {
     try {
       await service.setSyncDirectory(path, onProgress: onProgress);
       state = AsyncData(path);
-    } catch (e) {
+    } catch (e, stack) {
+      ref.read(loggerProvider).error(
+        'settings.sync_directory.save_failed',
+        error: e,
+        stack: stack,
+      );
       state = AsyncError(e, StackTrace.current);
     }
   }
@@ -67,7 +88,12 @@ class ThemeModeNotifier extends _$ThemeModeNotifier {
     final service = ref.watch(settingsServiceProvider);
     try {
       return await service.getThemeMode();
-    } catch (e) {
+    } catch (e, stack) {
+      ref.read(loggerProvider).warn(
+        'settings.theme_mode.load_failed',
+        error: e,
+        stack: stack,
+      );
       return AppThemeMode.system;
     }
   }
@@ -77,7 +103,12 @@ class ThemeModeNotifier extends _$ThemeModeNotifier {
     try {
       await service.setThemeMode(mode);
       state = AsyncData(mode);
-    } catch (e) {
+    } catch (e, stack) {
+      ref.read(loggerProvider).error(
+        'settings.theme_mode.save_failed',
+        error: e,
+        stack: stack,
+      );
       state = AsyncError(e, StackTrace.current);
     }
   }
