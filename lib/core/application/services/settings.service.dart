@@ -15,7 +15,13 @@ class SettingsService {
   Future<String> getBackendUrl() => _settingsRepository.getBackendUrl();
 
   Future<void> setBackendUrl(String url) async {
-    await _settingsRepository.clearPassword();
+    // Supprimer le mot de passe stocké car l'URL du serveur a changé.
+    // Non-bloquant : si le Keychain échoue, on sauvegarde quand même l'URL.
+    try {
+      await _settingsRepository.clearPassword();
+    } catch (_) {
+      // Ignorer les erreurs Keychain (ex: entitlement manquant sur macOS)
+    }
     await _settingsRepository.setBackendUrl(url);
   }
 

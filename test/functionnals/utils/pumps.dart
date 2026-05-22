@@ -18,6 +18,7 @@ import 'package:songbook/ui/pages/song_viewer/song_viewer.page.dart';
 
 import '../../builders/builders.dart';
 import 'actions/home/actions.dart';
+import 'actions/settings/actions.dart';
 import 'actions/song_list_detail/actions.dart';
 import 'actions/song_list_edit/actions.dart';
 import 'actions/song_list_viewer/actions.dart';
@@ -169,4 +170,43 @@ Future<SongListViewerPageActions> startInSongListViewerPage(
   await tester.pumpAndSettle();
 
   return PageObjects(tester).songListViewerPage;
+}
+
+/// Démarre l'application sur la SettingsPage via l'onglet "Paramètres".
+Future<SettingsPageActions> startInSettingsPage(
+  WidgetTester tester, {
+  App? app,
+}) async {
+  app ??= anApp().build();
+  final mockSongs = app.songs;
+
+  // Utiliser une surface plus large pour éviter les overflows sur la page Settings
+  tester.view.physicalSize = const Size(1200, 1600);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(() {
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+  });
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        songsProvider.overrideWith((ref) async => mockSongs),
+        songListsProvider.overrideWith((ref) async => <SongListDto>[]),
+        themeRepositoryProvider.overrideWithValue(InMemoryThemeRepository()),
+        settingsRepositoryProvider.overrideWithValue(
+          InMemorySettingsRepository(),
+        ),
+      ],
+      child: const MaterialApp(home: HomePage()),
+    ),
+  );
+
+  await tester.pumpAndSettle();
+
+  // Naviguer vers l'onglet "Paramètres" (index 2)
+  await tester.tap(find.text('Paramètres'));
+  await tester.pumpAndSettle();
+
+  return PageObjects(tester).settingsPage;
 }

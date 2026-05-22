@@ -15,7 +15,12 @@ class SharedPreferencesSettingsRepository implements SettingsRepository {
   SharedPreferences? _preferences;
 
   /// Instance de FlutterSecureStorage pour le stockage sécurisé du mot de passe
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage(
+    mOptions: MacOsOptions(
+      accessibility: KeychainAccessibility.first_unlock,
+      synchronizable: false,
+    ),
+  );
 
   /// S'assure que SharedPreferences est initialisé
   Future<void> _ensureInitialized() async {

@@ -1,4 +1,5 @@
 import '../../base.dart';
+import '../settings/actions.dart';
 import '../song_viewer/actions.dart';
 import 'commands.dart';
 import 'finders.dart';
@@ -74,5 +75,11 @@ class HomePageActions extends FluentActionsBase {
   /// Note: Appeler tapSongCard() avant pour déclencher la navigation.
   SongViewerPageActions goToSongViewer() {
     return SongViewerPageActions(navigation, tester)..commands.addAll(commands);
+  }
+
+  /// Navigue vers la page des paramètres.
+  /// Note: Appeler tapSettingsButton() avant pour déclencher la navigation.
+  SettingsPageActions goToSettings() {
+    return SettingsPageActions(navigation, tester)..commands.addAll(commands);
   }
 }
