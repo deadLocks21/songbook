@@ -8,64 +8,50 @@ part of 'song_list.service_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Provider pour le service applicatif des listes de chants.
 
-@ProviderFor(songListService)
-final songListServiceProvider = SongListServiceProvider._();
+@ProviderFor(setlistService)
+final setlistServiceProvider = SetlistServiceProvider._();
 
-/// Provider pour le service applicatif des listes de chants.
-
-final class SongListServiceProvider
-    extends
-        $FunctionalProvider<
-          SongListApplicationService,
-          SongListApplicationService,
-          SongListApplicationService
-        >
-    with $Provider<SongListApplicationService> {
-  /// Provider pour le service applicatif des listes de chants.
-  SongListServiceProvider._()
+final class SetlistServiceProvider
+    extends $FunctionalProvider<SetlistService, SetlistService, SetlistService>
+    with $Provider<SetlistService> {
+  SetlistServiceProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'songListServiceProvider',
+        name: r'setlistServiceProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$songListServiceHash();
+  String debugGetCreateSourceHash() => _$setlistServiceHash();
 
   @$internal
   @override
-  $ProviderElement<SongListApplicationService> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
+  $ProviderElement<SetlistService> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
 
   @override
-  SongListApplicationService create(Ref ref) {
-    return songListService(ref);
+  SetlistService create(Ref ref) {
+    return setlistService(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(SongListApplicationService value) {
+  Override overrideWithValue(SetlistService value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<SongListApplicationService>(value),
+      providerOverride: $SyncValueProvider<SetlistService>(value),
     );
   }
 }
 
-String _$songListServiceHash() => r'6bbb15ac2af0941d35a4807f835d44b4db9115df';
-
-/// Provider pour recuperer toutes les listes de chants.
+String _$setlistServiceHash() => r'f85fd1ca7cdbedea6b0d2aded107b647144a78ca';
 
 @ProviderFor(songLists)
 final songListsProvider = SongListsProvider._();
-
-/// Provider pour recuperer toutes les listes de chants.
 
 final class SongListsProvider
     extends
@@ -77,7 +63,6 @@ final class SongListsProvider
     with
         $FutureModifier<List<SongListDto>>,
         $FutureProvider<List<SongListDto>> {
-  /// Provider pour recuperer toutes les listes de chants.
   SongListsProvider._()
     : super(
         from: null,
@@ -104,4 +89,4 @@ final class SongListsProvider
   }
 }
 
-String _$songListsHash() => r'a2cae7e9ecc7d05a416aa453df2f45712e3200dc';
+String _$songListsHash() => r'5e748aac4604ef6476a0f1eee58a64e2b256aebd';

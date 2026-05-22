@@ -165,105 +165,46 @@ final class RemoteResourceRepositoryProvider
 String _$remoteResourceRepositoryHash() =>
     r'b1eec9f98bfd6b1dbe1e7d311a4f103cb6b79e8a';
 
-/// Provider pour le use case de calcul des différences de synchronisation.
+/// Provider pour le service de synchronisation.
 
-@ProviderFor(computeSyncDiffUseCase)
-final computeSyncDiffUseCaseProvider = ComputeSyncDiffUseCaseProvider._();
+@ProviderFor(syncService)
+final syncServiceProvider = SyncServiceProvider._();
 
-/// Provider pour le use case de calcul des différences de synchronisation.
+/// Provider pour le service de synchronisation.
 
-final class ComputeSyncDiffUseCaseProvider
+final class SyncServiceProvider
     extends
         $FunctionalProvider<
-          ComputeSyncDiffUseCase,
-          ComputeSyncDiffUseCase,
-          ComputeSyncDiffUseCase
+          AsyncValue<SyncService>,
+          SyncService,
+          FutureOr<SyncService>
         >
-    with $Provider<ComputeSyncDiffUseCase> {
-  /// Provider pour le use case de calcul des différences de synchronisation.
-  ComputeSyncDiffUseCaseProvider._()
+    with $FutureModifier<SyncService>, $FutureProvider<SyncService> {
+  /// Provider pour le service de synchronisation.
+  SyncServiceProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'computeSyncDiffUseCaseProvider',
+        name: r'syncServiceProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$computeSyncDiffUseCaseHash();
+  String debugGetCreateSourceHash() => _$syncServiceHash();
 
   @$internal
   @override
-  $ProviderElement<ComputeSyncDiffUseCase> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  ComputeSyncDiffUseCase create(Ref ref) {
-    return computeSyncDiffUseCase(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(ComputeSyncDiffUseCase value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<ComputeSyncDiffUseCase>(value),
-    );
-  }
-}
-
-String _$computeSyncDiffUseCaseHash() =>
-    r'207a890f986d5bee8c9fa3d0fadfb85a8e0072e5';
-
-/// Provider pour le use case d'exécution de la synchronisation.
-/// Retourne un Future car dépend du RemoteResourceRepository async.
-
-@ProviderFor(executeSyncUseCase)
-final executeSyncUseCaseProvider = ExecuteSyncUseCaseProvider._();
-
-/// Provider pour le use case d'exécution de la synchronisation.
-/// Retourne un Future car dépend du RemoteResourceRepository async.
-
-final class ExecuteSyncUseCaseProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<ExecuteSyncUseCase>,
-          ExecuteSyncUseCase,
-          FutureOr<ExecuteSyncUseCase>
-        >
-    with
-        $FutureModifier<ExecuteSyncUseCase>,
-        $FutureProvider<ExecuteSyncUseCase> {
-  /// Provider pour le use case d'exécution de la synchronisation.
-  /// Retourne un Future car dépend du RemoteResourceRepository async.
-  ExecuteSyncUseCaseProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'executeSyncUseCaseProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$executeSyncUseCaseHash();
-
-  @$internal
-  @override
-  $FutureProviderElement<ExecuteSyncUseCase> $createElement(
+  $FutureProviderElement<SyncService> $createElement(
     $ProviderPointer pointer,
   ) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<ExecuteSyncUseCase> create(Ref ref) {
-    return executeSyncUseCase(ref);
+  FutureOr<SyncService> create(Ref ref) {
+    return syncService(ref);
   }
 }
 
-String _$executeSyncUseCaseHash() =>
-    r'a6ee808208dd58ff3f16135a5e61daf1cce79ee4';
+String _$syncServiceHash() => r'988bfc7d5a1648cb7ab3c484ddaa03c977db643f';

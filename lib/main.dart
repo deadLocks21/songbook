@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/infrastructure/theme/app_theme_data.dart';
-import 'package:songbook/infrastructure/theme/providers/theme.usecases_provider.dart';
+import 'package:songbook/infrastructure/settings/providers/settings.service_provider.dart';
 import 'package:songbook/ui/pages/sync/sync.page.dart';
 
 void main() {

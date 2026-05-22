@@ -21,13 +21,13 @@ Future<SongListViewerData?> songListViewerData(
   Ref ref,
   String songListId,
 ) async {
-  final songListService = ref.watch(songListServiceProvider);
-  final songService = ref.watch(songServiceProvider);
+  final setlistService = ref.watch(setlistServiceProvider);
+  final songCatalogService = await ref.watch(songCatalogServiceProvider.future);
 
-  final detail = await songListService.getSongListDetail.execute(songListId);
+  final detail = await setlistService.getDetail(songListId);
   if (detail == null) return null;
 
-  final allSongs = await songService.getAllSongs.execute();
+  final allSongs = await songCatalogService.getAllSongs();
   final songsById = {for (final s in allSongs) s.id: s};
 
   final resolvedSongs = detail.entries
