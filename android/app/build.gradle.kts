@@ -1,5 +1,5 @@
-import java.io.File
-import java.util.*
+import java.util.Properties
+import java.io.FileInputStream
 
 plugins {
     id("com.android.application")
@@ -8,12 +8,14 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-
-val keystoreProperties =
-    Properties().apply {
-        var file = File("key.properties")
-        if (file.exists()) load(file.reader())
-    }
+// Release signing : lit `android/key.properties` (généré par la CI GitHub
+// Actions). Requis pour tout build release — un build release sans ce fichier
+// ni keystore échouera volontairement (pas de fallback debug).
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
 
 android {
     namespace = "fr.dtfh.songbook"
@@ -29,34 +31,24 @@ android {
         jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
-    val appVersionCode = (System.getenv()["PROJECT_BUILD_NUMBER"] ?: "1")?.toInt()
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "fr.dtfh.songbook"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = appVersionCode
+        versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
     signingConfigs {
         create("release") {
-            if (System.getenv()["CI"].toBoolean()) { // CI=true is exported by Codemagic
-                storeFile = file(System.getenv()["CM_KEYSTORE_PATH"])
-                storePassword = System.getenv()["CM_KEYSTORE_PASSWORD"]
-                keyAlias = System.getenv()["CM_KEY_ALIAS"]
-                keyPassword = System.getenv()["CM_KEY_PASSWORD"]
-            } else {
-                keyAlias = keystoreProperties.getProperty("keyAlias")
-                keyPassword = keystoreProperties.getProperty("keyPassword")
-                storeFile = file(keystoreProperties.getProperty("storeFile"))
-                storePassword = keystoreProperties.getProperty("storePassword")
-            }
+            keyAlias = keystoreProperties["keyAlias"] as String?
+            keyPassword = keystoreProperties["keyPassword"] as String?
+            storeFile = (keystoreProperties["storeFile"] as String?)?.let { file(it) }
+            storePassword = keystoreProperties["storePassword"] as String?
         }
     }
-
 
     buildTypes {
         getByName("release") {
