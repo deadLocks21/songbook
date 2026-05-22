@@ -1,5 +1,7 @@
 # Miscellaneous
 .claude/settings.local.json
+node_modules/
+.npm/
 *.class
 *.log
 *.pyc
