@@ -126,6 +126,8 @@ Map<String, Object?> _resourceAttributes() {
     'service.version': _kAppVersion,
     'deployment.environment': env,
     'os.type': _osType(),
+    'container.name': 'songbook-flutter',
+    'host.name': 'fr.dtfh.songbook',
   };
 }
 
