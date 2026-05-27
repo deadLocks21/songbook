@@ -10,10 +10,10 @@ part 'song.service_provider.g.dart';
 @riverpod
 Future<SongCatalogService> songCatalogService(Ref ref) async {
   final songRepository = ref.watch(songRepositoryProvider);
-  final resourceRepository = await ref.watch(
-    remoteResourceRepositoryProvider.future,
+  final resourceCacheRepository = await ref.watch(
+    resourceCacheRepositoryProvider.future,
   );
-  return SongCatalogService(songRepository, resourceRepository);
+  return SongCatalogService(songRepository, resourceCacheRepository);
 }
 
 @riverpod

@@ -8,5 +8,5 @@ class BackendEndpoints {
   const BackendEndpoints._();
 
   /// Catalogue of songs to synchronise.
-  static const String songs = '/api/songs/examples';
+  static const String songs = '/api/songs';
 }

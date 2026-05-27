@@ -4,7 +4,7 @@ import 'package:songbook/core/application/dtos/resource.dto.dart';
 import 'package:songbook/core/application/dtos/song.dto.dart';
 import 'package:songbook/ui/pages/song_list_viewer/providers/song_list_viewer.provider.dart';
 import 'package:songbook/ui/pages/song_list_viewer/widgets/song_list_overview_sheet.widget.dart';
-import 'package:songbook/ui/pages/song_viewer/widgets/zoomable_image_viewer.widget.dart';
+import 'package:songbook/ui/pages/song_viewer/widgets/cached_image_viewer.widget.dart';
 
 /// Page de visualisation d'une liste de chants.
 /// Affiche les partitions avec navigation precedent/suivant.
@@ -105,15 +105,16 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
         .whereType<ImageResourceDto>()
         .firstOrNull;
 
-    if (imageResource == null || imageResource.imagePaths.isEmpty) {
+    if (imageResource == null || imageResource.imageUrls.isEmpty) {
       return const Center(
         child: Text('Aucune partition disponible pour ce chant'),
       );
     }
 
-    return ZoomableImageViewer(
+    return CachedImageViewer(
       key: ValueKey('viewer_${_currentIndex}_${song.id}'),
-      imagePaths: imageResource.imagePaths,
+      songId: song.id,
+      imageUrls: imageResource.imageUrls,
     );
   }
 

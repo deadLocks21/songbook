@@ -4,64 +4,17 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:songbook/core/application/services/sync.service.dart';
-import 'package:songbook/core/domain/exceptions/password_required.exception.dart';
-import 'package:songbook/core/domain/services/remote_resource.repository.dart';
 import 'package:songbook/core/domain/services/remote_song.repository.dart';
-import 'package:songbook/infrastructure/resource/dio.remote_resource.repository.dart';
-import 'package:songbook/infrastructure/resource/in_memory.remote_resource.repository.dart';
+import 'package:songbook/core/domain/services/resource_cache.repository.dart';
+import 'package:songbook/infrastructure/resource/dio.resource_cache.repository.dart';
+import 'package:songbook/infrastructure/resource/in_memory.resource_cache.repository.dart';
 import 'package:songbook/infrastructure/song/dio.remote_song.repository.dart';
 import 'package:songbook/infrastructure/song/in_memory.remote_song.repository.dart';
-
 import 'package:songbook/infrastructure/song/providers/song.repository_provider.dart';
-import 'package:songbook/infrastructure/settings/providers/settings.repository_provider.dart';
 
 part 'sync.providers.g.dart';
 
-/// Intercepteur Dio pour gérer l'authentification par mot de passe
-class _AuthInterceptor extends Interceptor {
-  final Ref _ref;
-
-  _AuthInterceptor(this._ref);
-
-  @override
-  Future<void> onRequest(
-    RequestOptions options,
-    RequestInterceptorHandler handler,
-  ) async {
-    // Récupérer le mot de passe stocké et l'ajouter au header X-Password
-    final settingsRepository = _ref.read(settingsRepositoryProvider);
-    final password = await settingsRepository.getPassword();
-
-    if (password != null) {
-      options.headers['X-Password'] = password;
-    }
-
-    handler.next(options);
-  }
-
-  @override
-  Future<void> onError(
-    DioException err,
-    ErrorInterceptorHandler handler,
-  ) async {
-    // Intercepter les erreurs 401 et 403 pour demander un mot de passe
-    if (err.response?.statusCode == 401 || err.response?.statusCode == 403) {
-      // Créer une nouvelle exception avec PasswordRequiredException comme cause
-      final passwordException = DioException(
-        requestOptions: err.requestOptions,
-        response: err.response,
-        type: err.type,
-        error: PasswordRequiredException(),
-      );
-      handler.reject(passwordException);
-      return;
-    }
-
-    handler.next(err);
-  }
-}
-
-/// Intercepteur Dio pour ajouter la version de l'application dans les headers
+/// Intercepteur Dio pour ajouter la version de l'application dans les headers.
 class _VersionInterceptor extends Interceptor {
   @override
   Future<void> onRequest(
@@ -82,12 +35,18 @@ class _VersionInterceptor extends Interceptor {
 /// Provider pour l'instance Dio utilisée pour les requêtes HTTP.
 @riverpod
 Dio dio(Ref ref) {
-  final dio = Dio();
+  // Des timeouts explicites sont indispensables : sans eux, un backend
+  // injoignable (connexion TCP qui pend sans réponse, ex. port filtré par un
+  // pare-feu) bloquerait la synchronisation indéfiniment. Avec timeout, l'échec
+  // remonte sous forme de DioException et l'app peut prévenir puis continuer.
+  final dio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 10),
+      sendTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+    ),
+  );
 
-  // Ajouter l'intercepteur d'authentification
-  dio.interceptors.add(_AuthInterceptor(ref));
-
-  // Ajouter l'intercepteur de version
   dio.interceptors.add(_VersionInterceptor());
 
   return dio;
@@ -104,33 +63,24 @@ RemoteSongRepository remoteSongRepository(Ref ref) {
   return DioRemoteSongRepository(dio);
 }
 
-/// Provider pour le repository des ressources distantes.
-/// Utilise InMemoryRemoteResourceRepository sur le web.
+/// Provider pour le cache des ressources (images/PDF).
+/// Utilise InMemoryResourceCacheRepository sur le web.
 /// Retourne un Future car nécessite le chemin du répertoire de l'application (hors web).
 @riverpod
-Future<RemoteResourceRepository> remoteResourceRepository(Ref ref) async {
+Future<ResourceCacheRepository> resourceCacheRepository(Ref ref) async {
   if (kIsWeb) {
-    return InMemoryRemoteResourceRepository();
+    return InMemoryResourceCacheRepository();
   }
   final dio = ref.watch(dioProvider);
   final appDir = await getApplicationSupportDirectory();
   final resourcesPath = '${appDir.path}/resources';
-  return DioRemoteResourceRepository(dio, resourcesPath);
+  return DioResourceCacheRepository(dio, resourcesPath);
 }
 
 /// Provider pour le service de synchronisation.
 @riverpod
-Future<SyncService> syncService(Ref ref) async {
+SyncService syncService(Ref ref) {
   final songRepository = ref.watch(songRepositoryProvider);
   final remoteSongRepository = ref.watch(remoteSongRepositoryProvider);
-  final resourceRepository = await ref.watch(
-    remoteResourceRepositoryProvider.future,
-  );
-  final settingsRepository = ref.watch(settingsRepositoryProvider);
-  return SyncService(
-    songRepository,
-    remoteSongRepository,
-    resourceRepository,
-    settingsRepository,
-  );
+  return SyncService(songRepository, remoteSongRepository);
 }

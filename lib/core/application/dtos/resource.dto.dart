@@ -12,15 +12,15 @@ sealed class ResourceDto {
   /// Utilise pattern matching pour déterminer le type.
   factory ResourceDto.fromDomain(Resource resource) {
     return switch (resource) {
-      ImageResource(imagePaths: final paths) => ImageResourceDto(
+      ImageResource(imageUrls: final urls) => ImageResourceDto(
         id: resource.id.value,
         name: resource.name,
-        imagePaths: paths,
+        imageUrls: urls,
       ),
-      PdfResource(pdfPath: final path) => PdfResourceDto(
+      PdfResource(pdfUrl: final url) => PdfResourceDto(
         id: resource.id.value,
         name: resource.name,
-        pdfPath: path,
+        pdfUrl: url,
       ),
     };
   }
@@ -49,12 +49,12 @@ class ImageResourceDto extends ResourceDto {
   final String id;
   @override
   final String name;
-  final List<String> imagePaths;
+  final List<String> imageUrls;
 
   const ImageResourceDto({
     required this.id,
     required this.name,
-    required this.imagePaths,
+    required this.imageUrls,
   });
 
   @override
@@ -62,20 +62,20 @@ class ImageResourceDto extends ResourceDto {
     return ImageResource(
       id: UuidValue.parse(id),
       name: name,
-      imagePaths: imagePaths,
+      imageUrls: imageUrls,
     );
   }
 
   @override
   Map<String, dynamic> toJson() {
-    return {'type': 'image', 'id': id, 'name': name, 'imagePaths': imagePaths};
+    return {'type': 'image', 'id': id, 'name': name, 'imageUrls': imageUrls};
   }
 
   factory ImageResourceDto.fromJson(Map<String, dynamic> json) {
     return ImageResourceDto(
       id: json['id'] as String,
       name: json['name'] as String,
-      imagePaths: (json['imagePaths'] as List<dynamic>).cast<String>(),
+      imageUrls: (json['imageUrls'] as List<dynamic>).cast<String>(),
     );
   }
 }
@@ -86,29 +86,29 @@ class PdfResourceDto extends ResourceDto {
   final String id;
   @override
   final String name;
-  final String pdfPath;
+  final String pdfUrl;
 
   const PdfResourceDto({
     required this.id,
     required this.name,
-    required this.pdfPath,
+    required this.pdfUrl,
   });
 
   @override
   Resource toDomain() {
-    return PdfResource(id: UuidValue.parse(id), name: name, pdfPath: pdfPath);
+    return PdfResource(id: UuidValue.parse(id), name: name, pdfUrl: pdfUrl);
   }
 
   @override
   Map<String, dynamic> toJson() {
-    return {'type': 'pdf', 'id': id, 'name': name, 'pdfPath': pdfPath};
+    return {'type': 'pdf', 'id': id, 'name': name, 'pdfUrl': pdfUrl};
   }
 
   factory PdfResourceDto.fromJson(Map<String, dynamic> json) {
     return PdfResourceDto(
       id: json['id'] as String,
       name: json['name'] as String,
-      pdfPath: json['pdfPath'] as String,
+      pdfUrl: json['pdfUrl'] as String,
     );
   }
 }

@@ -10,29 +10,30 @@ sealed class Resource {
 }
 
 /// Ressource contenant des images.
-/// Les chemins sont absolus vers les fichiers locaux.
+/// Les URLs pointent vers les images distantes ; les fichiers sont
+/// téléchargés et mis en cache à la demande lors de l'affichage.
 class ImageResource extends Resource {
   @override
   final UuidValue id;
   @override
   final String name;
-  final List<String> imagePaths;
+  final List<String> imageUrls;
 
   ImageResource({
     required this.id,
     required this.name,
-    required this.imagePaths,
-  }) : assert(imagePaths.isNotEmpty, 'imagePaths cannot be empty');
+    required this.imageUrls,
+  }) : assert(imageUrls.isNotEmpty, 'imageUrls cannot be empty');
 
   ImageResource copyWith({
     UuidValue? id,
     String? name,
-    List<String>? imagePaths,
+    List<String>? imageUrls,
   }) {
     return ImageResource(
       id: id ?? this.id,
       name: name ?? this.name,
-      imagePaths: imagePaths ?? this.imagePaths,
+      imageUrls: imageUrls ?? this.imageUrls,
     );
   }
 
@@ -48,21 +49,22 @@ class ImageResource extends Resource {
 }
 
 /// Ressource contenant un fichier PDF.
-/// Le chemin est absolu vers le fichier local.
+/// L'URL pointe vers le PDF distant ; le fichier est téléchargé et mis en
+/// cache à la demande.
 class PdfResource extends Resource {
   @override
   final UuidValue id;
   @override
   final String name;
-  final String pdfPath;
+  final String pdfUrl;
 
-  PdfResource({required this.id, required this.name, required this.pdfPath});
+  PdfResource({required this.id, required this.name, required this.pdfUrl});
 
-  PdfResource copyWith({UuidValue? id, String? name, String? pdfPath}) {
+  PdfResource copyWith({UuidValue? id, String? name, String? pdfUrl}) {
     return PdfResource(
       id: id ?? this.id,
       name: name ?? this.name,
-      pdfPath: pdfPath ?? this.pdfPath,
+      pdfUrl: pdfUrl ?? this.pdfUrl,
     );
   }
 

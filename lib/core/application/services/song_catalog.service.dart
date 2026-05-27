@@ -2,14 +2,14 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:songbook/core/application/dtos/song.dto.dart';
-import 'package:songbook/core/domain/services/remote_resource.repository.dart';
+import 'package:songbook/core/domain/services/resource_cache.repository.dart';
 import 'package:songbook/core/domain/services/song.repository.dart';
 
 class SongCatalogService {
   final SongRepository _songRepository;
-  final RemoteResourceRepository _resourceRepository;
+  final ResourceCacheRepository _resourceCacheRepository;
 
-  const SongCatalogService(this._songRepository, this._resourceRepository);
+  const SongCatalogService(this._songRepository, this._resourceCacheRepository);
 
   Future<List<SongDto>> getAllSongs() async {
     final songs = List.of(await _songRepository.getAllSongs());
@@ -19,10 +19,9 @@ class SongCatalogService {
 
   Future<void> clearDatabase() async {
     if (!kIsWeb) {
-      final resourcesDir =
-          Directory(_resourceRepository.getResourcesDirectory());
-      if (await resourcesDir.exists()) {
-        await resourcesDir.delete(recursive: true);
+      final cacheDir = Directory(_resourceCacheRepository.getCacheDirectory());
+      if (await cacheDir.exists()) {
+        await cacheDir.delete(recursive: true);
       }
     }
     await _songRepository.deleteAllSongs();

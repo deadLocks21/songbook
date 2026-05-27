@@ -1,34 +1,27 @@
 import 'package:songbook/core/application/usecases/compute_sync_diff.usecase.dart';
 import 'package:songbook/core/application/usecases/execute_sync.usecase.dart';
-import 'package:songbook/core/domain/model/sync_diff.dart';
-import 'package:songbook/core/domain/services/remote_resource.repository.dart';
 import 'package:songbook/core/domain/services/remote_song.repository.dart';
-import 'package:songbook/core/domain/services/settings.repository.dart';
 import 'package:songbook/core/domain/services/song.repository.dart';
 
+/// Service de synchronisation de la **liste** des chants.
+///
+/// Réconcilie la base locale avec le serveur (ajouts / mises à jour /
+/// suppressions) sans télécharger les ressources : les images et PDF sont mis
+/// en cache à la demande lors de l'affichage.
 class SyncService {
-  final SettingsRepository _settingsRepository;
   final ComputeSyncDiffUseCase _computeSyncDiff;
   final ExecuteSyncUseCase _executeSync;
 
   SyncService(
     SongRepository songRepository,
     RemoteSongRepository remoteSongRepository,
-    RemoteResourceRepository resourceRepository,
-    this._settingsRepository,
   )   : _computeSyncDiff =
             ComputeSyncDiffUseCase(songRepository, remoteSongRepository),
-        _executeSync =
-            ExecuteSyncUseCase(songRepository, resourceRepository);
+        _executeSync = ExecuteSyncUseCase(songRepository);
 
-  Future<SyncDiff> computeDiff(String baseUrl,
-          {void Function(double)? onProgress}) =>
-      _computeSyncDiff.execute(baseUrl, onProgress: onProgress);
-
-  Future<void> executeSync(SyncDiff diff,
-          {void Function(double)? onProgress}) =>
-      _executeSync.execute(diff, onProgress: onProgress);
-
-  Future<void> setPassword(String password) =>
-      _settingsRepository.setPassword(password);
+  /// Synchronise la liste locale des chants avec le serveur distant.
+  Future<void> syncSongList(String baseUrl) async {
+    final diff = await _computeSyncDiff.execute(baseUrl);
+    await _executeSync.execute(diff);
+  }
 }

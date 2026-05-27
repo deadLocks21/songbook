@@ -49,7 +49,7 @@ final class SongCatalogServiceProvider
 }
 
 String _$songCatalogServiceHash() =>
-    r'43f4643ce1406b1ce7badfbd42ac6d1e713220af';
+    r'44d1c979f8dfdbc55dc80032f54740d695851e0f';
 
 @ProviderFor(songs)
 final songsProvider = SongsProvider._();

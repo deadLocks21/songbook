@@ -109,58 +109,58 @@ final class RemoteSongRepositoryProvider
 String _$remoteSongRepositoryHash() =>
     r'fec5963f9ce7dc008262f642d1f7d14c39276f75';
 
-/// Provider pour le repository des ressources distantes.
-/// Utilise InMemoryRemoteResourceRepository sur le web.
+/// Provider pour le cache des ressources (images/PDF).
+/// Utilise InMemoryResourceCacheRepository sur le web.
 /// Retourne un Future car nécessite le chemin du répertoire de l'application (hors web).
 
-@ProviderFor(remoteResourceRepository)
-final remoteResourceRepositoryProvider = RemoteResourceRepositoryProvider._();
+@ProviderFor(resourceCacheRepository)
+final resourceCacheRepositoryProvider = ResourceCacheRepositoryProvider._();
 
-/// Provider pour le repository des ressources distantes.
-/// Utilise InMemoryRemoteResourceRepository sur le web.
+/// Provider pour le cache des ressources (images/PDF).
+/// Utilise InMemoryResourceCacheRepository sur le web.
 /// Retourne un Future car nécessite le chemin du répertoire de l'application (hors web).
 
-final class RemoteResourceRepositoryProvider
+final class ResourceCacheRepositoryProvider
     extends
         $FunctionalProvider<
-          AsyncValue<RemoteResourceRepository>,
-          RemoteResourceRepository,
-          FutureOr<RemoteResourceRepository>
+          AsyncValue<ResourceCacheRepository>,
+          ResourceCacheRepository,
+          FutureOr<ResourceCacheRepository>
         >
     with
-        $FutureModifier<RemoteResourceRepository>,
-        $FutureProvider<RemoteResourceRepository> {
-  /// Provider pour le repository des ressources distantes.
-  /// Utilise InMemoryRemoteResourceRepository sur le web.
+        $FutureModifier<ResourceCacheRepository>,
+        $FutureProvider<ResourceCacheRepository> {
+  /// Provider pour le cache des ressources (images/PDF).
+  /// Utilise InMemoryResourceCacheRepository sur le web.
   /// Retourne un Future car nécessite le chemin du répertoire de l'application (hors web).
-  RemoteResourceRepositoryProvider._()
+  ResourceCacheRepositoryProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'remoteResourceRepositoryProvider',
+        name: r'resourceCacheRepositoryProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$remoteResourceRepositoryHash();
+  String debugGetCreateSourceHash() => _$resourceCacheRepositoryHash();
 
   @$internal
   @override
-  $FutureProviderElement<RemoteResourceRepository> $createElement(
+  $FutureProviderElement<ResourceCacheRepository> $createElement(
     $ProviderPointer pointer,
   ) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<RemoteResourceRepository> create(Ref ref) {
-    return remoteResourceRepository(ref);
+  FutureOr<ResourceCacheRepository> create(Ref ref) {
+    return resourceCacheRepository(ref);
   }
 }
 
-String _$remoteResourceRepositoryHash() =>
-    r'd9578069155d63a4784ef1a4c8952c211e29d1fd';
+String _$resourceCacheRepositoryHash() =>
+    r'53e808121f1a5d00adc2521496457fcc15524990';
 
 /// Provider pour le service de synchronisation.
 
@@ -170,13 +170,8 @@ final syncServiceProvider = SyncServiceProvider._();
 /// Provider pour le service de synchronisation.
 
 final class SyncServiceProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<SyncService>,
-          SyncService,
-          FutureOr<SyncService>
-        >
-    with $FutureModifier<SyncService>, $FutureProvider<SyncService> {
+    extends $FunctionalProvider<SyncService, SyncService, SyncService>
+    with $Provider<SyncService> {
   /// Provider pour le service de synchronisation.
   SyncServiceProvider._()
     : super(
@@ -194,14 +189,21 @@ final class SyncServiceProvider
 
   @$internal
   @override
-  $FutureProviderElement<SyncService> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  $ProviderElement<SyncService> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
 
   @override
-  FutureOr<SyncService> create(Ref ref) {
+  SyncService create(Ref ref) {
     return syncService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SyncService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SyncService>(value),
+    );
   }
 }
 
-String _$syncServiceHash() => r'988bfc7d5a1648cb7ab3c484ddaa03c977db643f';
+String _$syncServiceHash() => r'bf22e2ccd684f7794ecccb3ddc3f6713f499247e';

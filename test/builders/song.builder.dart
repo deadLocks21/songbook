@@ -45,30 +45,32 @@ class SongBuilder {
     return this;
   }
 
-  /// Ajoute une ressource de type Image avec des chemins optionnels.
+  /// Ajoute une ressource de type Image avec des URLs optionnelles.
   SongBuilder withImageResource({
     String? id,
     String? name,
-    List<String>? imagePaths,
+    List<String>? imageUrls,
   }) {
     _resources.add(
       ImageResourceDto(
         id: id ?? '00000000-0000-4000-a000-00000000000${_resources.length + 1}',
         name: name ?? 'Image Resource ${_resources.length + 1}',
-        imagePaths:
-            imagePaths ?? ['/path/to/image${_resources.length + 1}.jpg'],
+        imageUrls:
+            imageUrls ??
+            ['https://example.com/image${_resources.length + 1}.jpg'],
       ),
     );
     return this;
   }
 
-  /// Ajoute une ressource de type PDF avec un chemin optionnel.
-  SongBuilder withPdfResource({String? id, String? name, String? pdfPath}) {
+  /// Ajoute une ressource de type PDF avec une URL optionnelle.
+  SongBuilder withPdfResource({String? id, String? name, String? pdfUrl}) {
     _resources.add(
       PdfResourceDto(
         id: id ?? '00000000-0000-4000-a000-00000000000${_resources.length + 1}',
         name: name ?? 'PDF Resource ${_resources.length + 1}',
-        pdfPath: pdfPath ?? '/path/to/document${_resources.length + 1}.pdf',
+        pdfUrl:
+            pdfUrl ?? 'https://example.com/document${_resources.length + 1}.pdf',
       ),
     );
     return this;
@@ -96,7 +98,7 @@ class SongBuilder {
 class ImageResourceDtoBuilder {
   String _id = '00000000-0000-4000-a000-000000000001';
   String _name = 'Default Image Resource';
-  List<String> _imagePaths = ['/path/to/image.jpg'];
+  List<String> _imageUrls = ['https://example.com/image.jpg'];
 
   /// Définit l'ID de la ressource.
   ImageResourceDtoBuilder withId(String id) {
@@ -110,21 +112,21 @@ class ImageResourceDtoBuilder {
     return this;
   }
 
-  /// Définit la liste des chemins d'images.
-  ImageResourceDtoBuilder withImagePaths(List<String> imagePaths) {
-    _imagePaths = imagePaths;
+  /// Définit la liste des URLs d'images.
+  ImageResourceDtoBuilder withImageUrls(List<String> imageUrls) {
+    _imageUrls = imageUrls;
     return this;
   }
 
-  /// Ajoute un chemin d'image à la liste existante.
-  ImageResourceDtoBuilder withImagePath(String imagePath) {
-    _imagePaths.add(imagePath);
+  /// Ajoute une URL d'image à la liste existante.
+  ImageResourceDtoBuilder withImageUrl(String imageUrl) {
+    _imageUrls.add(imageUrl);
     return this;
   }
 
   /// Construit et retourne l'objet [ImageResourceDto] final.
   ImageResourceDto build() {
-    return ImageResourceDto(id: _id, name: _name, imagePaths: _imagePaths);
+    return ImageResourceDto(id: _id, name: _name, imageUrls: _imageUrls);
   }
 }
 
@@ -132,7 +134,7 @@ class ImageResourceDtoBuilder {
 class PdfResourceDtoBuilder {
   String _id = '00000000-0000-4000-a000-000000000001';
   String _name = 'Default PDF Resource';
-  String _pdfPath = '/path/to/document.pdf';
+  String _pdfUrl = 'https://example.com/document.pdf';
 
   /// Définit l'ID de la ressource.
   PdfResourceDtoBuilder withId(String id) {
@@ -146,14 +148,14 @@ class PdfResourceDtoBuilder {
     return this;
   }
 
-  /// Définit le chemin du fichier PDF.
-  PdfResourceDtoBuilder withPdfPath(String pdfPath) {
-    _pdfPath = pdfPath;
+  /// Définit l'URL du fichier PDF.
+  PdfResourceDtoBuilder withPdfUrl(String pdfUrl) {
+    _pdfUrl = pdfUrl;
     return this;
   }
 
   /// Construit et retourne l'objet [PdfResourceDto] final.
   PdfResourceDto build() {
-    return PdfResourceDto(id: _id, name: _name, pdfPath: _pdfPath);
+    return PdfResourceDto(id: _id, name: _name, pdfUrl: _pdfUrl);
   }
 }

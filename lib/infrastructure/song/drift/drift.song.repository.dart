@@ -171,20 +171,20 @@ class DriftSongRepository implements SongRepository {
 
     switch (row['type']) {
       case 'image':
-        final imagePaths = (jsonData['imagePaths'] as List<dynamic>)
-            .map((path) => path as String)
+        final imageUrls = (jsonData['imageUrls'] as List<dynamic>)
+            .map((url) => url as String)
             .toList();
         return ImageResource(
           id: UuidValue.parse(row['id'] as String),
           name: row['name'] as String,
-          imagePaths: imagePaths,
+          imageUrls: imageUrls,
         );
 
       case 'pdf':
         return PdfResource(
           id: UuidValue.parse(row['id'] as String),
           name: row['name'] as String,
-          pdfPath: jsonData['pdfPath'] as String,
+          pdfUrl: jsonData['pdfUrl'] as String,
         );
 
       default:
@@ -203,8 +203,8 @@ class DriftSongRepository implements SongRepository {
   /// Convertit une ressource en JSON
   String _resourceToJson(Resource resource) {
     final jsonData = switch (resource) {
-      ImageResource() => {'imagePaths': resource.imagePaths},
-      PdfResource() => {'pdfPath': resource.pdfPath},
+      ImageResource() => {'imageUrls': resource.imageUrls},
+      PdfResource() => {'pdfUrl': resource.pdfUrl},
     };
     return jsonEncode(jsonData);
   }

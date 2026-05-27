@@ -1,4 +1,3 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:songbook/core/domain/services/settings.repository.dart';
 
@@ -15,14 +14,6 @@ class SharedPreferencesSettingsRepository implements SettingsRepository {
   /// Instance de SharedPreferences - nullable pour gérer l'initialisation
   SharedPreferences? _preferences;
 
-  /// Instance de FlutterSecureStorage pour le stockage sécurisé du mot de passe
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage(
-    mOptions: MacOsOptions(
-      accessibility: KeychainAccessibility.first_unlock,
-      synchronizable: false,
-    ),
-  );
-
   /// S'assure que SharedPreferences est initialisé
   Future<void> _ensureInitialized() async {
     _preferences ??= await SharedPreferences.getInstance();
@@ -38,20 +29,5 @@ class SharedPreferencesSettingsRepository implements SettingsRepository {
   Future<void> setBackendUrl(String url) async {
     await _ensureInitialized();
     await _preferences!.setString(backendUrlKey, url);
-  }
-
-  @override
-  Future<String?> getPassword() async {
-    return await _secureStorage.read(key: 'api_password');
-  }
-
-  @override
-  Future<void> setPassword(String password) async {
-    await _secureStorage.write(key: 'api_password', value: password);
-  }
-
-  @override
-  Future<void> clearPassword() async {
-    await _secureStorage.delete(key: 'api_password');
   }
 }

@@ -9,13 +9,31 @@ import 'package:songbook/core/utils/backend_url.dart';
 class DioRemoteSongRepository implements RemoteSongRepository {
   final Dio _dio;
 
-  DioRemoteSongRepository(this._dio);
+  /// Plafond dur sur la requête. Les timeouts de Dio ne couvrent pas le cas
+  /// « connexion TCP ouverte mais aucune réponse » (ex. port de conteneur relayé
+  /// qui accepte la connexion puis reste muet) : `connectTimeout` est déjà
+  /// satisfait et `receiveTimeout` ne s'arme qu'entre deux octets reçus. Sans ce
+  /// plafond, la requête pendrait indéfiniment et la sync ne se terminerait jamais.
+  final Duration _requestTimeout;
+
+  DioRemoteSongRepository(
+    this._dio, {
+    Duration requestTimeout = const Duration(seconds: 90),
+  }) : _requestTimeout = requestTimeout;
 
   @override
   Future<List<RemoteSong>> fetchSongs(String baseUrl) async {
     // [baseUrl] est l'origine (domaine) ; le chemin de l'API est ajouté ici.
     final url = BackendUrl.join(baseUrl, BackendEndpoints.songs);
-    final response = await _dio.get<Map<String, dynamic>>(url);
+    final response = await _dio
+        .get<Map<String, dynamic>>(url)
+        .timeout(
+          _requestTimeout,
+          onTimeout: () => throw DioException(
+            requestOptions: RequestOptions(path: url),
+            type: DioExceptionType.receiveTimeout,
+          ),
+        );
     final responseData = response.data;
 
     if (responseData == null) {

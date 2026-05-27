@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 
 /// Faux Dio qui écrit du contenu factice au lieu de faire des appels HTTP.
-/// Utilisé pour tester DioRemoteResourceRepository sans réseau.
+/// Utilisé pour tester DioResourceCacheRepository sans réseau.
 class FakeDio with DioMixin implements Dio {
   FakeDio() {
     options = BaseOptions();

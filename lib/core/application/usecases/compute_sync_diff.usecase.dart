@@ -15,17 +15,10 @@ class ComputeSyncDiffUseCase {
   /// Exécute le calcul des différences.
   ///
   /// [baseUrl] est l'URL de base de l'API distante.
-  /// [onProgress] callback optionnel pour rapporter la progression (0.0 à 1.0).
   /// Retourne un [SyncDiff] contenant les songs à ajouter, mettre à jour et supprimer.
-  Future<SyncDiff> execute(
-    String baseUrl, {
-    void Function(double progress)? onProgress,
-  }) async {
-    onProgress?.call(0.1); // Démarrage du processus
+  Future<SyncDiff> execute(String baseUrl) async {
     final localSongs = await _localRepository.getAllSongs();
-    onProgress?.call(0.5); // Récupération des données locales terminée
     final remoteSongs = await _remoteRepository.fetchSongs(baseUrl);
-    onProgress?.call(0.8); // Récupération des données distantes terminée
 
     final localById = {for (final s in localSongs) s.id: s};
     final remoteById = {for (final s in remoteSongs) s.id: s};
@@ -54,7 +47,6 @@ class ComputeSyncDiffUseCase {
       }
     }
 
-    onProgress?.call(1.0); // Calcul terminé
     return SyncDiff(toAdd: toAdd, toUpdate: toUpdate, toDelete: toDelete);
   }
 }

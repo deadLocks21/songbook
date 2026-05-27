@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:songbook/core/application/dtos/resource.dto.dart';
 import 'package:songbook/core/application/dtos/song.dto.dart';
-import 'package:songbook/ui/pages/song_viewer/widgets/zoomable_image_viewer.widget.dart';
+import 'package:songbook/ui/pages/song_viewer/widgets/cached_image_viewer.widget.dart';
 
 /// Page de visualisation des partitions d'un chant.
 class SongViewerPage extends StatelessWidget {
@@ -44,16 +44,17 @@ class SongViewerPage extends StatelessWidget {
   }
 
   Widget _buildBody(ImageResourceDto? imageResource) {
-    if (imageResource == null || imageResource.imagePaths.isEmpty) {
+    if (imageResource == null || imageResource.imageUrls.isEmpty) {
       return const Center(
         key: Key('noImageMessage'),
         child: Text('Aucune partition disponible pour ce chant'),
       );
     }
 
-    return ZoomableImageViewer(
+    return CachedImageViewer(
       key: const Key('imageViewer'),
-      imagePaths: imageResource.imagePaths,
+      songId: song.id,
+      imageUrls: imageResource.imageUrls,
     );
   }
 }

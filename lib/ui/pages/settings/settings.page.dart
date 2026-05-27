@@ -34,6 +34,21 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     super.dispose();
   }
 
+  /// Ouvre l'écran de synchronisation manuelle (rafraîchit la liste des chants)
+  /// et signale le résultat à l'utilisateur.
+  Future<void> _runManualSync() async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (context) => const SyncPage()),
+    );
+    if (!mounted || result != true) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Liste des chants synchronisée'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeModeAsync = ref.watch(themeModeProvider);
@@ -209,13 +224,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                           _originalBackendUrl = url;
                                         });
                                         if (context.mounted) {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  const SyncPage(), // isStartupSync = false par défaut
-                                            ),
-                                          );
+                                          await _runManualSync();
                                         }
                                       }
                                     }
@@ -255,13 +264,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                   final backendUrl = _backendUrlController.text
                                       .trim();
                                   if (backendUrl.isNotEmpty) {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            const SyncPage(), // isStartupSync = false par défaut
-                                      ),
-                                    );
+                                    _runManualSync();
                                   }
                                 },
                               ),

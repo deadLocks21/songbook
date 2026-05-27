@@ -6,7 +6,6 @@ class InMemorySettingsRepository implements SettingsRepository {
   static const String defaultBackendUrl = 'https://songbook.dtfh.fr';
 
   String _backendUrl = defaultBackendUrl;
-  String? _password;
 
   @override
   Future<String> getBackendUrl() async => _backendUrl;
@@ -14,18 +13,5 @@ class InMemorySettingsRepository implements SettingsRepository {
   @override
   Future<void> setBackendUrl(String url) async {
     _backendUrl = url;
-  }
-
-  @override
-  Future<String?> getPassword() async => _password;
-
-  @override
-  Future<void> setPassword(String password) async {
-    _password = password;
-  }
-
-  @override
-  Future<void> clearPassword() async {
-    _password = null;
   }
 }

@@ -7,14 +7,4 @@ abstract interface class SettingsRepository {
 
   /// Sauvegarde l'URL du backend configurée par l'utilisateur
   Future<void> setBackendUrl(String url);
-
-  /// Récupère le mot de passe stocké pour l'authentification API.
-  /// Retourne null si aucun mot de passe n'est stocké.
-  Future<String?> getPassword();
-
-  /// Stocke le mot de passe pour l'authentification API.
-  Future<void> setPassword(String password);
-
-  /// Supprime le mot de passe stocké.
-  Future<void> clearPassword();
 }
