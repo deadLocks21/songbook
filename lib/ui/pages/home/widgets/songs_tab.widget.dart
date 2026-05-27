@@ -5,18 +5,31 @@ import 'package:songbook/ui/pages/home/providers/search_provider.dart';
 import 'package:songbook/ui/pages/home/widgets/song_card.widget.dart';
 
 /// Onglet affichant la grille de chants avec recherche.
-class SongsTab extends ConsumerWidget {
+class SongsTab extends ConsumerStatefulWidget {
   const SongsTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SongsTab> createState() => _SongsTabState();
+}
+
+class _SongsTabState extends ConsumerState<SongsTab> {
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final filteredSongsAsync = ref.watch(filteredSongsProvider);
 
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.all(16.0),
-          child: _buildSearchField(ref),
+          child: _buildSearchField(),
         ),
         Expanded(
           child: filteredSongsAsync.when(
@@ -43,18 +56,22 @@ class SongsTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildSearchField(WidgetRef ref) {
+  Widget _buildSearchField() {
     final searchQuery = ref.watch(searchQueryProvider);
 
     return TextField(
       key: const Key('searchField'),
+      controller: _searchController,
       decoration: InputDecoration(
         hintText: 'Rechercher par code ou titre...',
         prefixIcon: const Icon(Icons.search),
         suffixIcon: searchQuery.isNotEmpty
             ? IconButton(
                 icon: const Icon(Icons.clear),
-                onPressed: () => ref.read(searchQueryProvider.notifier).clear(),
+                onPressed: () {
+                  _searchController.clear();
+                  ref.read(searchQueryProvider.notifier).clear();
+                },
               )
             : null,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
