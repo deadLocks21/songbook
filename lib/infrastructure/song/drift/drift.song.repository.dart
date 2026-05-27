@@ -16,33 +16,21 @@ class DriftSongRepository implements SongRepository {
   Future<List<domain_song.Song>> getAllSongs() async {
     final db = await _database;
 
-    // Récupérer tous les chants
+    // Deux requêtes seulement : tous les chants, puis toutes les ressources en
+    // une fois, regroupées par chant en mémoire. Évite le N+1 (une requête de
+    // ressources par chant) qui dominait le temps de synchronisation.
     final songRows = await db.query('songs');
+    final resourceRows = await db.query('resources');
 
-    final songs = <domain_song.Song>[];
+    final resourcesBySongId = _groupResourcesBySongId(resourceRows);
 
-    for (final songRow in songRows) {
-      // Récupérer les ressources pour ce chant
-      final resourceRows = await db.query(
-        'resources',
-        where: 'songId = ?',
-        whereArgs: [songRow['id']],
-      );
-
-      final resources = resourceRows.map(_resourceRowToDomain).toList();
-
-      songs.add(
-        domain_song.Song(
-          id: UuidValue.parse(songRow['id'] as String),
-          code: songRow['code'] as String,
-          name: songRow['name'] as String,
-          updatedAt: DateTime.parse(songRow['updatedAt'] as String),
-          resources: resources,
+    return [
+      for (final songRow in songRows)
+        _songRowToDomain(
+          songRow,
+          resourcesBySongId[songRow['id'] as String] ?? const [],
         ),
-      );
-    }
-
-    return songs;
+    ];
   }
 
   @override
@@ -53,35 +41,28 @@ class DriftSongRepository implements SongRepository {
     final placeholders = List.filled(ids.length, '?').join(', ');
     final idValues = ids.map((id) => id.value).toList();
 
+    // Deux requêtes seulement (cf. getAllSongs) : les chants demandés puis
+    // leurs ressources, regroupées en mémoire — au lieu d'un N+1.
     final songRows = await db.query(
       'songs',
       where: 'id IN ($placeholders)',
       whereArgs: idValues,
     );
+    final resourceRows = await db.query(
+      'resources',
+      where: 'songId IN ($placeholders)',
+      whereArgs: idValues,
+    );
 
-    final songs = <domain_song.Song>[];
+    final resourcesBySongId = _groupResourcesBySongId(resourceRows);
 
-    for (final songRow in songRows) {
-      final resourceRows = await db.query(
-        'resources',
-        where: 'songId = ?',
-        whereArgs: [songRow['id']],
-      );
-
-      final resources = resourceRows.map(_resourceRowToDomain).toList();
-
-      songs.add(
-        domain_song.Song(
-          id: UuidValue.parse(songRow['id'] as String),
-          code: songRow['code'] as String,
-          name: songRow['name'] as String,
-          updatedAt: DateTime.parse(songRow['updatedAt'] as String),
-          resources: resources,
+    return [
+      for (final songRow in songRows)
+        _songRowToDomain(
+          songRow,
+          resourcesBySongId[songRow['id'] as String] ?? const [],
         ),
-      );
-    }
-
-    return songs;
+    ];
   }
 
   @override
@@ -163,6 +144,33 @@ class DriftSongRepository implements SongRepository {
 
     // Au cas où les foreign keys ne sont pas activées, supprimer aussi manuellement les ressources
     await db.delete('resources');
+  }
+
+  /// Regroupe des lignes de la table `resources` par `songId`, en préservant
+  /// l'ordre d'apparition des ressources pour un même chant.
+  Map<String, List<Resource>> _groupResourcesBySongId(
+    List<Map<String, Object?>> rows,
+  ) {
+    final bySongId = <String, List<Resource>>{};
+    for (final row in rows) {
+      final songId = row['songId'] as String;
+      (bySongId[songId] ??= <Resource>[]).add(_resourceRowToDomain(row));
+    }
+    return bySongId;
+  }
+
+  /// Construit un [domain_song.Song] depuis une ligne `songs` et ses ressources.
+  domain_song.Song _songRowToDomain(
+    Map<String, Object?> songRow,
+    List<Resource> resources,
+  ) {
+    return domain_song.Song(
+      id: UuidValue.parse(songRow['id'] as String),
+      code: songRow['code'] as String,
+      name: songRow['name'] as String,
+      updatedAt: DateTime.parse(songRow['updatedAt'] as String),
+      resources: resources,
+    );
   }
 
   /// Convertit une ligne de ressource en objet Resource du domaine
