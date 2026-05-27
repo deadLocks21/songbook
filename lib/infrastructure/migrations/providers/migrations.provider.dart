@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:songbook/infrastructure/migrations/migration.dart';
+import 'package:songbook/infrastructure/migrations/migrations/reset_songs_for_url_storage.migration.dart';
 import 'package:songbook/infrastructure/migrations/migrations/strip_backend_url_path.migration.dart';
 
 part 'migrations.provider.g.dart';
@@ -12,4 +13,5 @@ part 'migrations.provider.g.dart';
 @riverpod
 List<Migration> migrations(Ref ref) => [
   StripBackendUrlPathMigration(),
+  ResetSongsForUrlStorageMigration(),
 ];
