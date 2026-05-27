@@ -66,7 +66,7 @@ void main() {
             .enterBackendUrl('https://new-url.com')
             .tapBackendUrlCancel()
             .expectBackendUrlReadonly()
-            .expectBackendUrl('https://songbook.dtfh.fr/api/songs/examples')
+            .expectBackendUrl('https://songbook.dtfh.fr')
             .execute();
       });
 

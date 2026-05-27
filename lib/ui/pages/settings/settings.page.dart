@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/services/error_message.service.dart';
 import 'package:songbook/core/domain/model/theme_mode.dart';
+import 'package:songbook/core/utils/backend_url.dart';
 import 'package:songbook/infrastructure/logger/providers/logger.service_provider.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.service_provider.dart';
 import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
@@ -19,6 +20,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   bool _isBackendUrlModified = false;
   bool _isBackendUrlEditable = false;
   String _originalBackendUrl = '';
+  String? _backendUrlError;
 
   @override
   void initState() {
@@ -159,6 +161,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                               _isBackendUrlEditable = true;
                               _originalBackendUrl = _backendUrlController.text;
                               _isBackendUrlModified = false;
+                              _backendUrlError = null;
                             });
                           },
                           icon: const Icon(Icons.edit, size: 18),
@@ -176,6 +179,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                       _originalBackendUrl;
                                   _isBackendUrlModified = false;
                                   _isBackendUrlEditable = false;
+                                  _backendUrlError = null;
                                 });
                               },
                               icon: const Icon(Icons.close, size: 18),
@@ -183,16 +187,23 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                             ),
                             TextButton.icon(
                               key: const Key('backendUrlSaveButton'),
-                              onPressed: _isBackendUrlModified
+                              onPressed:
+                                  (_isBackendUrlModified &&
+                                      _backendUrlError == null)
                                   ? () async {
-                                      final url = _backendUrlController.text
+                                      final raw = _backendUrlController.text
                                           .trim();
-                                      if (url.isNotEmpty) {
-                                        // Le mot de passe est automatiquement supprimé par le use case
+                                      if (BackendUrl.validate(raw) == null) {
+                                        // L'URL stockée est l'origine seule ;
+                                        // les chemins d'API sont ajoutés dans
+                                        // le code. Le mot de passe est
+                                        // automatiquement supprimé par le use case.
+                                        final url = BackendUrl.normalize(raw);
                                         await backendUrlNotifier.setBackendUrl(
                                           url,
                                         );
                                         setState(() {
+                                          _backendUrlController.text = url;
                                           _isBackendUrlModified = false;
                                           _isBackendUrlEditable = false;
                                           _originalBackendUrl = url;
@@ -222,7 +233,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     controller: _backendUrlController,
                     readOnly: !_isBackendUrlEditable,
                     decoration: InputDecoration(
-                      hintText: 'https://api.example.com',
+                      hintText: 'https://songbook.dtfh.fr',
+                      errorText: _isBackendUrlEditable
+                          ? _backendUrlError
+                          : null,
                       border: const OutlineInputBorder(),
                       filled: !_isBackendUrlEditable,
                       fillColor: !_isBackendUrlEditable
@@ -258,12 +272,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     onChanged: (value) {
                       setState(() {
                         _isBackendUrlModified = true;
+                        _backendUrlError = BackendUrl.validate(value.trim());
                       });
                     },
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Configurez l\'URL de votre serveur backend',
+                    'Saisissez uniquement le domaine de votre serveur '
+                    '(ex : https://songbook.dtfh.fr), sans chemin',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(
                         context,

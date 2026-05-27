@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:songbook/infrastructure/migrations/migration.dart';
+import 'package:songbook/infrastructure/migrations/migrations/strip_backend_url_path.migration.dart';
 
 part 'migrations.provider.g.dart';
 
@@ -9,6 +10,6 @@ part 'migrations.provider.g.dart';
 /// forever once shipped (their history is keyed by [Migration.id]); never
 /// reorder past migrations relative to ones already released.
 @riverpod
-List<Migration> migrations(Ref ref) => const [
-  // e.g. Move2026_05_27BackendUrlToDb(),
+List<Migration> migrations(Ref ref) => [
+  StripBackendUrlPathMigration(),
 ];

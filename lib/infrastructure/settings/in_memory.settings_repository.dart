@@ -3,8 +3,7 @@ import 'package:songbook/core/domain/services/settings.repository.dart';
 /// Implémentation en mémoire du SettingsRepository.
 /// Utilisé pour le web et les tests.
 class InMemorySettingsRepository implements SettingsRepository {
-  static const String defaultBackendUrl =
-      'https://songbook.dtfh.fr/api/songs/examples';
+  static const String defaultBackendUrl = 'https://songbook.dtfh.fr';
 
   String _backendUrl = defaultBackendUrl;
   String? _password;
