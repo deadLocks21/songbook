@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/services/logger_application.service.dart';
 import 'package:songbook/infrastructure/device/providers/device_identity.service_provider.dart';
 import 'package:songbook/infrastructure/logger/providers/logger.service_provider.dart';
+import 'package:songbook/infrastructure/migrations/providers/migration_runner.provider.dart';
 import 'package:songbook/infrastructure/theme/app_theme_data.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.service_provider.dart';
 import 'package:songbook/ui/pages/sync/sync.page.dart';
@@ -28,6 +29,18 @@ Future<void> main() async {
     container.read(logContextProvider).deviceId = deviceId;
   } catch (_) {
     // getDeviceId already degrades gracefully; ignore here too.
+  }
+
+  // Run pending data migrations before the first screen reads the DB.
+  // Web uses an in-memory repository (no sqflite), so there's nothing to
+  // migrate there. The runner is log-and-continue and never throws, but we
+  // guard defensively so a migration subsystem fault can't block startup.
+  if (!kIsWeb) {
+    try {
+      await container.read(migrationRunnerProvider).run();
+    } catch (e, stack) {
+      logger.error('migration.runner_failed', error: e, stack: stack);
+    }
   }
 
   logger.info('app.started');
