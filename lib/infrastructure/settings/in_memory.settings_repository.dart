@@ -8,7 +8,6 @@ class InMemorySettingsRepository implements SettingsRepository {
 
   String _backendUrl = defaultBackendUrl;
   String? _password;
-  String? _syncDirectory;
 
   @override
   Future<String> getBackendUrl() async => _backendUrl;
@@ -29,13 +28,5 @@ class InMemorySettingsRepository implements SettingsRepository {
   @override
   Future<void> clearPassword() async {
     _password = null;
-  }
-
-  @override
-  Future<String?> getSyncDirectory() async => _syncDirectory;
-
-  @override
-  Future<void> setSyncDirectory(String? path) async {
-    _syncDirectory = path;
   }
 }

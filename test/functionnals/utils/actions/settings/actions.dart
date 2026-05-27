@@ -129,26 +129,6 @@ class SettingsPageActions extends FluentActionsBase {
     return this;
   }
 
-  // ==================== Assertions Dossier Sync ====================
-
-  /// Vérifie le chemin affiché du dossier de synchronisation.
-  SettingsPageActions expectSyncDirectoryPath(String path) {
-    addCommand(ExpectSyncDirectoryPathCommand(_finders, path));
-    return this;
-  }
-
-  /// Vérifie que le bouton "Réinitialiser" est absent.
-  SettingsPageActions expectSyncDirectoryResetButtonAbsent() {
-    addCommand(ExpectSyncDirectoryResetButtonAbsentCommand(_finders));
-    return this;
-  }
-
-  /// Vérifie que le bouton "Réinitialiser" est visible.
-  SettingsPageActions expectSyncDirectoryResetButtonVisible() {
-    addCommand(ExpectSyncDirectoryResetButtonVisibleCommand(_finders));
-    return this;
-  }
-
   // ==================== Assertions Base de données ====================
 
   /// Vérifie que le dialog de confirmation est affiché.

@@ -30,17 +30,6 @@ class SettingsPageFinders {
   Finder get backendUrlSyncButton =>
       find.byKey(const Key('backendUrlSyncButton'));
 
-  /// Container affichant le chemin du dossier de synchronisation.
-  Finder get syncDirectoryPath => find.byKey(const Key('syncDirectoryPath'));
-
-  /// Bouton "Modifier" du dossier de synchronisation.
-  Finder get syncDirectoryModifyButton =>
-      find.byKey(const Key('syncDirectoryModifyButton'));
-
-  /// Bouton "Réinitialiser" du dossier de synchronisation.
-  Finder get syncDirectoryResetButton =>
-      find.byKey(const Key('syncDirectoryResetButton'));
-
   /// Bouton "Vider la base de données".
   Finder get clearDatabaseButton =>
       find.byKey(const Key('clearDatabaseButton'));

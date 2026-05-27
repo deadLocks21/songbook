@@ -48,40 +48,6 @@ class BackendUrlNotifier extends _$BackendUrlNotifier {
 }
 
 @riverpod
-class SyncDirectoryNotifier extends _$SyncDirectoryNotifier {
-  @override
-  Future<String?> build() async {
-    final service = ref.watch(settingsServiceProvider);
-    try {
-      return await service.getSyncDirectory();
-    } catch (e, stack) {
-      ref.read(loggerProvider).warn(
-        'settings.sync_directory.load_failed',
-        error: e,
-        stack: stack,
-      );
-      return null;
-    }
-  }
-
-  Future<void> setSyncDirectory(String? path,
-      {void Function(double)? onProgress}) async {
-    final service = ref.watch(settingsServiceProvider);
-    try {
-      await service.setSyncDirectory(path, onProgress: onProgress);
-      state = AsyncData(path);
-    } catch (e, stack) {
-      ref.read(loggerProvider).error(
-        'settings.sync_directory.save_failed',
-        error: e,
-        stack: stack,
-      );
-      state = AsyncError(e, StackTrace.current);
-    }
-  }
-}
-
-@riverpod
 class ThemeModeNotifier extends _$ThemeModeNotifier {
   @override
   Future<AppThemeMode> build() async {

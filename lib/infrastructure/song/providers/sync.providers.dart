@@ -107,22 +107,14 @@ RemoteSongRepository remoteSongRepository(Ref ref) {
 /// Provider pour le repository des ressources distantes.
 /// Utilise InMemoryRemoteResourceRepository sur le web.
 /// Retourne un Future car nécessite le chemin du répertoire de l'application (hors web).
-/// Utilise le répertoire de synchronisation personnalisé s'il est configuré.
 @riverpod
 Future<RemoteResourceRepository> remoteResourceRepository(Ref ref) async {
   if (kIsWeb) {
     return InMemoryRemoteResourceRepository();
   }
   final dio = ref.watch(dioProvider);
-  final settingsRepository = ref.read(settingsRepositoryProvider);
-  final customDir = await settingsRepository.getSyncDirectory();
-  final String resourcesPath;
-  if (customDir != null) {
-    resourcesPath = customDir;
-  } else {
-    final appDir = await getApplicationSupportDirectory();
-    resourcesPath = '${appDir.path}/resources';
-  }
+  final appDir = await getApplicationSupportDirectory();
+  final resourcesPath = '${appDir.path}/resources';
   return DioRemoteResourceRepository(dio, resourcesPath);
 }
 

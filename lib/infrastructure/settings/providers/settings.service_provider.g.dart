@@ -76,54 +76,9 @@ final class BackendUrlNotifierProvider
 }
 
 String _$backendUrlNotifierHash() =>
-    r'497eb2fe60209e9626d203485c413f17de51a31b';
+    r'd27176d0dd5ce0a6eb53a52059d7f2ebd06d4601';
 
 abstract class _$BackendUrlNotifier extends $AsyncNotifier<String?> {
-  FutureOr<String?> build();
-  @$mustCallSuper
-  @override
-  void runBuild() {
-    final ref = this.ref as $Ref<AsyncValue<String?>, String?>;
-    final element =
-        ref.element
-            as $ClassProviderElement<
-              AnyNotifier<AsyncValue<String?>, String?>,
-              AsyncValue<String?>,
-              Object?,
-              Object?
-            >;
-    element.handleCreate(ref, build);
-  }
-}
-
-@ProviderFor(SyncDirectoryNotifier)
-final syncDirectoryProvider = SyncDirectoryNotifierProvider._();
-
-final class SyncDirectoryNotifierProvider
-    extends $AsyncNotifierProvider<SyncDirectoryNotifier, String?> {
-  SyncDirectoryNotifierProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'syncDirectoryProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$syncDirectoryNotifierHash();
-
-  @$internal
-  @override
-  SyncDirectoryNotifier create() => SyncDirectoryNotifier();
-}
-
-String _$syncDirectoryNotifierHash() =>
-    r'ea1d62486780fba77447deb8c95ca82c04dfe323';
-
-abstract class _$SyncDirectoryNotifier extends $AsyncNotifier<String?> {
   FutureOr<String?> build();
   @$mustCallSuper
   @override
@@ -165,7 +120,7 @@ final class ThemeModeNotifierProvider
   ThemeModeNotifier create() => ThemeModeNotifier();
 }
 
-String _$themeModeNotifierHash() => r'2bd6faf40bb59cc1282871ca64e46d0693768a1b';
+String _$themeModeNotifierHash() => r'480f7c26ecdaa2730bc4ba5023c3fe55fcae7ea0';
 
 abstract class _$ThemeModeNotifier extends $AsyncNotifier<AppThemeMode> {
   FutureOr<AppThemeMode> build();

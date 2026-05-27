@@ -82,18 +82,6 @@ void main() {
       });
     });
 
-    group('Dossier de synchronisation', () {
-      testWidgets(
-        'should display default sync directory text when no custom path',
-        (tester) async {
-          await (await startInSettingsPage(tester))
-              .expectSyncDirectoryPath('Emplacement par défaut')
-              .expectSyncDirectoryResetButtonAbsent()
-              .execute();
-        },
-      );
-    });
-
     group('Base de données', () {
       testWidgets('should show confirmation dialog when tapping clear database',
           (tester) async {

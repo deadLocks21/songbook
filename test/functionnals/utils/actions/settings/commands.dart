@@ -189,60 +189,6 @@ class ExpectSaveButtonDisabledCommand extends FluentCommand {
   }
 }
 
-/// Commande pour vérifier le texte affiché dans le chemin du dossier sync.
-class ExpectSyncDirectoryPathCommand extends FluentCommand {
-  final SettingsPageFinders finders;
-  final String expectedPath;
-
-  ExpectSyncDirectoryPathCommand(this.finders, this.expectedPath);
-
-  @override
-  Future<void> execute() async {
-    expect(finders.syncDirectoryPath, findsOneWidget);
-    final textFinder = find.descendant(
-      of: finders.syncDirectoryPath,
-      matching: find.text(expectedPath),
-    );
-    expect(
-      textFinder,
-      findsOneWidget,
-      reason: 'Sync directory should display "$expectedPath"',
-    );
-  }
-}
-
-/// Commande pour vérifier que le bouton "Réinitialiser" est absent.
-class ExpectSyncDirectoryResetButtonAbsentCommand extends FluentCommand {
-  final SettingsPageFinders finders;
-
-  ExpectSyncDirectoryResetButtonAbsentCommand(this.finders);
-
-  @override
-  Future<void> execute() async {
-    expect(
-      finders.syncDirectoryResetButton,
-      findsNothing,
-      reason: 'Reset button should not be visible when using default path',
-    );
-  }
-}
-
-/// Commande pour vérifier que le bouton "Réinitialiser" est présent.
-class ExpectSyncDirectoryResetButtonVisibleCommand extends FluentCommand {
-  final SettingsPageFinders finders;
-
-  ExpectSyncDirectoryResetButtonVisibleCommand(this.finders);
-
-  @override
-  Future<void> execute() async {
-    expect(
-      finders.syncDirectoryResetButton,
-      findsOneWidget,
-      reason: 'Reset button should be visible when custom path is set',
-    );
-  }
-}
-
 /// Commande pour taper sur le bouton "Vider la base de données".
 class TapClearDatabaseCommand extends FluentCommand {
   final WidgetTester tester;
