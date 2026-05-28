@@ -27,9 +27,7 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage> {
   }
 
   Future<void> _openServerSettings() {
-    return Navigator.of(context).push<void>(
-      MaterialPageRoute(builder: (context) => const ServerUrlPage()),
-    );
+    return showServerUrlSheet(context);
   }
 
   Future<void> _submit() async {
