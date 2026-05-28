@@ -9,12 +9,16 @@ class RemoteSong {
   final DateTime updatedAt;
   final List<RemoteResource> resources;
 
+  /// Codes des recueils auxquels ce chant appartient (cf. `/api/songs`).
+  final List<String> recueils;
+
   RemoteSong({
     required this.id,
     required this.code,
     required this.name,
     required this.updatedAt,
     required this.resources,
+    this.recueils = const [],
   });
 
   @override

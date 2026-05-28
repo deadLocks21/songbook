@@ -10,6 +10,9 @@ class BackendEndpoints {
   /// Catalogue of songs to synchronise.
   static const String songs = '/api/songs';
 
+  /// Collections de chants (recueils) disponibles sur le serveur.
+  static const String recueils = '/api/recueils';
+
   /// Demande d'un code OTP par SMS (public).
   static const String requestOtp = '/api/auth/request-otp';
 

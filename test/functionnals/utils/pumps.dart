@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:songbook/core/application/dtos/song_list.dto.dart';
+import 'package:songbook/infrastructure/recueil/in_memory.remote_recueil.repository.dart';
+import 'package:songbook/infrastructure/recueil/providers/recueil.providers.dart';
 import 'package:songbook/infrastructure/settings/in_memory.settings_repository.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.repository_provider.dart';
+import 'package:songbook/infrastructure/song/in_memory.remote_song.repository.dart';
 import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
+import 'package:songbook/infrastructure/song/providers/sync.providers.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
 import 'package:songbook/infrastructure/theme/in_memory.theme_repository.dart';
 import 'package:songbook/infrastructure/theme/providers/theme.repository_provider.dart';
@@ -44,6 +48,12 @@ Future<HomePageActions> startInHomePage(WidgetTester tester, {App? app}) async {
         settingsRepositoryProvider.overrideWithValue(
           InMemorySettingsRepository(),
         ),
+        remoteRecueilRepositoryProvider.overrideWithValue(
+          InMemoryRemoteRecueilRepository(),
+        ),
+        remoteSongRepositoryProvider.overrideWithValue(
+          InMemoryRemoteSongRepository(),
+        ),
       ],
       child: const MaterialApp(home: HomePage()),
     ),
@@ -65,7 +75,15 @@ Future<SongViewerPageActions> startInSongViewerPage(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [songsProvider.overrideWith((ref) async => mockSongs)],
+      overrides: [
+        songsProvider.overrideWith((ref) async => mockSongs),
+        remoteRecueilRepositoryProvider.overrideWithValue(
+          InMemoryRemoteRecueilRepository(),
+        ),
+        remoteSongRepositoryProvider.overrideWithValue(
+          InMemoryRemoteSongRepository(),
+        ),
+      ],
       child: MaterialApp(home: SongViewerPage(song: mockSong)),
     ),
   );
@@ -196,6 +214,12 @@ Future<SettingsPageActions> startInSettingsPage(
         themeRepositoryProvider.overrideWithValue(InMemoryThemeRepository()),
         settingsRepositoryProvider.overrideWithValue(
           InMemorySettingsRepository(),
+        ),
+        remoteRecueilRepositoryProvider.overrideWithValue(
+          InMemoryRemoteRecueilRepository(),
+        ),
+        remoteSongRepositoryProvider.overrideWithValue(
+          InMemoryRemoteSongRepository(),
         ),
       ],
       child: const MaterialApp(home: HomePage()),

@@ -13,6 +13,12 @@ class SettingsService {
   Future<void> setBackendUrl(String url) =>
       _settingsRepository.setBackendUrl(url);
 
+  Future<List<String>> getSelectedRecueils() =>
+      _settingsRepository.getSelectedRecueils();
+
+  Future<void> setSelectedRecueils(List<String> codes) =>
+      _settingsRepository.setSelectedRecueils(codes);
+
   Future<AppThemeMode> getThemeMode() => _themeRepository.getThemeMode();
 
   Future<void> setThemeMode(AppThemeMode mode) =>

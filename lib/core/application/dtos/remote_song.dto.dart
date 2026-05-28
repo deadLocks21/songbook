@@ -8,6 +8,7 @@ class RemoteSongDto {
   final String name;
   final DateTime updatedAt;
   final List<RemoteResourceDto> resources;
+  final List<String> recueils;
 
   const RemoteSongDto({
     required this.id,
@@ -15,6 +16,7 @@ class RemoteSongDto {
     required this.name,
     required this.updatedAt,
     required this.resources,
+    this.recueils = const [],
   });
 
   /// Crée un RemoteSongDto depuis du JSON.
@@ -28,6 +30,8 @@ class RemoteSongDto {
           .map((r) => RemoteResourceDto.tryFromJson(r as Map<String, dynamic>))
           .whereType<RemoteResourceDto>()
           .toList(),
+      recueils:
+          (json['recueils'] as List<dynamic>?)?.cast<String>() ?? const [],
     );
   }
 
@@ -39,6 +43,7 @@ class RemoteSongDto {
       name: name,
       updatedAt: updatedAt,
       resources: resources.map((r) => r.toDomain()).toList(),
+      recueils: recueils,
     );
   }
 
@@ -50,6 +55,7 @@ class RemoteSongDto {
       'name': name,
       'updatedAt': updatedAt.toIso8601String(),
       'resources': resources.map((r) => r.toJson()).toList(),
+      'recueils': recueils,
     };
   }
 }

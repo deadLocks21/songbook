@@ -2,7 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/services/error_message.service.dart';
 import 'package:songbook/core/application/services/logger_application.service.dart';
 import 'package:songbook/core/application/services/sync.service.dart';
+import 'package:songbook/core/application/usecases/cache_recueil_partitions.usecase.dart';
 import 'package:songbook/infrastructure/logger/providers/logger.service_provider.dart';
+import 'package:songbook/infrastructure/settings/providers/settings.service_provider.dart';
 import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
 import 'package:songbook/infrastructure/song/providers/sync.providers.dart';
 
@@ -11,9 +13,20 @@ sealed class SyncState {
   const SyncState();
 }
 
-/// Synchronisation en cours.
+/// Synchronisation de la liste des chants en cours.
 class SyncInProgress extends SyncState {
   const SyncInProgress();
+}
+
+/// Téléchargement des partitions des recueils sélectionnés en cours.
+///
+/// [total] vaut 0 tant que le nombre de partitions à télécharger n'est pas
+/// connu (juste avant le premier téléchargement).
+class SyncCachingPartitions extends SyncState {
+  final int done;
+  final int total;
+
+  const SyncCachingPartitions(this.done, this.total);
 }
 
 /// Synchronisation terminée avec succès.
@@ -42,8 +55,25 @@ class SyncStateNotifier extends Notifier<SyncState> {
     _logger.info('sync.started', attrs: {'url.host': _hostOf(baseUrl)});
     state = const SyncInProgress();
     try {
-      await _syncService.syncSongList(baseUrl);
+      final remoteSongs = await _syncService.syncSongList(baseUrl);
       ref.invalidate(songsProvider);
+
+      // Cache des partitions des recueils sélectionnés (téléchargement
+      // bloquant, avec progression). Best effort : un échec ici ne remet pas en
+      // cause la synchronisation de la liste déjà aboutie.
+      final selected = await ref.read(selectedRecueilsProvider.future);
+      if (selected.isNotEmpty) {
+        final cache = await ref.read(resourceCacheRepositoryProvider.future);
+        state = const SyncCachingPartitions(0, 0);
+        await CacheRecueilPartitionsUseCase(cache).execute(
+          remoteSongs,
+          selected.toSet(),
+          onProgress: (done, total) {
+            state = SyncCachingPartitions(done, total);
+          },
+        );
+      }
+
       _logger.info('sync.completed');
       state = const SyncSuccess();
     } catch (e, stackTrace) {

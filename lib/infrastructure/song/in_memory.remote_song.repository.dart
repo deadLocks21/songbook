@@ -7,7 +7,10 @@ class InMemoryRemoteSongRepository implements RemoteSongRepository {
   InMemoryRemoteSongRepository();
 
   @override
-  Future<List<RemoteSong>> fetchSongs(String baseUrl) async {
+  Future<List<RemoteSong>> fetchSongs(
+    String baseUrl, {
+    List<String> recueils = const [],
+  }) async {
     const jsonList = [
       {
         'id': '7cba49da-a9d1-4b7f-8e46-bf4ea27570cc',

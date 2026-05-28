@@ -53,8 +53,12 @@ class _SyncPageState extends ConsumerState<SyncPage> {
           _showFailureDialog(message);
         case SyncInProgress():
           _handled = false;
+        case SyncCachingPartitions():
+          _handled = false;
       }
     });
+
+    final state = ref.watch(syncStateProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -70,13 +74,25 @@ class _SyncPageState extends ConsumerState<SyncPage> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Mise à jour de la liste des chants…',
+              _labelFor(state),
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ],
         ),
       ),
     );
+  }
+
+  /// Libellé affiché selon la phase de synchronisation en cours.
+  String _labelFor(SyncState state) {
+    if (state is SyncCachingPartitions) {
+      if (state.total == 0) {
+        return 'Téléchargement des partitions…';
+      }
+      return 'Téléchargement des partitions… '
+          '${state.done}/${state.total}';
+    }
+    return 'Mise à jour de la liste des chants…';
   }
 
   Future<void> _showFailureDialog(String message) async {

@@ -11,6 +11,10 @@ class SharedPreferencesSettingsRepository implements SettingsRepository {
   /// les chemins d'API sont ajoutés dans le code via BackendEndpoints).
   static const String defaultBackendUrl = 'https://songbook.dtfh.fr';
 
+  /// Clé SharedPreferences sous laquelle les codes des recueils sélectionnés
+  /// (cache local des partitions) sont stockés.
+  static const String selectedRecueilsKey = 'selected_recueils';
+
   /// Instance de SharedPreferences - nullable pour gérer l'initialisation
   SharedPreferences? _preferences;
 
@@ -29,5 +33,17 @@ class SharedPreferencesSettingsRepository implements SettingsRepository {
   Future<void> setBackendUrl(String url) async {
     await _ensureInitialized();
     await _preferences!.setString(backendUrlKey, url);
+  }
+
+  @override
+  Future<List<String>> getSelectedRecueils() async {
+    await _ensureInitialized();
+    return _preferences!.getStringList(selectedRecueilsKey) ?? const [];
+  }
+
+  @override
+  Future<void> setSelectedRecueils(List<String> codes) async {
+    await _ensureInitialized();
+    await _preferences!.setStringList(selectedRecueilsKey, codes);
   }
 }

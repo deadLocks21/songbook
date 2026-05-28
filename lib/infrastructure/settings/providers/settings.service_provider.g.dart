@@ -96,6 +96,57 @@ abstract class _$BackendUrlNotifier extends $AsyncNotifier<String?> {
   }
 }
 
+/// Codes des recueils sélectionnés pour le cache local des partitions.
+
+@ProviderFor(SelectedRecueilsNotifier)
+final selectedRecueilsProvider = SelectedRecueilsNotifierProvider._();
+
+/// Codes des recueils sélectionnés pour le cache local des partitions.
+final class SelectedRecueilsNotifierProvider
+    extends $AsyncNotifierProvider<SelectedRecueilsNotifier, List<String>> {
+  /// Codes des recueils sélectionnés pour le cache local des partitions.
+  SelectedRecueilsNotifierProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'selectedRecueilsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$selectedRecueilsNotifierHash();
+
+  @$internal
+  @override
+  SelectedRecueilsNotifier create() => SelectedRecueilsNotifier();
+}
+
+String _$selectedRecueilsNotifierHash() =>
+    r'f7e2f780c04441b3eab409d041ea3d69bda946ec';
+
+/// Codes des recueils sélectionnés pour le cache local des partitions.
+
+abstract class _$SelectedRecueilsNotifier extends $AsyncNotifier<List<String>> {
+  FutureOr<List<String>> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<List<String>>, List<String>>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<List<String>>, List<String>>,
+              AsyncValue<List<String>>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}
+
 @ProviderFor(ThemeModeNotifier)
 final themeModeProvider = ThemeModeNotifierProvider._();
 

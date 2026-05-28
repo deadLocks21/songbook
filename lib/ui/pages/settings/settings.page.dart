@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/services/error_message.service.dart';
 import 'package:songbook/core/domain/model/theme_mode.dart';
+import 'package:songbook/core/domain/model/recueil.dart';
 import 'package:songbook/infrastructure/logger/providers/logger.service_provider.dart';
+import 'package:songbook/infrastructure/recueil/providers/recueil.providers.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.service_provider.dart';
 import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
 import 'package:songbook/ui/pages/auth/auth_gate.dart';
 import 'package:songbook/ui/pages/auth/providers/auth_state.provider.dart';
+import 'package:songbook/ui/pages/settings/providers/recueil_download.provider.dart';
 import 'package:songbook/ui/pages/sync/sync.page.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
@@ -17,19 +20,11 @@ class SettingsPage extends ConsumerStatefulWidget {
 }
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
-  /// Ouvre l'écran de synchronisation manuelle (rafraîchit la liste des chants)
-  /// et signale le résultat à l'utilisateur.
-  Future<void> _runManualSync() async {
-    final result = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (context) => const SyncPage()),
-    );
-    if (!mounted || result != true) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Liste des chants synchronisée'),
-        backgroundColor: Colors.green,
-      ),
-    );
+  /// Ouvre l'écran de synchronisation manuelle (rafraîchit la liste des chants).
+  Future<void> _runManualSync() {
+    return Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (context) => const SyncPage()));
   }
 
   /// Déconnecte l'utilisateur et revient à l'écran de connexion.
@@ -46,10 +41,175 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
+  /// Liste des recueils disponibles avec une case à cocher par recueil.
+  ///
+  /// Cocher un recueil ne modifie pas la liste des chants (toujours
+  /// synchronisée intégralement) : il déclenche le téléchargement local de
+  /// toutes ses partitions à la prochaine synchronisation.
+  Widget _buildRecueilsSection() {
+    final recueilsAsync = ref.watch(availableRecueilsProvider);
+    final selectedAsync = ref.watch(selectedRecueilsProvider);
+    final selected = selectedAsync.value ?? const <String>[];
+    final songCounts =
+        ref.watch(recueilSongCountsProvider).value ?? const <String, int>{};
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Cochez les recueils à rendre disponibles hors-ligne, puis lancez '
+            'le téléchargement de leurs partitions avec le bouton ci-dessous.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(
+                context,
+              ).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+            ),
+          ),
+          const SizedBox(height: 8),
+          recueilsAsync.when(
+            data: (recueils) {
+              if (recueils.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Text('Aucun recueil disponible.'),
+                );
+              }
+              return Column(
+                children: [
+                  for (final Recueil recueil in recueils)
+                    CheckboxListTile(
+                      key: Key('recueilCheckbox_${recueil.code}'),
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(recueil.name),
+                      subtitle: Text(
+                        songCounts.containsKey(recueil.code)
+                            ? '${recueil.code} · '
+                                  '${songCounts[recueil.code]} chant(s)'
+                            : recueil.code,
+                      ),
+                      value: selected.contains(recueil.code),
+                      onChanged: (checked) {
+                        ref
+                            .read(selectedRecueilsProvider.notifier)
+                            .toggle(recueil.code, selected: checked ?? false);
+                      },
+                    ),
+                ],
+              );
+            },
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (error, _) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Impossible de charger les recueils : '
+                      '${ErrorMessageService.getNetworkErrorMessage(error)}',
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () =>
+                        ref.invalidate(availableRecueilsProvider),
+                    child: const Text('Réessayer'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Le bouton n'apparaît que lorsqu'au moins un recueil est coché :
+          // sans sélection, il n'y a rien à télécharger.
+          if (selected.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _buildDownloadButton(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Bouton de téléchargement des partitions des recueils cochés, avec barre de
+  /// progression pendant l'opération.
+  Widget _buildDownloadButton() {
+    final downloadState = ref.watch(recueilDownloadNotifierProvider);
+    final inProgress = downloadState is RecueilDownloadInProgress;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FilledButton.icon(
+          key: const Key('downloadRecueilsButton'),
+          onPressed: inProgress
+              ? null
+              : () =>
+                    ref.read(recueilDownloadNotifierProvider.notifier).download(),
+          icon: inProgress
+              ? const SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.download),
+          label: Text(
+            inProgress
+                ? 'Téléchargement en cours…'
+                : 'Télécharger les recueils sélectionnés',
+          ),
+        ),
+        if (inProgress) ...[
+          const SizedBox(height: 8),
+          LinearProgressIndicator(
+            value: downloadState.total == 0
+                ? null
+                : downloadState.done / downloadState.total,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            downloadState.total == 0
+                ? 'Préparation…'
+                : 'Partitions : ${downloadState.done}/${downloadState.total}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeModeAsync = ref.watch(themeModeProvider);
     final themeNotifier = ref.read(themeModeProvider.notifier);
+
+    // Retour utilisateur (snackbar) à la fin du téléchargement des recueils.
+    ref.listen<RecueilDownloadState>(recueilDownloadNotifierProvider, (
+      previous,
+      next,
+    ) {
+      if (next is RecueilDownloadSuccess) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              next.total == 0
+                  ? 'Aucune partition à télécharger.'
+                  : '${next.total} partition(s) téléchargée(s).',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else if (next is RecueilDownloadFailure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Échec du téléchargement : ${next.message}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    });
 
     return Center(
       child: ConstrainedBox(
@@ -221,23 +381,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
                           // Invalider le cache des chants pour forcer le rechargement
                           ref.invalidate(songsProvider);
-
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Base de données vidée avec succès',
-                                ),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          }
                         } catch (e, stack) {
-                          ref.read(loggerProvider).error(
-                            'database.clear_failed',
-                            error: e,
-                            stack: stack,
-                          );
+                          ref
+                              .read(loggerProvider)
+                              .error(
+                                'database.clear_failed',
+                                error: e,
+                                stack: stack,
+                              );
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -270,6 +421,20 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 ],
               ),
             ),
+
+            const SizedBox(height: 32),
+
+            // Section Recueils
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Recueils à synchroniser',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+            _buildRecueilsSection(),
 
             const SizedBox(height: 32),
 

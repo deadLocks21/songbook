@@ -47,6 +47,49 @@ class BackendUrlNotifier extends _$BackendUrlNotifier {
   }
 }
 
+/// Codes des recueils sélectionnés pour le cache local des partitions.
+@riverpod
+class SelectedRecueilsNotifier extends _$SelectedRecueilsNotifier {
+  @override
+  Future<List<String>> build() async {
+    final service = ref.watch(settingsServiceProvider);
+    try {
+      return await service.getSelectedRecueils();
+    } catch (e, stack) {
+      ref.read(loggerProvider).warn(
+        'settings.selected_recueils.load_failed',
+        error: e,
+        stack: stack,
+      );
+      return const [];
+    }
+  }
+
+  /// Coche ou décoche un recueil, puis persiste la nouvelle sélection.
+  Future<void> toggle(String code, {required bool selected}) async {
+    final current = state.value ?? const <String>[];
+    final next = selected
+        ? (current.contains(code) ? current : [...current, code])
+        : current.where((c) => c != code).toList();
+    await _save(next);
+  }
+
+  Future<void> _save(List<String> codes) async {
+    final service = ref.watch(settingsServiceProvider);
+    try {
+      await service.setSelectedRecueils(codes);
+      state = AsyncData(codes);
+    } catch (e, stack) {
+      ref.read(loggerProvider).error(
+        'settings.selected_recueils.save_failed',
+        error: e,
+        stack: stack,
+      );
+      state = AsyncError(e, StackTrace.current);
+    }
+  }
+}
+
 @riverpod
 class ThemeModeNotifier extends _$ThemeModeNotifier {
   @override

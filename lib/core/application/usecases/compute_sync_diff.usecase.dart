@@ -1,5 +1,5 @@
+import 'package:songbook/core/domain/model/remote_song.dart';
 import 'package:songbook/core/domain/model/sync_diff.dart';
-import 'package:songbook/core/domain/services/remote_song.repository.dart';
 import 'package:songbook/core/domain/services/song.repository.dart';
 
 /// Use case pour calculer les différences entre les données distantes et locales.
@@ -8,17 +8,17 @@ import 'package:songbook/core/domain/services/song.repository.dart';
 /// présents localement, et retourne un [SyncDiff] décrivant les actions à effectuer.
 class ComputeSyncDiffUseCase {
   final SongRepository _localRepository;
-  final RemoteSongRepository _remoteRepository;
 
-  ComputeSyncDiffUseCase(this._localRepository, this._remoteRepository);
+  ComputeSyncDiffUseCase(this._localRepository);
 
   /// Exécute le calcul des différences.
   ///
-  /// [baseUrl] est l'URL de base de l'API distante.
+  /// [remoteSongs] est la liste des chants telle que renvoyée par le serveur ;
+  /// elle est récupérée en amont (cf. [SyncService]) afin de pouvoir être
+  /// réutilisée pour le cache des partitions.
   /// Retourne un [SyncDiff] contenant les songs à ajouter, mettre à jour et supprimer.
-  Future<SyncDiff> execute(String baseUrl) async {
+  Future<SyncDiff> execute(List<RemoteSong> remoteSongs) async {
     final localSongs = await _localRepository.getAllSongs();
-    final remoteSongs = await _remoteRepository.fetchSongs(baseUrl);
 
     final localById = {for (final s in localSongs) s.id: s};
     final remoteById = {for (final s in remoteSongs) s.id: s};

@@ -22,11 +22,17 @@ class DioRemoteSongRepository implements RemoteSongRepository {
   }) : _requestTimeout = requestTimeout;
 
   @override
-  Future<List<RemoteSong>> fetchSongs(String baseUrl) async {
+  Future<List<RemoteSong>> fetchSongs(
+    String baseUrl, {
+    List<String> recueils = const [],
+  }) async {
     // [baseUrl] est l'origine (domaine) ; le chemin de l'API est ajouté ici.
     final url = BackendUrl.join(baseUrl, BackendEndpoints.songs);
+    final queryParameters = recueils.isEmpty
+        ? null
+        : <String, dynamic>{'recueils': recueils.join(',')};
     final response = await _dio
-        .get<Map<String, dynamic>>(url)
+        .get<Map<String, dynamic>>(url, queryParameters: queryParameters)
         .timeout(
           _requestTimeout,
           onTimeout: () => throw DioException(
