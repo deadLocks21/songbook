@@ -14,7 +14,7 @@ class OtpPage extends ConsumerStatefulWidget {
 }
 
 class _OtpPageState extends ConsumerState<OtpPage> {
-  static const _resendCooldownSeconds = 30;
+  static const _resendCooldownSeconds = 60;
 
   final _otpController = TextEditingController();
   bool _isSubmitting = false;
