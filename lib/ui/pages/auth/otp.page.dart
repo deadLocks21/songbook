@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,18 +14,65 @@ class OtpPage extends ConsumerStatefulWidget {
 }
 
 class _OtpPageState extends ConsumerState<OtpPage> {
+  static const _resendCooldownSeconds = 30;
+
   final _otpController = TextEditingController();
   bool _isSubmitting = false;
   String? _error;
+  Timer? _cooldownTimer;
+  int _resendCountdown = _resendCooldownSeconds;
+
+  @override
+  void initState() {
+    super.initState();
+    _startCooldown();
+  }
 
   @override
   void dispose() {
+    _cooldownTimer?.cancel();
     _otpController.dispose();
     super.dispose();
   }
 
+  void _startCooldown() {
+    _cooldownTimer?.cancel();
+    setState(() => _resendCountdown = _resendCooldownSeconds);
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_resendCountdown <= 1) {
+        timer.cancel();
+        setState(() => _resendCountdown = 0);
+      } else {
+        setState(() => _resendCountdown--);
+      }
+    });
+  }
+
   void _backToPhoneEntry() {
     ref.read(authNotifierProvider.notifier).backToPhoneEntry();
+  }
+
+  Future<void> _resend(String phoneNumber) async {
+    setState(() {
+      _isSubmitting = true;
+      _error = null;
+    });
+
+    final error = await ref
+        .read(authNotifierProvider.notifier)
+        .requestOtp(phoneNumber);
+
+    if (!mounted) return;
+    setState(() {
+      _isSubmitting = false;
+      _error = error;
+    });
+    if (error == null) {
+      _startCooldown();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Un nouveau code a été envoyé')),
+      );
+    }
   }
 
   Future<void> _submit() async {
@@ -85,11 +134,7 @@ class _OtpPageState extends ConsumerState<OtpPage> {
               padding: const EdgeInsets.all(24),
               shrinkWrap: true,
               children: [
-                Icon(
-                  Icons.sms,
-                  size: 64,
-                  color: theme.colorScheme.primary,
-                ),
+                Icon(Icons.sms, size: 64, color: theme.colorScheme.primary),
                 const SizedBox(height: 24),
                 Text(
                   'Code de vérification',
@@ -116,12 +161,12 @@ class _OtpPageState extends ConsumerState<OtpPage> {
                   enabled: !_isSubmitting,
                   keyboardType: TextInputType.number,
                   maxLength: 6,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   textInputAction: TextInputAction.done,
                   textAlign: TextAlign.center,
-                  style: theme.textTheme.headlineSmall?.copyWith(letterSpacing: 8),
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    letterSpacing: 8,
+                  ),
                   onSubmitted: (_) => _submit(),
                   decoration: InputDecoration(
                     hintText: '000000',
@@ -141,6 +186,21 @@ class _OtpPageState extends ConsumerState<OtpPage> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Text('Valider'),
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  key: const Key('otpResendButton'),
+                  onPressed:
+                      (_isSubmitting ||
+                          phoneNumber.isEmpty ||
+                          _resendCountdown > 0)
+                      ? null
+                      : () => _resend(phoneNumber),
+                  child: Text(
+                    _resendCountdown > 0
+                        ? 'Renvoyer dans $_resendCountdown s'
+                        : 'Renvoyer le code',
+                  ),
                 ),
               ],
             ),
