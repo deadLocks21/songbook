@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/services/error_message.service.dart';
 import 'package:songbook/core/domain/model/theme_mode.dart';
-import 'package:songbook/core/utils/backend_url.dart';
 import 'package:songbook/infrastructure/logger/providers/logger.service_provider.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.service_provider.dart';
 import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
+import 'package:songbook/ui/pages/auth/auth_gate.dart';
+import 'package:songbook/ui/pages/auth/providers/auth_state.provider.dart';
 import 'package:songbook/ui/pages/sync/sync.page.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
@@ -16,24 +17,6 @@ class SettingsPage extends ConsumerStatefulWidget {
 }
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
-  late TextEditingController _backendUrlController;
-  bool _isBackendUrlModified = false;
-  bool _isBackendUrlEditable = false;
-  String _originalBackendUrl = '';
-  String? _backendUrlError;
-
-  @override
-  void initState() {
-    super.initState();
-    _backendUrlController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _backendUrlController.dispose();
-    super.dispose();
-  }
-
   /// Ouvre l'écran de synchronisation manuelle (rafraîchit la liste des chants)
   /// et signale le résultat à l'utilisateur.
   Future<void> _runManualSync() async {
@@ -49,20 +32,24 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
+  /// Déconnecte l'utilisateur et revient à l'écran de connexion.
+  ///
+  /// La connexion ayant remplacé `AuthGate` par la home dans la pile de
+  /// navigation, on renavigue explicitement vers un `AuthGate` neuf (qui
+  /// affiche la saisie du numéro puisque l'état est repassé à non authentifié).
+  Future<void> _logout() async {
+    await ref.read(authNotifierProvider.notifier).logout();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const AuthGate()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeModeAsync = ref.watch(themeModeProvider);
     final themeNotifier = ref.read(themeModeProvider.notifier);
-    final backendUrlAsync = ref.watch(backendUrlProvider);
-    final backendUrlNotifier = ref.read(backendUrlProvider.notifier);
-
-    // Mettre à jour le contrôleur quand les données sont chargées
-    backendUrlAsync.whenData((url) {
-      if (!_isBackendUrlEditable) {
-        _backendUrlController.text = url ?? '';
-        _originalBackendUrl = url ?? '';
-      }
-    });
 
     return Center(
       child: ConstrainedBox(
@@ -139,7 +126,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
             const SizedBox(height: 32),
 
-            // Section Backend
+            // Section Gestion des données
             Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
@@ -150,139 +137,29 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ),
 
-            // URL du Backend
+            // Synchronisation manuelle de la liste des chants. L'URL du serveur
+            // se configure avant connexion (roue crantée de l'écran de
+            // connexion) : on ne change pas de backend une fois connecté.
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Flexible(
-                        child: Text(
-                          'URL du backend',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      if (!_isBackendUrlEditable)
-                        TextButton.icon(
-                          key: const Key('backendUrlEditButton'),
-                          onPressed: () {
-                            setState(() {
-                              _isBackendUrlEditable = true;
-                              _originalBackendUrl = _backendUrlController.text;
-                              _isBackendUrlModified = false;
-                              _backendUrlError = null;
-                            });
-                          },
-                          icon: const Icon(Icons.edit, size: 18),
-                          label: const Text('Modifier'),
-                        )
-                      else
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            TextButton.icon(
-                              key: const Key('backendUrlCancelButton'),
-                              onPressed: () {
-                                setState(() {
-                                  _backendUrlController.text =
-                                      _originalBackendUrl;
-                                  _isBackendUrlModified = false;
-                                  _isBackendUrlEditable = false;
-                                  _backendUrlError = null;
-                                });
-                              },
-                              icon: const Icon(Icons.close, size: 18),
-                              label: const Text('Annuler'),
-                            ),
-                            TextButton.icon(
-                              key: const Key('backendUrlSaveButton'),
-                              onPressed:
-                                  (_isBackendUrlModified &&
-                                      _backendUrlError == null)
-                                  ? () async {
-                                      final raw = _backendUrlController.text
-                                          .trim();
-                                      if (BackendUrl.validate(raw) == null) {
-                                        // L'URL stockée est l'origine seule ;
-                                        // les chemins d'API sont ajoutés dans
-                                        // le code. Le mot de passe est
-                                        // automatiquement supprimé par le use case.
-                                        final url = BackendUrl.normalize(raw);
-                                        await backendUrlNotifier.setBackendUrl(
-                                          url,
-                                        );
-                                        setState(() {
-                                          _backendUrlController.text = url;
-                                          _isBackendUrlModified = false;
-                                          _isBackendUrlEditable = false;
-                                          _originalBackendUrl = url;
-                                        });
-                                        if (context.mounted) {
-                                          await _runManualSync();
-                                        }
-                                      }
-                                    }
-                                  : null,
-                              icon: const Icon(Icons.save, size: 18),
-                              label: const Text('Sauvegarder'),
-                            ),
-                          ],
-                        ),
-                    ],
+                  const Text(
+                    'Liste des chants',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: 8),
-                  TextField(
-                    key: const Key('backendUrlField'),
-                    controller: _backendUrlController,
-                    readOnly: !_isBackendUrlEditable,
-                    decoration: InputDecoration(
-                      hintText: 'https://songbook.dtfh.fr',
-                      errorText: _isBackendUrlEditable
-                          ? _backendUrlError
-                          : null,
-                      border: const OutlineInputBorder(),
-                      filled: !_isBackendUrlEditable,
-                      fillColor: !_isBackendUrlEditable
-                          ? Theme.of(
-                              context,
-                            ).disabledColor.withValues(alpha: 0.05)
-                          : null,
-                      suffixIcon: !_isBackendUrlEditable
-                          ? Padding(
-                              padding: const EdgeInsets.only(right: 8.0),
-                              child: IconButton(
-                                key: const Key('backendUrlSyncButton'),
-                                icon: const Icon(Icons.sync),
-                                tooltip: 'Synchroniser',
-                                onPressed: () {
-                                  final backendUrl = _backendUrlController.text
-                                      .trim();
-                                  if (backendUrl.isNotEmpty) {
-                                    _runManualSync();
-                                  }
-                                },
-                              ),
-                            )
-                          : null,
-                    ),
-                    keyboardType: TextInputType.url,
-                    onChanged: (value) {
-                      setState(() {
-                        _isBackendUrlModified = true;
-                        _backendUrlError = BackendUrl.validate(value.trim());
-                      });
-                    },
+                  OutlinedButton.icon(
+                    key: const Key('manualSyncButton'),
+                    onPressed: _runManualSync,
+                    icon: const Icon(Icons.sync),
+                    label: const Text('Synchroniser maintenant'),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Saisissez uniquement le domaine de votre serveur '
-                    '(ex : https://songbook.dtfh.fr), sans chemin',
+                    'Récupère la dernière version des chants depuis le serveur '
+                    'configuré.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(
                         context,
@@ -391,6 +268,29 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     ),
                   ),
                 ],
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
+            // Section Compte
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Compte',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: OutlinedButton.icon(
+                key: const Key('logoutButton'),
+                onPressed: _logout,
+                icon: const Icon(Icons.logout),
+                label: const Text('Se déconnecter'),
               ),
             ),
 

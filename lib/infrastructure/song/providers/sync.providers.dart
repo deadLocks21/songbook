@@ -4,8 +4,10 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:songbook/core/application/services/sync.service.dart';
+import 'package:songbook/core/domain/services/auth_token_store.dart';
 import 'package:songbook/core/domain/services/remote_song.repository.dart';
 import 'package:songbook/core/domain/services/resource_cache.repository.dart';
+import 'package:songbook/infrastructure/auth/providers/auth_token_store.provider.dart';
 import 'package:songbook/infrastructure/resource/dio.resource_cache.repository.dart';
 import 'package:songbook/infrastructure/resource/in_memory.resource_cache.repository.dart';
 import 'package:songbook/infrastructure/song/dio.remote_song.repository.dart';
@@ -32,6 +34,30 @@ class _VersionInterceptor extends Interceptor {
   }
 }
 
+/// Ajoute l'en-tête `Authorization: Bearer <jwt>` aux routes protégées et
+/// purge la session locale quand l'API répond `401 invalid_token` (token
+/// absent/expiré/invalide) — cf. API.md.
+class _AuthInterceptor extends Interceptor {
+  final AuthTokenStore _tokenStore;
+
+  _AuthInterceptor(this._tokenStore);
+
+  @override
+  Future<void> onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
+    // Les endpoints d'authentification sont publics : pas de Bearer.
+    if (!options.uri.path.contains('/api/auth/')) {
+      final session = await _tokenStore.read();
+      if (session != null) {
+        options.headers['Authorization'] = 'Bearer ${session.token}';
+      }
+    }
+    handler.next(options);
+  }
+}
+
 /// Provider pour l'instance Dio utilisée pour les requêtes HTTP.
 @riverpod
 Dio dio(Ref ref) {
@@ -48,6 +74,7 @@ Dio dio(Ref ref) {
   );
 
   dio.interceptors.add(_VersionInterceptor());
+  dio.interceptors.add(_AuthInterceptor(ref.watch(authTokenStoreProvider)));
 
   return dio;
 }

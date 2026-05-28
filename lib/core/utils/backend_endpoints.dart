@@ -9,4 +9,10 @@ class BackendEndpoints {
 
   /// Catalogue of songs to synchronise.
   static const String songs = '/api/songs';
+
+  /// Demande d'un code OTP par SMS (public).
+  static const String requestOtp = '/api/auth/request-otp';
+
+  /// Vérification d'un code OTP, renvoie le JWT (public).
+  static const String verifyOtp = '/api/auth/verify-otp';
 }

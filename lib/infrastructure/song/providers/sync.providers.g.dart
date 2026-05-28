@@ -51,7 +51,7 @@ final class DioProvider extends $FunctionalProvider<Dio, Dio, Dio>
   }
 }
 
-String _$dioHash() => r'831fb3837c329739dd14ae421d4633397223c156';
+String _$dioHash() => r'1a0e80642bf5e381a50b019ad5ebf99ae134c4ec';
 
 /// Provider pour le repository des songs distants.
 /// Utilise InMemoryRemoteSongRepository sur le web (CORS empêche les appels Dio directs).
@@ -206,4 +206,4 @@ final class SyncServiceProvider
   }
 }
 
-String _$syncServiceHash() => r'bf22e2ccd684f7794ecccb3ddc3f6713f499247e';
+String _$syncServiceHash() => r'b33d2e64c96ade347b0cbff5125245cd8f419817';

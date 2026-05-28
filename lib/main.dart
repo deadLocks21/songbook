@@ -7,7 +7,7 @@ import 'package:songbook/infrastructure/logger/providers/logger.service_provider
 import 'package:songbook/infrastructure/migrations/providers/migration_runner.provider.dart';
 import 'package:songbook/infrastructure/theme/app_theme_data.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.service_provider.dart';
-import 'package:songbook/ui/pages/sync/sync.page.dart';
+import 'package:songbook/ui/pages/auth/auth_gate.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -143,7 +143,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         theme: AppThemeData.buildLightTheme(),
         darkTheme: AppThemeData.buildDarkTheme(),
         themeMode: AppThemeData.toFlutterThemeMode(appThemeMode),
-        home: const SyncPage(isStartupSync: true),
+        home: const AuthGate(),
       ),
       loading: () => MaterialApp(
         title: 'Songbook',

@@ -25,7 +25,8 @@ class RemoteSongDto {
       name: json['name'] as String,
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       resources: (json['resources'] as List<dynamic>)
-          .map((r) => RemoteResourceDto.fromJson(r as Map<String, dynamic>))
+          .map((r) => RemoteResourceDto.tryFromJson(r as Map<String, dynamic>))
+          .whereType<RemoteResourceDto>()
           .toList(),
     );
   }
@@ -68,6 +69,17 @@ sealed class RemoteResourceDto {
       'image' => RemoteImageResourceDto.fromJson(json),
       'pdf' => RemotePdfResourceDto.fromJson(json),
       _ => throw ArgumentError('Unknown remote resource type: $type'),
+    };
+  }
+
+  /// Comme [fromJson] mais renvoie `null` pour un type non géré (lyrics, audio,
+  /// chords, …) au lieu de lever : l'app n'affiche que les images/PDF, les
+  /// autres ressources sont ignorées sans faire échouer la synchronisation.
+  static RemoteResourceDto? tryFromJson(Map<String, dynamic> json) {
+    return switch (json['type'] as String?) {
+      'image' => RemoteImageResourceDto.fromJson(json),
+      'pdf' => RemotePdfResourceDto.fromJson(json),
+      _ => null,
     };
   }
 
