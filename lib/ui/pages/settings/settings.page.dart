@@ -190,18 +190,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       previous,
       next,
     ) {
-      if (next is RecueilDownloadSuccess) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              next.total == 0
-                  ? 'Aucune partition à télécharger.'
-                  : '${next.total} partition(s) téléchargée(s).',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else if (next is RecueilDownloadFailure) {
+      if (next is RecueilDownloadFailure) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Échec du téléchargement : ${next.message}'),
