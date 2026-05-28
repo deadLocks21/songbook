@@ -1,16 +1,20 @@
-import 'dart:developer' as developer;
-
+import 'package:flutter/foundation.dart';
 import 'package:songbook/core/domain/model/log_level.dart';
 import 'package:songbook/core/domain/services/logger.service.dart';
 
-/// [LoggerService] that prints to the dev console via `dart:developer`'s
-/// `log()`.
+/// [LoggerService] that prints to the console via [debugPrint].
 ///
 /// Used:
 /// - In every non-release build as the primary sink.
-/// - As one branch of [CompositeLoggerService] so the developer can see
-///   in their console exactly what is being shipped to Signoz (for
-///   calibration).
+/// - As one branch of [CompositeLoggerService] so the developer sees in
+///   their console exactly what is shipped to Signoz (for calibration).
+///
+/// [debugPrint] is used on purpose rather than `dart:developer`'s `log()`:
+/// it is the channel that actually surfaces in the `flutter run` terminal
+/// and in `adb logcat`. `developer.log()` shows up only in DevTools'
+/// Logging view, never in the terminal — which defeats the point of a
+/// "console" logger during local debugging. The throttling [debugPrint]
+/// applies also keeps logcat from dropping lines under load.
 ///
 /// The output is a single line per record: `LEVEL message k=v k=v …`
 /// followed by a stack trace when present. Cheap and grep-friendly.
@@ -22,11 +26,7 @@ class ConsoleLoggerService implements LoggerService {
   /// [CompositeLoggerService] (e.g. `[→signoz]`).
   final String? prefix;
 
-  /// `dart:developer` logger name. Shows up in Flutter DevTools' Logging
-  /// view as the category.
-  final String name;
-
-  const ConsoleLoggerService({this.prefix, this.name = 'songbook'});
+  const ConsoleLoggerService({this.prefix});
 
   @override
   Future<void> log(
@@ -38,6 +38,8 @@ class ConsoleLoggerService implements LoggerService {
   }) async {
     final buf = StringBuffer();
     if (prefix != null) buf.write('$prefix ');
+    // The level is part of the text since debugPrint has no severity param.
+    buf.write('${level.otelSeverityText} ');
     buf.write(message);
     if (attributes.isNotEmpty) {
       buf.write(' ');
@@ -46,14 +48,9 @@ class ConsoleLoggerService implements LoggerService {
         ' ',
       );
     }
-    developer.log(
-      buf.toString(),
-      name: name,
-      level:
-          level.otelSeverityNumber * 100, // dart:developer expects 0..2000-ish
-      error: error,
-      stackTrace: stack,
-    );
+    if (error != null) buf.write(' error=${_format(error)}');
+    debugPrint(buf.toString());
+    if (stack != null) debugPrint(stack.toString());
   }
 
   @override
