@@ -69,9 +69,6 @@ class _OtpPageState extends ConsumerState<OtpPage> {
     });
     if (error == null) {
       _startCooldown();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Un nouveau code a été envoyé')),
-      );
     }
   }
 
