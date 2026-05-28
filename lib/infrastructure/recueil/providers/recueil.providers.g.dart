@@ -117,58 +117,119 @@ final class AvailableRecueilsProvider
 
 String _$availableRecueilsHash() => r'cd76bee1e27fc24801e1ee0277ceacf3244d107e';
 
-/// Nombre de chants par code de recueil, dérivé du champ `recueils` de chaque
-/// chant renvoyé par `/api/songs`.
+/// Catalogue complet des chants distants (un seul appel `/api/songs`).
 ///
-/// L'API `/api/recueils` ne fournit pas ce décompte ; on le calcule donc à
-/// partir de la liste complète des chants (un seul appel réseau).
+/// Mémoïsé : sert de source pour l'appartenance aux recueils, les totaux et les
+/// URLs des partitions, sans refaire d'appel réseau à chaque recalcul des
+/// statistiques de téléchargement.
 
-@ProviderFor(recueilSongCounts)
-final recueilSongCountsProvider = RecueilSongCountsProvider._();
+@ProviderFor(remoteSongCatalog)
+final remoteSongCatalogProvider = RemoteSongCatalogProvider._();
 
-/// Nombre de chants par code de recueil, dérivé du champ `recueils` de chaque
-/// chant renvoyé par `/api/songs`.
+/// Catalogue complet des chants distants (un seul appel `/api/songs`).
 ///
-/// L'API `/api/recueils` ne fournit pas ce décompte ; on le calcule donc à
-/// partir de la liste complète des chants (un seul appel réseau).
+/// Mémoïsé : sert de source pour l'appartenance aux recueils, les totaux et les
+/// URLs des partitions, sans refaire d'appel réseau à chaque recalcul des
+/// statistiques de téléchargement.
 
-final class RecueilSongCountsProvider
+final class RemoteSongCatalogProvider
     extends
         $FunctionalProvider<
-          AsyncValue<Map<String, int>>,
-          Map<String, int>,
-          FutureOr<Map<String, int>>
+          AsyncValue<List<RemoteSong>>,
+          List<RemoteSong>,
+          FutureOr<List<RemoteSong>>
         >
-    with $FutureModifier<Map<String, int>>, $FutureProvider<Map<String, int>> {
-  /// Nombre de chants par code de recueil, dérivé du champ `recueils` de chaque
-  /// chant renvoyé par `/api/songs`.
+    with $FutureModifier<List<RemoteSong>>, $FutureProvider<List<RemoteSong>> {
+  /// Catalogue complet des chants distants (un seul appel `/api/songs`).
   ///
-  /// L'API `/api/recueils` ne fournit pas ce décompte ; on le calcule donc à
-  /// partir de la liste complète des chants (un seul appel réseau).
-  RecueilSongCountsProvider._()
+  /// Mémoïsé : sert de source pour l'appartenance aux recueils, les totaux et les
+  /// URLs des partitions, sans refaire d'appel réseau à chaque recalcul des
+  /// statistiques de téléchargement.
+  RemoteSongCatalogProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'recueilSongCountsProvider',
+        name: r'remoteSongCatalogProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$recueilSongCountsHash();
+  String debugGetCreateSourceHash() => _$remoteSongCatalogHash();
 
   @$internal
   @override
-  $FutureProviderElement<Map<String, int>> $createElement(
+  $FutureProviderElement<List<RemoteSong>> $createElement(
     $ProviderPointer pointer,
   ) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<Map<String, int>> create(Ref ref) {
-    return recueilSongCounts(ref);
+  FutureOr<List<RemoteSong>> create(Ref ref) {
+    return remoteSongCatalog(ref);
   }
 }
 
-String _$recueilSongCountsHash() => r'2f52ec18dc38ee7c4f244aa58f2a4a6c244bd708';
+String _$remoteSongCatalogHash() => r'16f025a7a2bbb80c9b990a93e57868bc851b9275';
+
+/// Statistiques par code de recueil : total (depuis le catalogue mémoïsé) et
+/// nombre de chants déjà téléchargés (présence des partitions sur le disque).
+///
+/// Seule la partie disque est recalculée ici ; le catalogue réseau étant
+/// mémoïsé, invalider ce provider (ex. à l'ouverture des réglages) ne relance
+/// que les vérifications de fichiers locaux.
+
+@ProviderFor(recueilSongStats)
+final recueilSongStatsProvider = RecueilSongStatsProvider._();
+
+/// Statistiques par code de recueil : total (depuis le catalogue mémoïsé) et
+/// nombre de chants déjà téléchargés (présence des partitions sur le disque).
+///
+/// Seule la partie disque est recalculée ici ; le catalogue réseau étant
+/// mémoïsé, invalider ce provider (ex. à l'ouverture des réglages) ne relance
+/// que les vérifications de fichiers locaux.
+
+final class RecueilSongStatsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<Map<String, RecueilSongStats>>,
+          Map<String, RecueilSongStats>,
+          FutureOr<Map<String, RecueilSongStats>>
+        >
+    with
+        $FutureModifier<Map<String, RecueilSongStats>>,
+        $FutureProvider<Map<String, RecueilSongStats>> {
+  /// Statistiques par code de recueil : total (depuis le catalogue mémoïsé) et
+  /// nombre de chants déjà téléchargés (présence des partitions sur le disque).
+  ///
+  /// Seule la partie disque est recalculée ici ; le catalogue réseau étant
+  /// mémoïsé, invalider ce provider (ex. à l'ouverture des réglages) ne relance
+  /// que les vérifications de fichiers locaux.
+  RecueilSongStatsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'recueilSongStatsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$recueilSongStatsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<Map<String, RecueilSongStats>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Map<String, RecueilSongStats>> create(Ref ref) {
+    return recueilSongStats(ref);
+  }
+}
+
+String _$recueilSongStatsHash() => r'71b5b386e659a758c4987808be85cc734759f23e';

@@ -15,6 +15,9 @@ class _SpyResourceCacheRepository implements ResourceCacheRepository {
   }
 
   @override
+  Future<bool> isResourceCached(String url, UuidValue songId) async => false;
+
+  @override
   String getCacheDirectory() => '/cache';
 }
 

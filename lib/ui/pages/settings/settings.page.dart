@@ -41,6 +41,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
+  /// Sous-titre d'un recueil : code, total de chants et nombre déjà téléchargé.
+  String _recueilSubtitle(
+    Recueil recueil,
+    Map<String, RecueilSongStats> stats,
+  ) {
+    final stat = stats[recueil.code];
+    if (stat == null) {
+      return recueil.code;
+    }
+    return '${recueil.code} · ${stat.downloaded}/${stat.total} téléchargé(s)';
+  }
+
   /// Liste des recueils disponibles avec une case à cocher par recueil.
   ///
   /// Cocher un recueil ne modifie pas la liste des chants (toujours
@@ -50,8 +62,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final recueilsAsync = ref.watch(availableRecueilsProvider);
     final selectedAsync = ref.watch(selectedRecueilsProvider);
     final selected = selectedAsync.value ?? const <String>[];
-    final songCounts =
-        ref.watch(recueilSongCountsProvider).value ?? const <String, int>{};
+    final songStats = ref.watch(recueilSongStatsProvider).value ??
+        const <String, RecueilSongStats>{};
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -83,12 +95,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       key: Key('recueilCheckbox_${recueil.code}'),
                       contentPadding: EdgeInsets.zero,
                       title: Text(recueil.name),
-                      subtitle: Text(
-                        songCounts.containsKey(recueil.code)
-                            ? '${recueil.code} · '
-                                  '${songCounts[recueil.code]} chant(s)'
-                            : recueil.code,
-                      ),
+                      subtitle: Text(_recueilSubtitle(recueil, songStats)),
                       value: selected.contains(recueil.code),
                       onChanged: (checked) {
                         ref
@@ -190,7 +197,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       previous,
       next,
     ) {
-      if (next is RecueilDownloadFailure) {
+      if (next is RecueilDownloadSuccess) {
+        // Rafraîchit les compteurs « X/N téléchargé(s) » après le download.
+        ref.invalidate(recueilSongStatsProvider);
+      } else if (next is RecueilDownloadFailure) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Échec du téléchargement : ${next.message}'),

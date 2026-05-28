@@ -15,6 +15,10 @@ abstract interface class ResourceCacheRepository {
   /// [songId] sert à organiser les fichiers par chant dans le cache.
   Future<String> getCachedResource(String url, UuidValue songId);
 
+  /// Indique si la ressource pointée par [url] est déjà présente en cache local
+  /// (sans la télécharger). [songId] sert à localiser le fichier.
+  Future<bool> isResourceCached(String url, UuidValue songId);
+
   /// Retourne le chemin du dossier racine du cache des ressources.
   String getCacheDirectory();
 }

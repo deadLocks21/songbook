@@ -1,21 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:songbook/infrastructure/recueil/providers/recueil.providers.dart';
 import 'package:songbook/ui/pages/home/widgets/songs_tab.widget.dart';
 import 'package:songbook/ui/pages/settings/settings.page.dart';
 import 'package:songbook/ui/pages/song_lists/song_lists.page.dart';
 
 /// Page d'accueil avec BottomNavigationBar pour naviguer
 /// entre les chants et les listes de chants.
-class HomePage extends StatefulWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends ConsumerState<HomePage> {
   int _currentIndex = 0;
 
+  /// Index de l'onglet « Paramètres » dans [_tabs].
+  static const _settingsTabIndex = 2;
+
   static const _tabs = <Widget>[SongsTab(), SongListsPage(), SettingsPage()];
+
+  void _onTabTapped(int index) {
+    // À l'ouverture des réglages, on rafraîchit le décompte « X/N téléchargé(s) »
+    // en relançant uniquement les vérifications disque (le catalogue réseau
+    // reste mémoïsé).
+    if (index == _settingsTabIndex) {
+      ref.invalidate(recueilSongStatsProvider);
+    }
+    setState(() => _currentIndex = index);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +44,7 @@ class _HomePageState extends State<HomePage> {
           constraints: const BoxConstraints(maxWidth: 600),
           child: BottomNavigationBar(
             currentIndex: _currentIndex,
-            onTap: (index) => setState(() => _currentIndex = index),
+            onTap: _onTabTapped,
             items: const [
               BottomNavigationBarItem(
                 icon: Icon(Icons.music_note),

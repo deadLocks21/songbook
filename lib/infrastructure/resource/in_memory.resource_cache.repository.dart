@@ -11,5 +11,8 @@ class InMemoryResourceCacheRepository implements ResourceCacheRepository {
   Future<String> getCachedResource(String url, UuidValue songId) async => url;
 
   @override
+  Future<bool> isResourceCached(String url, UuidValue songId) async => false;
+
+  @override
   String getCacheDirectory() => '';
 }

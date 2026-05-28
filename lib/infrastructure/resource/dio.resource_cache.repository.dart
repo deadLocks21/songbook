@@ -33,6 +33,12 @@ class DioResourceCacheRepository implements ResourceCacheRepository {
   }
 
   @override
+  Future<bool> isResourceCached(String url, UuidValue songId) async {
+    final filePath = '$_baseDirectory/${songId.value}/${_extractFilename(url)}';
+    return File(filePath).exists();
+  }
+
+  @override
   String getCacheDirectory() => _baseDirectory;
 
   /// Dérive un nom de fichier déterministe depuis une URL.
