@@ -41,6 +41,22 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
+  /// Vrai s'il reste au moins un chant à télécharger parmi les recueils
+  /// [selected]. Un recueil dont les statistiques ne sont pas encore connues est
+  /// considéré comme « à télécharger » (on propose alors le bouton).
+  bool _hasPendingDownload(
+    List<String> selected,
+    Map<String, RecueilSongStats> stats,
+  ) {
+    for (final code in selected) {
+      final stat = stats[code];
+      if (stat == null || stat.downloaded < stat.total) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// Sous-titre d'un recueil : code, total de chants et nombre déjà téléchargé.
   String _recueilSubtitle(
     Recueil recueil,
@@ -64,6 +80,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final selected = selectedAsync.value ?? const <String>[];
     final songStats = ref.watch(recueilSongStatsProvider).value ??
         const <String, RecueilSongStats>{};
+
+    // Le bouton n'apparaît que s'il reste des partitions à télécharger pour la
+    // sélection (téléchargés < total), ou pendant un téléchargement en cours.
+    final downloadInProgress =
+        ref.watch(recueilDownloadNotifierProvider) is RecueilDownloadInProgress;
+    final showDownloadButton = selected.isNotEmpty &&
+        (downloadInProgress || _hasPendingDownload(selected, songStats));
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -129,9 +152,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ),
           ),
-          // Le bouton n'apparaît que lorsqu'au moins un recueil est coché :
-          // sans sélection, il n'y a rien à télécharger.
-          if (selected.isNotEmpty) ...[
+          if (showDownloadButton) ...[
             const SizedBox(height: 16),
             _buildDownloadButton(),
           ],
@@ -179,7 +200,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           Text(
             downloadState.total == 0
                 ? 'Préparation…'
-                : 'Partitions : ${downloadState.done}/${downloadState.total}',
+                : 'Chants : ${downloadState.done}/${downloadState.total}',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],

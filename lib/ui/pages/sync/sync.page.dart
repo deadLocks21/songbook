@@ -87,9 +87,9 @@ class _SyncPageState extends ConsumerState<SyncPage> {
   String _labelFor(SyncState state) {
     if (state is SyncCachingPartitions) {
       if (state.total == 0) {
-        return 'Téléchargement des partitions…';
+        return 'Téléchargement des chants…';
       }
-      return 'Téléchargement des partitions… '
+      return 'Téléchargement des chants… '
           '${state.done}/${state.total}';
     }
     return 'Mise à jour de la liste des chants…';

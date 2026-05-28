@@ -74,9 +74,11 @@ void main() {
       expect(cache.requested, isEmpty);
     });
 
-    test('rapporte la progression jusqu\'au total', () async {
+    test('rapporte la progression en nombre de chants', () async {
       final songs = [
+        // Deux chants (4 images au total) → la progression compte 2 chants.
         songIn(id1, ['REC-001'], ['a.jpg', 'b.jpg']),
+        songIn(id2, ['REC-001'], ['c.jpg', 'd.jpg']),
       ];
 
       final progress = <({int done, int total})>[];
