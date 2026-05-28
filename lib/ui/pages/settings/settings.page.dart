@@ -81,12 +81,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final songStats = ref.watch(recueilSongStatsProvider).value ??
         const <String, RecueilSongStats>{};
 
-    // Le bouton n'apparaît que s'il reste des partitions à télécharger pour la
-    // sélection (téléchargés < total), ou pendant un téléchargement en cours.
-    final downloadInProgress =
-        ref.watch(recueilDownloadNotifierProvider) is RecueilDownloadInProgress;
-    final showDownloadButton = selected.isNotEmpty &&
-        (downloadInProgress || _hasPendingDownload(selected, songStats));
+    // Le bouton reste toujours affiché ; il est désactivé quand il n'y a rien à
+    // télécharger (aucune sélection, ou tout déjà en cache pour la sélection).
+    final canDownload =
+        selected.isNotEmpty && _hasPendingDownload(selected, songStats);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -152,10 +150,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ),
           ),
-          if (showDownloadButton) ...[
-            const SizedBox(height: 16),
-            _buildDownloadButton(),
-          ],
+          const SizedBox(height: 16),
+          _buildDownloadButton(canDownload: canDownload),
         ],
       ),
     );
@@ -163,7 +159,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   /// Bouton de téléchargement des partitions des recueils cochés, avec barre de
   /// progression pendant l'opération.
-  Widget _buildDownloadButton() {
+  Widget _buildDownloadButton({required bool canDownload}) {
     final downloadState = ref.watch(recueilDownloadNotifierProvider);
     final inProgress = downloadState is RecueilDownloadInProgress;
 
@@ -172,7 +168,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       children: [
         FilledButton.icon(
           key: const Key('downloadRecueilsButton'),
-          onPressed: inProgress
+          onPressed: (inProgress || !canDownload)
               ? null
               : () =>
                     ref.read(recueilDownloadNotifierProvider.notifier).download(),
