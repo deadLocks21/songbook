@@ -133,6 +133,32 @@ class AuthNotifier extends Notifier<AuthState> {
     }
     _logger.info('auth.logged_out');
   }
+
+  bool _reauthInProgress = false;
+
+  /// Réagit à un `401 invalid_token` (token déjà purgé par l'intercepteur) :
+  /// renvoie l'utilisateur **directement à l'étape OTP** pour le numéro déjà
+  /// connu — pas besoin de ressaisir le numéro — en redemandant un code.
+  ///
+  /// Retourne `true` si une ré-authentification a bien été initiée (l'appelant
+  /// peut alors naviguer). Les 401 concurrents/tardifs sont ignorés (plusieurs
+  /// requêtes protégées peuvent échouer en même temps) pour ne pas renvoyer
+  /// plusieurs SMS ni rouvrir la synchro pendant le basculement. Si l'envoi du
+  /// code échoue, on retombe sur la saisie du numéro.
+  Future<bool> reauthenticate() async {
+    final current = state;
+    if (_reauthInProgress || current is! AuthAuthenticated) return false;
+    _reauthInProgress = true;
+    try {
+      _logger.warn('auth.session_expired');
+      // requestOtp passe l'état à AuthOtpPending(numéro) en cas de succès.
+      final error = await requestOtp(current.phoneNumber);
+      if (error != null) state = const AuthUnauthenticated();
+      return true;
+    } finally {
+      _reauthInProgress = false;
+    }
+  }
 }
 
 /// Provider du notifier d'authentification.

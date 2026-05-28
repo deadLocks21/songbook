@@ -21,6 +21,17 @@ class ErrorMessageService {
     }
   }
 
+  /// Vrai si [error] est un `401 invalid_token` (JWT rejeté par le serveur) —
+  /// exactement le cas que l'intercepteur traite par purge + retour OTP.
+  /// L'appelant ne doit donc pas le présenter comme une erreur réseau.
+  static bool isUnauthorized(Object error) {
+    if (error is! DioException || error.response?.statusCode != 401) {
+      return false;
+    }
+    final data = error.response?.data;
+    return data is Map && data['code'] == 'invalid_token';
+  }
+
   /// Traite spécifiquement les erreurs Dio
   static String _getDioErrorMessage(DioException error) {
     switch (error.type) {

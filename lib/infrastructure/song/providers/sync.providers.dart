@@ -8,6 +8,7 @@ import 'package:songbook/core/domain/services/auth_token_store.dart';
 import 'package:songbook/core/domain/services/remote_song.repository.dart';
 import 'package:songbook/core/domain/services/resource_cache.repository.dart';
 import 'package:songbook/infrastructure/auth/providers/auth_token_store.provider.dart';
+import 'package:songbook/infrastructure/auth/providers/session_revocation.provider.dart';
 import 'package:songbook/infrastructure/resource/dio.resource_cache.repository.dart';
 import 'package:songbook/infrastructure/resource/in_memory.resource_cache.repository.dart';
 import 'package:songbook/infrastructure/song/dio.remote_song.repository.dart';
@@ -39,8 +40,9 @@ class _VersionInterceptor extends Interceptor {
 /// absent/expiré/invalide) — cf. API.md.
 class _AuthInterceptor extends Interceptor {
   final AuthTokenStore _tokenStore;
+  final void Function() _onUnauthorized;
 
-  _AuthInterceptor(this._tokenStore);
+  _AuthInterceptor(this._tokenStore, this._onUnauthorized);
 
   @override
   Future<void> onRequest(
@@ -55,6 +57,22 @@ class _AuthInterceptor extends Interceptor {
       }
     }
     handler.next(options);
+  }
+
+  @override
+  Future<void> onError(
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
+    final data = err.response?.data;
+    final code = data is Map<String, dynamic> ? data['code'] : null;
+    if (err.response?.statusCode == 401 && code == 'invalid_token') {
+      // Token absent/expiré/invalide : on purge la session locale et on
+      // signale l'UI pour relancer le flux OTP (cf. API.md).
+      await _tokenStore.clear();
+      _onUnauthorized();
+    }
+    handler.next(err);
   }
 }
 
@@ -74,7 +92,12 @@ Dio dio(Ref ref) {
   );
 
   dio.interceptors.add(_VersionInterceptor());
-  dio.interceptors.add(_AuthInterceptor(ref.watch(authTokenStoreProvider)));
+  dio.interceptors.add(
+    _AuthInterceptor(
+      ref.watch(authTokenStoreProvider),
+      () => ref.read(sessionRevocationProvider.notifier).signal(),
+    ),
+  );
 
   return dio;
 }

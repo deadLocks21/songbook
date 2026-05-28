@@ -47,6 +47,13 @@ class SyncStateNotifier extends Notifier<SyncState> {
       _logger.info('sync.completed');
       state = const SyncSuccess();
     } catch (e, stackTrace) {
+      if (ErrorMessageService.isUnauthorized(e)) {
+        // 401 invalid_token : session expirée/révoquée. La ré-authentification
+        // (retour à l'OTP) est déclenchée par l'intercepteur — on n'affiche pas
+        // d'erreur réseau et on laisse la redirection se faire.
+        _logger.info('sync.unauthorized');
+        return;
+      }
       _logger.error('sync.failed', error: e, stack: stackTrace);
       state = SyncFailure(ErrorMessageService.getNetworkErrorMessage(e));
     }

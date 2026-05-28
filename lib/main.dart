@@ -6,8 +6,10 @@ import 'package:songbook/infrastructure/device/providers/device_identity.service
 import 'package:songbook/infrastructure/logger/providers/logger.service_provider.dart';
 import 'package:songbook/infrastructure/migrations/providers/migration_runner.provider.dart';
 import 'package:songbook/infrastructure/theme/app_theme_data.dart';
+import 'package:songbook/infrastructure/auth/providers/session_revocation.provider.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.service_provider.dart';
 import 'package:songbook/ui/pages/auth/auth_gate.dart';
+import 'package:songbook/ui/pages/auth/providers/auth_state.provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -98,6 +100,11 @@ void _installErrorHandlers(LoggerApplicationService logger) {
 class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
+  /// Clé du navigateur racine : permet de renvoyer au login depuis l'extérieur
+  /// de l'arbre de widgets (révocation de session sur 401).
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+
   @override
   ConsumerState<MyApp> createState() => _MyAppState();
 }
@@ -137,9 +144,25 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     // Observer le mode de thème actuel
     final themeModeAsync = ref.watch(themeModeProvider);
 
+    // Un 401 invalid_token sur une route protégée révoque la session : on
+    // redemande un OTP pour le numéro connu et on renvoie directement à l'écran
+    // OTP (cf. API.md), sans faire ressaisir le numéro.
+    ref.listen(sessionRevocationProvider, (_, _) async {
+      final started = await ref
+          .read(authNotifierProvider.notifier)
+          .reauthenticate();
+      if (started) {
+        MyApp.navigatorKey.currentState?.pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const AuthGate()),
+          (route) => false,
+        );
+      }
+    });
+
     return themeModeAsync.when(
       data: (appThemeMode) => MaterialApp(
         title: 'Songbook',
+        navigatorKey: MyApp.navigatorKey,
         theme: AppThemeData.buildLightTheme(),
         darkTheme: AppThemeData.buildDarkTheme(),
         themeMode: AppThemeData.toFlutterThemeMode(appThemeMode),
