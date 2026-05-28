@@ -62,8 +62,10 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Connexion'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           IconButton(
             key: const Key('serverUrlSettingsButton'),
