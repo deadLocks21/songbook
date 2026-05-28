@@ -67,8 +67,10 @@ class _OtpPageState extends ConsumerState<OtpPage> {
         if (!didPop) _backToPhoneEntry();
       },
       child: Scaffold(
+        extendBodyBehindAppBar: true,
         appBar: AppBar(
-          title: const Text('Vérification'),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
           leading: IconButton(
             key: const Key('otpBackButton'),
             icon: const Icon(Icons.arrow_back),
