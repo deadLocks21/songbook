@@ -195,6 +195,13 @@ class DriftSongRepository implements SongRepository {
           pdfUrl: jsonData['pdfUrl'] as String,
         );
 
+      case 'chordpro':
+        return ChordProResource(
+          id: UuidValue.parse(row['id'] as String),
+          name: row['name'] as String,
+          chordProUrl: jsonData['chordProUrl'] as String,
+        );
+
       default:
         throw UnsupportedError('Unknown resource type: ${row['type']}');
     }
@@ -205,6 +212,7 @@ class DriftSongRepository implements SongRepository {
     return switch (resource) {
       ImageResource() => 'image',
       PdfResource() => 'pdf',
+      ChordProResource() => 'chordpro',
     };
   }
 
@@ -213,6 +221,7 @@ class DriftSongRepository implements SongRepository {
     final jsonData = switch (resource) {
       ImageResource() => {'imageUrls': resource.imageUrls},
       PdfResource() => {'pdfUrl': resource.pdfUrl},
+      ChordProResource() => {'chordProUrl': resource.chordProUrl},
     };
     return jsonEncode(jsonData);
   }

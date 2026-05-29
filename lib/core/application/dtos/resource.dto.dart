@@ -22,6 +22,11 @@ sealed class ResourceDto {
         name: resource.name,
         pdfUrl: url,
       ),
+      ChordProResource(chordProUrl: final url) => ChordProResourceDto(
+        id: resource.id.value,
+        name: resource.name,
+        chordProUrl: url,
+      ),
     };
   }
 
@@ -38,6 +43,7 @@ sealed class ResourceDto {
     return switch (type) {
       'image' => ImageResourceDto.fromJson(json),
       'pdf' => PdfResourceDto.fromJson(json),
+      'chordpro' => ChordProResourceDto.fromJson(json),
       _ => throw ArgumentError('Unknown resource type: $type'),
     };
   }
@@ -109,6 +115,48 @@ class PdfResourceDto extends ResourceDto {
       id: json['id'] as String,
       name: json['name'] as String,
       pdfUrl: json['pdfUrl'] as String,
+    );
+  }
+}
+
+/// DTO pour une ressource contenant un fichier ChordPro.
+class ChordProResourceDto extends ResourceDto {
+  @override
+  final String id;
+  @override
+  final String name;
+  final String chordProUrl;
+
+  const ChordProResourceDto({
+    required this.id,
+    required this.name,
+    required this.chordProUrl,
+  });
+
+  @override
+  Resource toDomain() {
+    return ChordProResource(
+      id: UuidValue.parse(id),
+      name: name,
+      chordProUrl: chordProUrl,
+    );
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'type': 'chordpro',
+      'id': id,
+      'name': name,
+      'chordProUrl': chordProUrl,
+    };
+  }
+
+  factory ChordProResourceDto.fromJson(Map<String, dynamic> json) {
+    return ChordProResourceDto(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      chordProUrl: json['chordProUrl'] as String,
     );
   }
 }

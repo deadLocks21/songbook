@@ -121,6 +121,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.4"
+  chord_pro:
+    dependency: "direct main"
+    description:
+      name: chord_pro
+      sha256: "2dcd90cca43ed99f3cd32c53719a3fa961537bcb713af3dec5091606ff75c3c2"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.6.0"
   cli_config:
     dependency: transitive
     description:

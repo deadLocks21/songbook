@@ -78,3 +78,38 @@ class PdfResource extends Resource {
   @override
   int get hashCode => id.hashCode;
 }
+
+/// Ressource contenant un fichier ChordPro (accords + paroles).
+/// L'URL pointe vers le fichier texte distant ; il est téléchargé et mis en
+/// cache à la demande, comme les partitions images/PDF.
+class ChordProResource extends Resource {
+  @override
+  final UuidValue id;
+  @override
+  final String name;
+  final String chordProUrl;
+
+  ChordProResource({
+    required this.id,
+    required this.name,
+    required this.chordProUrl,
+  });
+
+  ChordProResource copyWith({UuidValue? id, String? name, String? chordProUrl}) {
+    return ChordProResource(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      chordProUrl: chordProUrl ?? this.chordProUrl,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ChordProResource &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
+}

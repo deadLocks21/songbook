@@ -57,6 +57,11 @@ class ExecuteSyncUseCase {
         name: remote.name,
         pdfUrl: remote.pdfUrl,
       ),
+      RemoteChordProResource() => ChordProResource(
+        id: remote.id,
+        name: remote.name,
+        chordProUrl: remote.chordProUrl,
+      ),
     };
   }
 }

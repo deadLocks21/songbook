@@ -88,3 +88,28 @@ class RemotePdfResource extends RemoteResource {
   @override
   int get hashCode => id.hashCode;
 }
+
+/// Ressource distante contenant une URL de fichier ChordPro.
+class RemoteChordProResource extends RemoteResource {
+  @override
+  final UuidValue id;
+  @override
+  final String name;
+  final String chordProUrl;
+
+  RemoteChordProResource({
+    required this.id,
+    required this.name,
+    required this.chordProUrl,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RemoteChordProResource &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
+}

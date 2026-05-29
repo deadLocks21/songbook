@@ -48,6 +48,7 @@ dependencies:
   sqflite: ^2.4.2
   drift_flutter: ^0.2.8
   sqflite_common_ffi: ^2.3.7+1
+  chord_pro: ^0.6.0
 
 dev_dependencies:
   flutter_test:
@@ -73,6 +74,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/À cause de ton nom.chordpro
 
   # To add assets to your application, add an assets section, like this:
   # assets:

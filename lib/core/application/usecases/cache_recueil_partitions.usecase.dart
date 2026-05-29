@@ -42,6 +42,7 @@ class CacheRecueilPartitionsUseCase {
         final urls = switch (resource) {
           RemoteImageResource(:final imageUrls) => imageUrls,
           RemotePdfResource(:final pdfUrl) => [pdfUrl],
+          RemoteChordProResource(:final chordProUrl) => [chordProUrl],
         };
         for (final url in urls) {
           try {

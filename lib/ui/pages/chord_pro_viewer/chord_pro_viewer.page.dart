@@ -34,29 +34,6 @@ class _ChordProViewerPageState extends State<ChordProViewerPage> {
     setState(() => _base = ChordPro.parseSong(source));
   }
 
-  void _transpose(int delta) {
-    setState(() => _semitones = (_semitones + delta).clamp(-11, 11));
-  }
-
-  /// Ouvre un panneau de transposition en bas de l'écran, laissant la
-  /// partition visible au-dessus (barrière non assombrie).
-  void _openTransposeSheet() {
-    showModalBottomSheet<void>(
-      context: context,
-      barrierColor: Colors.transparent,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setSheetState) => _TransposeSheet(
-          semitones: _semitones,
-          onTranspose: (delta) {
-            _transpose(delta);
-            // Reconstruit le panneau pour refléter la nouvelle valeur.
-            setSheetState(() {});
-          },
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final base = _base;
@@ -75,20 +52,45 @@ class _ChordProViewerPageState extends State<ChordProViewerPage> {
           IconButton(
             tooltip: 'Transposer',
             icon: const Icon(Icons.tune),
-            onPressed: _openTransposeSheet,
+            onPressed: () => showChordProTransposeSheet(
+              context,
+              semitones: _semitones,
+              onTranspose: (delta) => setState(
+                () => _semitones = (_semitones + delta).clamp(-11, 11),
+              ),
+            ),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _Header(metadata: song.metadata),
-            const SizedBox(height: 20),
-            ..._buildSections(song.sections),
-          ],
-        ),
+      body: ChordProView(song: song),
+    );
+  }
+}
+
+/// Affiche le contenu d'un ChordPro déjà parsé et transposé : en-tête
+/// (métadonnées) puis sections (couplets, refrains, …).
+///
+/// Sans Scaffold ni AppBar : le widget est conçu pour être intégré dans une
+/// page hôte (la page de démo [ChordProViewerPage] ou la visionneuse de chant).
+/// La transposition est portée par le parent, qui fournit un [song] déjà
+/// transposé et, au besoin, le panneau via [showChordProTransposeSheet].
+class ChordProView extends StatelessWidget {
+  const ChordProView({super.key, required this.song});
+
+  /// Le chant ChordPro à afficher, déjà transposé si nécessaire.
+  final Song song;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _Header(metadata: song.metadata),
+          const SizedBox(height: 20),
+          ..._buildSections(song.sections),
+        ],
       ),
     );
   }
@@ -166,6 +168,33 @@ class _ChordProViewerPageState extends State<ChordProViewerPage> {
   }
 }
 
+/// Ouvre le panneau de transposition en bas de l'écran, laissant le contenu
+/// visible au-dessus (barrière non assombrie). [onTranspose] reçoit le delta de
+/// demi-tons à appliquer ; le parent met à jour son état de transposition et
+/// re-rend le contenu transposé.
+void showChordProTransposeSheet(
+  BuildContext context, {
+  required int semitones,
+  required ValueChanged<int> onTranspose,
+}) {
+  var current = semitones;
+  showModalBottomSheet<void>(
+    context: context,
+    barrierColor: Colors.transparent,
+    builder: (_) => StatefulBuilder(
+      builder: (context, setSheetState) => _TransposeSheet(
+        semitones: current,
+        onTranspose: (delta) {
+          current = (current + delta).clamp(-11, 11);
+          onTranspose(delta);
+          // Reconstruit le panneau pour refléter la nouvelle valeur.
+          setSheetState(() {});
+        },
+      ),
+    ),
+  );
+}
+
 /// Mentions de copyright / attribution, affichées en pied de page.
 class _Copyright extends StatelessWidget {
   const _Copyright({required this.lines});
@@ -241,36 +270,75 @@ class _TransposeSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Transposition', style: theme.textTheme.titleSmall),
-            const Spacer(),
-            IconButton.filledTonal(
-              tooltip: 'Transposer -1',
-              icon: const Icon(Icons.remove),
-              onPressed: () => onTranspose(-1),
-            ),
-            SizedBox(
-              width: 44,
-              child: Text(
-                semitones > 0 ? '+$semitones' : '$semitones',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleMedium,
-              ),
-            ),
-            IconButton.filledTonal(
-              tooltip: 'Transposer +1',
-              icon: const Icon(Icons.add),
-              onPressed: () => onTranspose(1),
-            ),
-          ],
+        child: ChordProTransposeControls(
+          semitones: semitones,
+          onTranspose: onTranspose,
         ),
       ),
+    );
+  }
+}
+
+/// Contrôles de transposition réutilisables : libellé « Transposition » et
+/// boutons −1 / +1 encadrant la valeur courante. Le parent porte l'état et
+/// reçoit le delta à appliquer via [onTranspose].
+///
+/// Utilisé seul dans le panneau de transposition de la démo
+/// ([showChordProTransposeSheet]) comme dans le panneau d'options de la
+/// visionneuse de chant.
+class ChordProTransposeControls extends StatelessWidget {
+  const ChordProTransposeControls({
+    super.key,
+    required this.semitones,
+    required this.onTranspose,
+    this.enabled = true,
+  });
+
+  final int semitones;
+  final ValueChanged<int> onTranspose;
+
+  /// Quand `false`, les contrôles restent affichés mais grisés et inactifs
+  /// (ex. transposition non pertinente sur la vue Partition).
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    // onPressed null désactive et grise automatiquement les IconButton.
+    final disabledColor = theme.colorScheme.onSurface.withValues(alpha: 0.38);
+    return Row(
+      children: [
+        Text(
+          'Transposition',
+          style: theme.textTheme.titleSmall?.copyWith(
+            color: enabled ? null : disabledColor,
+          ),
+        ),
+        const Spacer(),
+        IconButton.filledTonal(
+          tooltip: 'Transposer -1',
+          icon: const Icon(Icons.remove),
+          onPressed: enabled ? () => onTranspose(-1) : null,
+        ),
+        SizedBox(
+          width: 44,
+          child: Text(
+            semitones > 0 ? '+$semitones' : '$semitones',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: enabled ? null : disabledColor,
+            ),
+          ),
+        ),
+        IconButton.filledTonal(
+          tooltip: 'Transposer +1',
+          icon: const Icon(Icons.add),
+          onPressed: enabled ? () => onTranspose(1) : null,
+        ),
+      ],
     );
   }
 }

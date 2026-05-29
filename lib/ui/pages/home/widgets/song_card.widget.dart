@@ -11,6 +11,10 @@ extension SongDtoExtension on SongDto {
 
   /// Vérifie si ce chant contient des ressources PDF.
   bool get hasPdf => resources.any((resource) => resource is PdfResourceDto);
+
+  /// Vérifie si ce chant contient un fichier ChordPro.
+  bool get hasChordPro =>
+      resources.any((resource) => resource is ChordProResourceDto);
 }
 
 /// Carte affichant un chant dans la grille.
@@ -49,6 +53,7 @@ class SongCard extends StatelessWidget {
                 children: [
                   if (song.hasImage) _ResourceIcon(icon: Icons.music_note),
                   if (song.hasPdf) _ResourceIcon(icon: Icons.list),
+                  if (song.hasChordPro) _ResourceIcon(icon: Icons.lyrics),
                   if (song.resources.isEmpty)
                     Text(
                       'Aucune ressource',

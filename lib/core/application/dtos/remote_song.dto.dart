@@ -74,6 +74,7 @@ sealed class RemoteResourceDto {
     return switch (type) {
       'image' => RemoteImageResourceDto.fromJson(json),
       'pdf' => RemotePdfResourceDto.fromJson(json),
+      'chordpro' => RemoteChordProResourceDto.fromJson(json),
       _ => throw ArgumentError('Unknown remote resource type: $type'),
     };
   }
@@ -85,6 +86,11 @@ sealed class RemoteResourceDto {
     return switch (json['type'] as String?) {
       'image' => RemoteImageResourceDto.fromJson(json),
       'pdf' => RemotePdfResourceDto.fromJson(json),
+      // Un ChordPro sans ID de stockage a un `data` qui n'est pas encore une
+      // URL (objet brut) : il n'est pas affichable, on l'ignore comme les
+      // autres types non gérés.
+      'chordpro' when json['data'] is String =>
+        RemoteChordProResourceDto.fromJson(json),
       _ => null,
     };
   }
@@ -172,5 +178,53 @@ class RemotePdfResourceDto extends RemoteResourceDto {
   @override
   Map<String, dynamic> toJson() {
     return {'type': 'pdf', 'id': id, 'name': name, 'pdfUrl': pdfUrl};
+  }
+}
+
+/// DTO pour une ressource ChordPro distante.
+class RemoteChordProResourceDto extends RemoteResourceDto {
+  @override
+  final String id;
+  @override
+  final String name;
+  final String chordProUrl;
+
+  const RemoteChordProResourceDto({
+    required this.id,
+    required this.name,
+    required this.chordProUrl,
+  });
+
+  factory RemoteChordProResourceDto.fromJson(Map<String, dynamic> json) {
+    return RemoteChordProResourceDto(
+      id: json['id'] as String,
+      // L'API ne fournit pas de name, on utilise l'id par défaut.
+      name: json['name'] as String? ?? json['id'] as String,
+      // L'API utilise 'data' (URL de téléchargement directe, mono-fichier).
+      // Si le fichier n'a pas encore d'ID de stockage, `data` peut être un
+      // objet brut au lieu d'une URL : on ne garde que la valeur string.
+      chordProUrl: json['data'] is String
+          ? json['data'] as String
+          : json['chordProUrl'] as String? ?? '',
+    );
+  }
+
+  @override
+  RemoteResource toDomain() {
+    return RemoteChordProResource(
+      id: UuidValue.parse(id),
+      name: name,
+      chordProUrl: chordProUrl,
+    );
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'type': 'chordpro',
+      'id': id,
+      'name': name,
+      'chordProUrl': chordProUrl,
+    };
   }
 }

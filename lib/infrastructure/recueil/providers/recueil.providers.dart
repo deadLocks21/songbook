@@ -96,6 +96,7 @@ List<String> _resourceUrls(RemoteSong song) {
       ...switch (resource) {
         RemoteImageResource(:final imageUrls) => imageUrls,
         RemotePdfResource(:final pdfUrl) => [pdfUrl],
+        RemoteChordProResource(:final chordProUrl) => [chordProUrl],
       },
   ];
 }
