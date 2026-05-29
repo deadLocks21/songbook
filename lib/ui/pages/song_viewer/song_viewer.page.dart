@@ -1,27 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/dtos/resource.dto.dart';
 import 'package:songbook/core/application/dtos/song.dto.dart';
+import 'package:songbook/core/domain/model/display_resource_type.dart';
+import 'package:songbook/infrastructure/settings/providers/settings.service_provider.dart';
 import 'package:songbook/ui/pages/chord_pro_viewer/chord_pro_viewer.page.dart';
 import 'package:songbook/ui/pages/chord_pro_viewer/widgets/cached_chord_pro_viewer.widget.dart';
 import 'package:songbook/ui/pages/song_viewer/widgets/cached_image_viewer.widget.dart';
+
+/// Ordre d'affichage par défaut tant que la préférence n'est pas chargée.
+const _defaultDisplayOrder = [
+  DisplayResourceType.partition,
+  DisplayResourceType.chordPro,
+];
 
 /// Page de visualisation des ressources d'un chant (partition image et/ou
 /// fichier ChordPro).
 ///
 /// Point d'entrée unique : si le chant possède plusieurs ressources
-/// affichables, un sélecteur permet de basculer entre elles. Le contrôle de
-/// transposition n'apparaît que pour la vue ChordPro.
-class SongViewerPage extends StatefulWidget {
+/// affichables, un sélecteur permet de basculer entre elles. La vue ouverte par
+/// défaut suit la préférence « Priorité d'affichage » des réglages. Le contrôle
+/// de transposition n'apparaît que pour la vue ChordPro.
+class SongViewerPage extends ConsumerStatefulWidget {
   final SongDto song;
   final List<Widget>? actions;
 
   const SongViewerPage({super.key, required this.song, this.actions});
 
   @override
-  State<SongViewerPage> createState() => _SongViewerPageState();
+  ConsumerState<SongViewerPage> createState() => _SongViewerPageState();
 }
 
-class _SongViewerPageState extends State<SongViewerPage> {
+class _SongViewerPageState extends ConsumerState<SongViewerPage> {
   /// Index de la vue sélectionnée parmi les ressources affichables.
   int _index = 0;
 
@@ -42,22 +52,31 @@ class _SongViewerPageState extends State<SongViewerPage> {
   Widget build(BuildContext context) {
     final image = _image;
     final chordPro = _chordPro;
+    final order =
+        ref.watch(resourceDisplayOrderProvider).value ?? _defaultDisplayOrder;
 
-    // Vues affichables, dans l'ordre Partition puis Accords. (Le PDF n'a pas de
-    // visionneuse, il n'est donc pas listé.)
-    final views = <_View>[
+    // Vues affichables, indexées par type. (Le PDF n'a pas de visionneuse, il
+    // n'est donc pas listé.)
+    final available = <DisplayResourceType, _View>{
       if (image != null)
-        const _View(
-          kind: _ViewKind.partition,
+        DisplayResourceType.partition: const _View(
+          kind: DisplayResourceType.partition,
           label: 'Partition',
           icon: Icons.music_note,
         ),
       if (chordPro != null)
-        const _View(
-          kind: _ViewKind.chords,
+        DisplayResourceType.chordPro: const _View(
+          kind: DisplayResourceType.chordPro,
           label: 'Accords',
           icon: Icons.lyrics,
         ),
+    };
+
+    // Ordonnées selon la préférence : la première disponible est la vue par
+    // défaut (index 0).
+    final views = [
+      for (final type in order)
+        if (available[type] case final view?) view,
     ];
 
     final index = views.isEmpty ? 0 : _index.clamp(0, views.length - 1);
@@ -86,7 +105,7 @@ class _SongViewerPageState extends State<SongViewerPage> {
         actions: [
           // Un seul bouton « Options » : choix de la vue (si plusieurs) et
           // transposition (en vue Accords) sont regroupés dans un panneau.
-          if (views.length > 1 || current == _ViewKind.chords)
+          if (views.length > 1 || current == DisplayResourceType.chordPro)
             IconButton(
               tooltip: 'Options',
               icon: const Icon(Icons.tune),
@@ -110,8 +129,8 @@ class _SongViewerPageState extends State<SongViewerPage> {
       builder: (_) => StatefulBuilder(
         builder: (context, setSheetState) {
           final index = views.isEmpty ? 0 : _index.clamp(0, views.length - 1);
-          final isChords =
-              views.isNotEmpty && views[index].kind == _ViewKind.chords;
+          final isChords = views.isNotEmpty &&
+              views[index].kind == DisplayResourceType.chordPro;
           return SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
@@ -124,41 +143,42 @@ class _SongViewerPageState extends State<SongViewerPage> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                  if (views.length > 1) ...[
-                    Text('Vue', style: theme.textTheme.titleSmall),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      width: double.infinity,
-                      child: SegmentedButton<int>(
-                        segments: [
-                          for (var i = 0; i < views.length; i++)
-                            ButtonSegment<int>(
-                              value: i,
-                              label: Text(views[i].label),
-                              icon: Icon(views[i].icon),
-                            ),
-                        ],
-                        selected: {index},
-                        onSelectionChanged: (selection) {
-                          setState(() => _index = selection.first);
-                          setSheetState(() {});
-                        },
+                    if (views.length > 1) ...[
+                      Text('Vue', style: theme.textTheme.titleSmall),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: SegmentedButton<int>(
+                          segments: [
+                            for (var i = 0; i < views.length; i++)
+                              ButtonSegment<int>(
+                                value: i,
+                                label: Text(views[i].label),
+                                icon: Icon(views[i].icon),
+                              ),
+                          ],
+                          selected: {index},
+                          onSelectionChanged: (selection) {
+                            setState(() => _index = selection.first);
+                            setSheetState(() {});
+                          },
+                        ),
                       ),
+                    ],
+                    if (views.length > 1) const SizedBox(height: 16),
+                    // Toujours affichée, mais désactivée hors vue Accords.
+                    ChordProTransposeControls(
+                      enabled: isChords,
+                      semitones: _semitones,
+                      onTranspose: (delta) {
+                        setState(
+                          () =>
+                              _semitones = (_semitones + delta).clamp(-11, 11),
+                        );
+                        setSheetState(() {});
+                      },
                     ),
                   ],
-                  if (views.length > 1) const SizedBox(height: 16),
-                  // Toujours affichée, mais désactivée hors vue Accords.
-                  ChordProTransposeControls(
-                    enabled: isChords,
-                    semitones: _semitones,
-                    onTranspose: (delta) {
-                      setState(
-                        () => _semitones = (_semitones + delta).clamp(-11, 11),
-                      );
-                      setSheetState(() {});
-                    },
-                  ),
-                ],
                 ),
               ),
             ),
@@ -169,18 +189,18 @@ class _SongViewerPageState extends State<SongViewerPage> {
   }
 
   Widget _buildBody(
-    _ViewKind? current,
+    DisplayResourceType? current,
     ImageResourceDto? image,
     ChordProResourceDto? chordPro,
   ) {
     switch (current) {
-      case _ViewKind.partition:
+      case DisplayResourceType.partition:
         return CachedImageViewer(
           key: const Key('imageViewer'),
           songId: widget.song.id,
           imageUrls: image!.imageUrls,
         );
-      case _ViewKind.chords:
+      case DisplayResourceType.chordPro:
         return CachedChordProViewer(
           key: const Key('chordProViewer'),
           songId: widget.song.id,
@@ -196,12 +216,9 @@ class _SongViewerPageState extends State<SongViewerPage> {
   }
 }
 
-/// Type de vue affichable dans la visionneuse.
-enum _ViewKind { partition, chords }
-
 /// Décrit une vue affichable (libellé + icône) pour le sélecteur.
 class _View {
-  final _ViewKind kind;
+  final DisplayResourceType kind;
   final String label;
   final IconData icon;
 

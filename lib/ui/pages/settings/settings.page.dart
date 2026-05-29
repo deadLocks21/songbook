@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/services/error_message.service.dart';
+import 'package:songbook/core/domain/model/display_resource_type.dart';
 import 'package:songbook/core/domain/model/theme_mode.dart';
 import 'package:songbook/core/domain/model/recueil.dart';
 import 'package:songbook/infrastructure/logger/providers/logger.service_provider.dart';
@@ -67,6 +68,73 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       return recueil.code;
     }
     return '${recueil.code} · ${stat.downloaded}/${stat.total} téléchargé(s)';
+  }
+
+  /// Libellé affiché pour un type de ressource.
+  String _displayResourceLabel(DisplayResourceType type) => switch (type) {
+    DisplayResourceType.partition => 'Partition',
+    DisplayResourceType.chordPro => 'Accords',
+  };
+
+  /// Icône associée à un type de ressource.
+  IconData _displayResourceIcon(DisplayResourceType type) => switch (type) {
+    DisplayResourceType.partition => Icons.music_note,
+    DisplayResourceType.chordPro => Icons.lyrics,
+  };
+
+  /// Liste réordonnable définissant la priorité d'affichage des ressources.
+  /// Le premier type disponible pour un chant est affiché par défaut.
+  Widget _buildResourceDisplayOrderSection() {
+    final orderAsync = ref.watch(resourceDisplayOrderProvider);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Priorité d\'affichage',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Glissez pour ordonner. Le premier type disponible pour un chant '
+            'est affiché par défaut ; l\'autre reste accessible dans le chant.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(
+                context,
+              ).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+            ),
+          ),
+          const SizedBox(height: 8),
+          orderAsync.when(
+            data: (order) => ReorderableListView(
+              key: const Key('resourceDisplayOrderList'),
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              onReorder: (oldIndex, newIndex) => ref
+                  .read(resourceDisplayOrderProvider.notifier)
+                  .reorder(oldIndex, newIndex),
+              children: [
+                for (var i = 0; i < order.length; i++)
+                  ListTile(
+                    key: ValueKey(order[i]),
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(_displayResourceIcon(order[i])),
+                    title: Text('${i + 1}. ${_displayResourceLabel(order[i])}'),
+                    trailing: const Icon(Icons.drag_handle),
+                  ),
+              ],
+            ),
+            loading: () => const SizedBox(
+              height: 60,
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (error, _) => const SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Liste des recueils disponibles avec une case à cocher par recueil.
@@ -300,6 +368,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ),
 
+            const SizedBox(height: 24),
+
+            // Priorité d'affichage des ressources (Partition / Accords)
+            _buildResourceDisplayOrderSection(),
+
             const SizedBox(height: 32),
 
             // Section Gestion des données
@@ -345,6 +418,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 ],
               ),
             ),
+
+            const SizedBox(height: 24),
+
+            // Recueils à synchroniser
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Recueils à synchroniser',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildRecueilsSection(),
 
             const SizedBox(height: 24),
 
@@ -437,20 +523,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 ],
               ),
             ),
-
-            const SizedBox(height: 32),
-
-            // Section Recueils
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                'Recueils à synchroniser',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ),
-            _buildRecueilsSection(),
 
             const SizedBox(height: 32),
 

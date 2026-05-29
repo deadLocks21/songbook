@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/dtos/resource.dto.dart';
 import 'package:songbook/core/application/dtos/song.dto.dart';
+import 'package:songbook/core/domain/model/display_resource_type.dart';
+import 'package:songbook/infrastructure/settings/providers/settings.service_provider.dart';
 import 'package:songbook/ui/pages/chord_pro_viewer/chord_pro_viewer.page.dart';
 import 'package:songbook/ui/pages/chord_pro_viewer/widgets/cached_chord_pro_viewer.widget.dart';
 import 'package:songbook/ui/pages/song_list_viewer/providers/song_list_viewer.provider.dart';
@@ -36,9 +38,27 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
   ChordProResourceDto? _chordProOf(SongDto song) =>
       song.resources.whereType<ChordProResourceDto>().firstOrNull;
 
+  /// Type de ressource affiché pour [song] : le premier disponible selon
+  /// l'ordre de préférence [order], ou `null` si rien d'affichable.
+  DisplayResourceType? _chosenTypeOf(
+    SongDto song,
+    List<DisplayResourceType> order,
+  ) {
+    final hasImage = _imageOf(song) != null;
+    final hasChordPro = _chordProOf(song) != null;
+    for (final type in order) {
+      if (type == DisplayResourceType.partition && hasImage) return type;
+      if (type == DisplayResourceType.chordPro && hasChordPro) return type;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final dataAsync = ref.watch(songListViewerDataProvider(widget.songListId));
+    final order =
+        ref.watch(resourceDisplayOrderProvider).value ??
+        const [DisplayResourceType.partition, DisplayResourceType.chordPro];
 
     return dataAsync.when(
       data: (data) {
@@ -56,10 +76,9 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
 
         final currentSong = data.songs[_currentIndex];
         final totalSongs = data.songs.length;
-        // Le chant est affiché en ChordPro (et transposable) quand il n'a pas
-        // de partition image mais possède un fichier ChordPro.
-        final showsChordPro = _imageOf(currentSong) == null &&
-            _chordProOf(currentSong) != null;
+        // Type affiché selon la préférence ; transposable seulement en ChordPro.
+        final chosenType = _chosenTypeOf(currentSong, order);
+        final showsChordPro = chosenType == DisplayResourceType.chordPro;
 
         return Scaffold(
           appBar: AppBar(
@@ -115,7 +134,7 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
           ),
           body: Stack(
             children: [
-              _buildSongContent(currentSong),
+              _buildSongContent(currentSong, chosenType),
               _buildNavigationOverlay(totalSongs),
             ],
           ),
@@ -132,31 +151,27 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
     );
   }
 
-  Widget _buildSongContent(SongDto song) {
-    // Priorité à la partition image (comme la vue par défaut du sélecteur de
-    // SongViewerPage), repli sur le ChordPro, sinon message d'absence.
-    final image = _imageOf(song);
-    if (image != null) {
-      return CachedImageViewer(
-        key: ValueKey('viewer_${_currentIndex}_${song.id}'),
-        songId: song.id,
-        imageUrls: image.imageUrls,
-      );
+  Widget _buildSongContent(SongDto song, DisplayResourceType? type) {
+    // Le type affiché suit la préférence « Priorité d'affichage » des réglages.
+    switch (type) {
+      case DisplayResourceType.partition:
+        return CachedImageViewer(
+          key: ValueKey('viewer_${_currentIndex}_${song.id}'),
+          songId: song.id,
+          imageUrls: _imageOf(song)!.imageUrls,
+        );
+      case DisplayResourceType.chordPro:
+        return CachedChordProViewer(
+          key: ValueKey('viewerChordPro_${_currentIndex}_${song.id}'),
+          songId: song.id,
+          chordProUrl: _chordProOf(song)!.chordProUrl,
+          semitones: _semitones,
+        );
+      case null:
+        return const Center(
+          child: Text('Aucune partition disponible pour ce chant'),
+        );
     }
-
-    final chordPro = _chordProOf(song);
-    if (chordPro != null) {
-      return CachedChordProViewer(
-        key: ValueKey('viewerChordPro_${_currentIndex}_${song.id}'),
-        songId: song.id,
-        chordProUrl: chordPro.chordProUrl,
-        semitones: _semitones,
-      );
-    }
-
-    return const Center(
-      child: Text('Aucune partition disponible pour ce chant'),
-    );
   }
 
   Widget _buildNavigationOverlay(int totalSongs) {

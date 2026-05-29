@@ -1,3 +1,4 @@
+import 'package:songbook/core/domain/model/display_resource_type.dart';
 import 'package:songbook/core/domain/model/theme_mode.dart';
 import 'package:songbook/core/domain/services/settings.repository.dart';
 import 'package:songbook/core/domain/services/theme.repository.dart';
@@ -23,4 +24,10 @@ class SettingsService {
 
   Future<void> setThemeMode(AppThemeMode mode) =>
       _themeRepository.setThemeMode(mode);
+
+  Future<List<DisplayResourceType>> getResourceDisplayOrder() =>
+      _settingsRepository.getResourceDisplayOrder();
+
+  Future<void> setResourceDisplayOrder(List<DisplayResourceType> order) =>
+      _settingsRepository.setResourceDisplayOrder(order);
 }

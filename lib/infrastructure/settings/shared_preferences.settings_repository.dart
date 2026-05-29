@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:songbook/core/domain/model/display_resource_type.dart';
 import 'package:songbook/core/domain/services/settings.repository.dart';
 
 /// Implémentation du repository de paramètres utilisant SharedPreferences
@@ -16,6 +17,16 @@ class SharedPreferencesSettingsRepository implements SettingsRepository {
   /// Clé SharedPreferences sous laquelle les codes des recueils sélectionnés
   /// (cache local des partitions) sont stockés.
   static const String selectedRecueilsKey = 'selected_recueils';
+
+  /// Clé SharedPreferences sous laquelle l'ordre de préférence d'affichage des
+  /// ressources est stocké (liste de noms d'enum).
+  static const String resourceDisplayOrderKey = 'resource_display_order';
+
+  /// Ordre par défaut : la partition image d'abord, puis le ChordPro.
+  static const List<DisplayResourceType> defaultResourceDisplayOrder = [
+    DisplayResourceType.partition,
+    DisplayResourceType.chordPro,
+  ];
 
   /// Instance de SharedPreferences - nullable pour gérer l'initialisation
   SharedPreferences? _preferences;
@@ -47,5 +58,41 @@ class SharedPreferencesSettingsRepository implements SettingsRepository {
   Future<void> setSelectedRecueils(List<String> codes) async {
     await _ensureInitialized();
     await _preferences!.setStringList(selectedRecueilsKey, codes);
+  }
+
+  @override
+  Future<List<DisplayResourceType>> getResourceDisplayOrder() async {
+    await _ensureInitialized();
+    final stored = _preferences!.getStringList(resourceDisplayOrderKey);
+    if (stored == null) {
+      return defaultResourceDisplayOrder;
+    }
+
+    // Reconstruit l'ordre depuis les noms stockés, puis complète avec les types
+    // éventuellement absents (robustesse si l'enum évolue ou si un nom inconnu
+    // traîne) afin de toujours renvoyer tous les types, sans doublon.
+    final order = <DisplayResourceType>[];
+    for (final name in stored) {
+      for (final type in DisplayResourceType.values) {
+        if (type.name == name && !order.contains(type)) {
+          order.add(type);
+        }
+      }
+    }
+    for (final type in DisplayResourceType.values) {
+      if (!order.contains(type)) {
+        order.add(type);
+      }
+    }
+    return order;
+  }
+
+  @override
+  Future<void> setResourceDisplayOrder(List<DisplayResourceType> order) async {
+    await _ensureInitialized();
+    await _preferences!.setStringList(
+      resourceDisplayOrderKey,
+      order.map((type) => type.name).toList(),
+    );
   }
 }

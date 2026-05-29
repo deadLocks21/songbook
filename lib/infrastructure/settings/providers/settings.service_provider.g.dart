@@ -190,3 +190,67 @@ abstract class _$ThemeModeNotifier extends $AsyncNotifier<AppThemeMode> {
     element.handleCreate(ref, build);
   }
 }
+
+/// Ordre de préférence des types de ressources affichées par défaut.
+
+@ProviderFor(ResourceDisplayOrderNotifier)
+final resourceDisplayOrderProvider = ResourceDisplayOrderNotifierProvider._();
+
+/// Ordre de préférence des types de ressources affichées par défaut.
+final class ResourceDisplayOrderNotifierProvider
+    extends
+        $AsyncNotifierProvider<
+          ResourceDisplayOrderNotifier,
+          List<DisplayResourceType>
+        > {
+  /// Ordre de préférence des types de ressources affichées par défaut.
+  ResourceDisplayOrderNotifierProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'resourceDisplayOrderProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$resourceDisplayOrderNotifierHash();
+
+  @$internal
+  @override
+  ResourceDisplayOrderNotifier create() => ResourceDisplayOrderNotifier();
+}
+
+String _$resourceDisplayOrderNotifierHash() =>
+    r'a9d6a326470bb9eecf422fccb5f8b9538b12e69c';
+
+/// Ordre de préférence des types de ressources affichées par défaut.
+
+abstract class _$ResourceDisplayOrderNotifier
+    extends $AsyncNotifier<List<DisplayResourceType>> {
+  FutureOr<List<DisplayResourceType>> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref =
+        this.ref
+            as $Ref<
+              AsyncValue<List<DisplayResourceType>>,
+              List<DisplayResourceType>
+            >;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<
+                AsyncValue<List<DisplayResourceType>>,
+                List<DisplayResourceType>
+              >,
+              AsyncValue<List<DisplayResourceType>>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}

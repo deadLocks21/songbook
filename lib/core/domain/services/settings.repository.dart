@@ -1,3 +1,5 @@
+import 'package:songbook/core/domain/model/display_resource_type.dart';
+
 /// Interface pour la gestion de la persistance des paramètres de l'application
 abstract interface class SettingsRepository {
   /// Récupère l'URL du backend actuellement sauvegardée
@@ -16,4 +18,14 @@ abstract interface class SettingsRepository {
 
   /// Sauvegarde les codes des recueils sélectionnés pour le cache local.
   Future<void> setSelectedRecueils(List<String> codes);
+
+  /// Ordre de préférence des types de ressources affichées : le premier type
+  /// disponible pour un chant est affiché par défaut.
+  ///
+  /// Retourne un ordre par défaut ([DisplayResourceType.partition] puis
+  /// [DisplayResourceType.chordPro]) si aucune préférence n'est sauvegardée.
+  Future<List<DisplayResourceType>> getResourceDisplayOrder();
+
+  /// Sauvegarde l'ordre de préférence des types de ressources affichées.
+  Future<void> setResourceDisplayOrder(List<DisplayResourceType> order);
 }

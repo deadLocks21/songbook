@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:songbook/core/application/services/settings.service.dart';
+import 'package:songbook/core/domain/model/display_resource_type.dart';
 import 'package:songbook/core/domain/model/theme_mode.dart';
 import 'package:songbook/infrastructure/logger/providers/logger.service_provider.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.repository_provider.dart';
@@ -115,6 +116,54 @@ class ThemeModeNotifier extends _$ThemeModeNotifier {
     } catch (e, stack) {
       ref.read(loggerProvider).error(
         'settings.theme_mode.save_failed',
+        error: e,
+        stack: stack,
+      );
+      state = AsyncError(e, StackTrace.current);
+    }
+  }
+}
+
+/// Ordre de préférence des types de ressources affichées par défaut.
+@riverpod
+class ResourceDisplayOrderNotifier extends _$ResourceDisplayOrderNotifier {
+  static const List<DisplayResourceType> _default = [
+    DisplayResourceType.partition,
+    DisplayResourceType.chordPro,
+  ];
+
+  @override
+  Future<List<DisplayResourceType>> build() async {
+    final service = ref.watch(settingsServiceProvider);
+    try {
+      return await service.getResourceDisplayOrder();
+    } catch (e, stack) {
+      ref.read(loggerProvider).warn(
+        'settings.resource_display_order.load_failed',
+        error: e,
+        stack: stack,
+      );
+      return _default;
+    }
+  }
+
+  /// Réordonne la liste suite à un glisser-déposer (indices d'un
+  /// [ReorderableListView]), puis persiste le nouvel ordre.
+  Future<void> reorder(int oldIndex, int newIndex) async {
+    final current = [...(state.value ?? _default)];
+    // Convention ReorderableListView : si on descend l'élément, l'index cible
+    // est décalé d'un cran une fois l'élément retiré.
+    if (newIndex > oldIndex) newIndex -= 1;
+    final item = current.removeAt(oldIndex);
+    current.insert(newIndex, item);
+
+    final service = ref.watch(settingsServiceProvider);
+    try {
+      await service.setResourceDisplayOrder(current);
+      state = AsyncData(current);
+    } catch (e, stack) {
+      ref.read(loggerProvider).error(
+        'settings.resource_display_order.save_failed',
         error: e,
         stack: stack,
       );
