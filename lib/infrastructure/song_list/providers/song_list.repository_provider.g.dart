@@ -9,13 +9,23 @@ part of 'song_list.repository_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// Provider pour l'implementation du SongListRepository.
-/// Utilise InMemorySongListRepository sur le web, DriftSongListRepository sinon.
+/// En mémoire en mode démo (web, aucune URL, ou URL « memory »),
+/// DriftSongListRepository sinon — cf. [inMemoryModeProvider].
+///
+/// Comme [songRepository], l'implémentation en mémoire conserve son état en
+/// instance : on épingle le provider (`ref.keepAlive`) en mode démo pour ne pas
+/// le perdre à l'auto-dispose (Drift, lui, persiste sur disque).
 
 @ProviderFor(songListRepository)
 final songListRepositoryProvider = SongListRepositoryProvider._();
 
 /// Provider pour l'implementation du SongListRepository.
-/// Utilise InMemorySongListRepository sur le web, DriftSongListRepository sinon.
+/// En mémoire en mode démo (web, aucune URL, ou URL « memory »),
+/// DriftSongListRepository sinon — cf. [inMemoryModeProvider].
+///
+/// Comme [songRepository], l'implémentation en mémoire conserve son état en
+/// instance : on épingle le provider (`ref.keepAlive`) en mode démo pour ne pas
+/// le perdre à l'auto-dispose (Drift, lui, persiste sur disque).
 
 final class SongListRepositoryProvider
     extends
@@ -26,7 +36,12 @@ final class SongListRepositoryProvider
         >
     with $Provider<SongListRepository> {
   /// Provider pour l'implementation du SongListRepository.
-  /// Utilise InMemorySongListRepository sur le web, DriftSongListRepository sinon.
+  /// En mémoire en mode démo (web, aucune URL, ou URL « memory »),
+  /// DriftSongListRepository sinon — cf. [inMemoryModeProvider].
+  ///
+  /// Comme [songRepository], l'implémentation en mémoire conserve son état en
+  /// instance : on épingle le provider (`ref.keepAlive`) en mode démo pour ne pas
+  /// le perdre à l'auto-dispose (Drift, lui, persiste sur disque).
   SongListRepositoryProvider._()
     : super(
         from: null,
@@ -62,4 +77,4 @@ final class SongListRepositoryProvider
 }
 
 String _$songListRepositoryHash() =>
-    r'1a47db6d5ab74711a9ac52ace448754436314ef0';
+    r'deae504aaebead998a2f0b9197522d95ab0e0bcc';

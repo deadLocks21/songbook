@@ -10,24 +10,24 @@ part of 'auth.repository_provider.dart';
 // ignore_for_file: type=lint, type=warning
 /// Fournit l'implémentation du repository d'authentification.
 ///
-/// Vrais appels HTTP hors web ; en mémoire sur le web (CORS), comme pour le
-/// repository des chants distants.
+/// Vrais appels HTTP quand un backend réel est configuré ; en mémoire sinon
+/// (web, aucune URL, ou URL « memory ») — cf. [inMemoryModeProvider].
 
 @ProviderFor(authRepository)
 final authRepositoryProvider = AuthRepositoryProvider._();
 
 /// Fournit l'implémentation du repository d'authentification.
 ///
-/// Vrais appels HTTP hors web ; en mémoire sur le web (CORS), comme pour le
-/// repository des chants distants.
+/// Vrais appels HTTP quand un backend réel est configuré ; en mémoire sinon
+/// (web, aucune URL, ou URL « memory ») — cf. [inMemoryModeProvider].
 
 final class AuthRepositoryProvider
     extends $FunctionalProvider<AuthRepository, AuthRepository, AuthRepository>
     with $Provider<AuthRepository> {
   /// Fournit l'implémentation du repository d'authentification.
   ///
-  /// Vrais appels HTTP hors web ; en mémoire sur le web (CORS), comme pour le
-  /// repository des chants distants.
+  /// Vrais appels HTTP quand un backend réel est configuré ; en mémoire sinon
+  /// (web, aucune URL, ou URL « memory ») — cf. [inMemoryModeProvider].
   AuthRepositoryProvider._()
     : super(
         from: null,
@@ -61,4 +61,4 @@ final class AuthRepositoryProvider
   }
 }
 
-String _$authRepositoryHash() => r'd85a0d3c926fdf2a49c7c43557fdfe2bf346a0b6';
+String _$authRepositoryHash() => r'abe313f4b65846bc1b789d3054143ebaf3b51c7b';

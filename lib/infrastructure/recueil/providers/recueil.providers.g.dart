@@ -9,13 +9,15 @@ part of 'recueil.providers.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// Provider pour le repository des recueils distants.
-/// Utilise l'implémentation en mémoire sur le web (CORS).
+/// En mémoire en mode démo (web, aucune URL, ou URL « memory »),
+/// appels Dio sinon — cf. [inMemoryModeProvider].
 
 @ProviderFor(remoteRecueilRepository)
 final remoteRecueilRepositoryProvider = RemoteRecueilRepositoryProvider._();
 
 /// Provider pour le repository des recueils distants.
-/// Utilise l'implémentation en mémoire sur le web (CORS).
+/// En mémoire en mode démo (web, aucune URL, ou URL « memory »),
+/// appels Dio sinon — cf. [inMemoryModeProvider].
 
 final class RemoteRecueilRepositoryProvider
     extends
@@ -26,7 +28,8 @@ final class RemoteRecueilRepositoryProvider
         >
     with $Provider<RemoteRecueilRepository> {
   /// Provider pour le repository des recueils distants.
-  /// Utilise l'implémentation en mémoire sur le web (CORS).
+  /// En mémoire en mode démo (web, aucune URL, ou URL « memory »),
+  /// appels Dio sinon — cf. [inMemoryModeProvider].
   RemoteRecueilRepositoryProvider._()
     : super(
         from: null,
@@ -62,7 +65,7 @@ final class RemoteRecueilRepositoryProvider
 }
 
 String _$remoteRecueilRepositoryHash() =>
-    r'612a7c141dcb0e5e407fd813e0b6697de136c854';
+    r'3e2f042c60043ea4c983c50fb78913561f374099';
 
 /// Liste des recueils disponibles sur le serveur configuré.
 ///
@@ -115,7 +118,7 @@ final class AvailableRecueilsProvider
   }
 }
 
-String _$availableRecueilsHash() => r'cd76bee1e27fc24801e1ee0277ceacf3244d107e';
+String _$availableRecueilsHash() => r'1e3f50b0412de4cdfddc83e8eb7ee6dba941d1eb';
 
 /// Catalogue complet des chants distants (un seul appel `/api/songs`).
 ///
@@ -171,7 +174,7 @@ final class RemoteSongCatalogProvider
   }
 }
 
-String _$remoteSongCatalogHash() => r'16f025a7a2bbb80c9b990a93e57868bc851b9275';
+String _$remoteSongCatalogHash() => r'8fe1490c7a16f3aff42e6d40c9075ee1cf9c35c7';
 
 /// Statistiques par code de recueil : total (depuis le catalogue mémoïsé) et
 /// nombre de chants déjà téléchargés (présence des partitions sur le disque).

@@ -7,9 +7,11 @@ class SharedPreferencesSettingsRepository implements SettingsRepository {
   /// Publique pour que la migration de démarrage puisse la cibler.
   static const String backendUrlKey = 'backend_url';
 
-  /// URL par défaut du backend au premier démarrage (domaine uniquement,
-  /// les chemins d'API sont ajoutés dans le code via BackendEndpoints).
-  static const String defaultBackendUrl = 'https://songbook.dtfh.fr';
+  /// URL par défaut tant qu'aucune n'a été configurée : **vide**, ce qui fait
+  /// démarrer l'app en mode démo in-memory (cf. `inMemoryModeProvider`). Pour
+  /// viser un vrai backend, l'utilisateur saisit l'URL via la roue crantée du
+  /// login (ou « memory » pour forcer la démo après coup).
+  static const String defaultBackendUrl = '';
 
   /// Clé SharedPreferences sous laquelle les codes des recueils sélectionnés
   /// (cache local des partitions) sont stockés.

@@ -54,13 +54,15 @@ final class DioProvider extends $FunctionalProvider<Dio, Dio, Dio>
 String _$dioHash() => r'fe06476ea1a7dfddbc28a8a154d81ec69066e317';
 
 /// Provider pour le repository des songs distants.
-/// Utilise InMemoryRemoteSongRepository sur le web (CORS empêche les appels Dio directs).
+/// En mémoire en mode démo (web, aucune URL, ou URL « memory »),
+/// appels Dio sinon — cf. [inMemoryModeProvider].
 
 @ProviderFor(remoteSongRepository)
 final remoteSongRepositoryProvider = RemoteSongRepositoryProvider._();
 
 /// Provider pour le repository des songs distants.
-/// Utilise InMemoryRemoteSongRepository sur le web (CORS empêche les appels Dio directs).
+/// En mémoire en mode démo (web, aucune URL, ou URL « memory »),
+/// appels Dio sinon — cf. [inMemoryModeProvider].
 
 final class RemoteSongRepositoryProvider
     extends
@@ -71,7 +73,8 @@ final class RemoteSongRepositoryProvider
         >
     with $Provider<RemoteSongRepository> {
   /// Provider pour le repository des songs distants.
-  /// Utilise InMemoryRemoteSongRepository sur le web (CORS empêche les appels Dio directs).
+  /// En mémoire en mode démo (web, aucune URL, ou URL « memory »),
+  /// appels Dio sinon — cf. [inMemoryModeProvider].
   RemoteSongRepositoryProvider._()
     : super(
         from: null,
@@ -107,18 +110,20 @@ final class RemoteSongRepositoryProvider
 }
 
 String _$remoteSongRepositoryHash() =>
-    r'fec5963f9ce7dc008262f642d1f7d14c39276f75';
+    r'eaeecb1adcdd9e021d82823eae7a2bed49d60b56';
 
 /// Provider pour le cache des ressources (images/PDF).
-/// Utilise InMemoryResourceCacheRepository sur le web.
-/// Retourne un Future car nécessite le chemin du répertoire de l'application (hors web).
+/// En mémoire en mode démo (web, aucune URL, ou URL « memory ») : aucune
+/// écriture disque — cf. [inMemoryModeProvider]. Retourne un Future car la
+/// version sur fichiers nécessite le chemin du répertoire de l'application.
 
 @ProviderFor(resourceCacheRepository)
 final resourceCacheRepositoryProvider = ResourceCacheRepositoryProvider._();
 
 /// Provider pour le cache des ressources (images/PDF).
-/// Utilise InMemoryResourceCacheRepository sur le web.
-/// Retourne un Future car nécessite le chemin du répertoire de l'application (hors web).
+/// En mémoire en mode démo (web, aucune URL, ou URL « memory ») : aucune
+/// écriture disque — cf. [inMemoryModeProvider]. Retourne un Future car la
+/// version sur fichiers nécessite le chemin du répertoire de l'application.
 
 final class ResourceCacheRepositoryProvider
     extends
@@ -131,8 +136,9 @@ final class ResourceCacheRepositoryProvider
         $FutureModifier<ResourceCacheRepository>,
         $FutureProvider<ResourceCacheRepository> {
   /// Provider pour le cache des ressources (images/PDF).
-  /// Utilise InMemoryResourceCacheRepository sur le web.
-  /// Retourne un Future car nécessite le chemin du répertoire de l'application (hors web).
+  /// En mémoire en mode démo (web, aucune URL, ou URL « memory ») : aucune
+  /// écriture disque — cf. [inMemoryModeProvider]. Retourne un Future car la
+  /// version sur fichiers nécessite le chemin du répertoire de l'application.
   ResourceCacheRepositoryProvider._()
     : super(
         from: null,
@@ -160,7 +166,7 @@ final class ResourceCacheRepositoryProvider
 }
 
 String _$resourceCacheRepositoryHash() =>
-    r'53e808121f1a5d00adc2521496457fcc15524990';
+    r'5ab07bc26f46501c36169bd93731de9365f25491';
 
 /// Provider pour le service de synchronisation.
 

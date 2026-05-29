@@ -33,6 +33,13 @@ Future<void> main() async {
     // getDeviceId already degrades gracefully; ignore here too.
   }
 
+  // Preload the backend URL so the real-vs-in-memory decision
+  // (inMemoryModeProvider) is settled before the first repository read. Without
+  // it, a transient in-memory start could miss restoring a persisted session
+  // (the keepAlive token store). Best-effort: the notifier swallows its own
+  // errors and resolves to null.
+  await container.read(backendUrlProvider.future);
+
   // Run pending data migrations before the first screen reads the DB.
   // Web uses an in-memory repository (no sqflite), so there's nothing to
   // migrate there. The runner is log-and-continue and never throws, but we
@@ -47,9 +54,7 @@ Future<void> main() async {
 
   logger.info('app.started');
 
-  runApp(
-    UncontrolledProviderScope(container: container, child: const MyApp()),
-  );
+  runApp(UncontrolledProviderScope(container: container, child: const MyApp()));
 }
 
 /// Routes uncaught Flutter/Dart errors to the logger.

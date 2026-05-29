@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -11,6 +10,7 @@ import 'package:songbook/infrastructure/auth/providers/auth_token_store.provider
 import 'package:songbook/infrastructure/auth/providers/session_revocation.provider.dart';
 import 'package:songbook/infrastructure/resource/dio.resource_cache.repository.dart';
 import 'package:songbook/infrastructure/resource/in_memory.resource_cache.repository.dart';
+import 'package:songbook/infrastructure/settings/providers/in_memory_mode.provider.dart';
 import 'package:songbook/infrastructure/song/dio.remote_song.repository.dart';
 import 'package:songbook/infrastructure/song/in_memory.remote_song.repository.dart';
 import 'package:songbook/infrastructure/song/providers/song.repository_provider.dart';
@@ -103,10 +103,11 @@ Dio dio(Ref ref) {
 }
 
 /// Provider pour le repository des songs distants.
-/// Utilise InMemoryRemoteSongRepository sur le web (CORS empêche les appels Dio directs).
+/// En mémoire en mode démo (web, aucune URL, ou URL « memory »),
+/// appels Dio sinon — cf. [inMemoryModeProvider].
 @riverpod
 RemoteSongRepository remoteSongRepository(Ref ref) {
-  if (kIsWeb) {
+  if (ref.watch(inMemoryModeProvider)) {
     return InMemoryRemoteSongRepository();
   }
   final dio = ref.watch(dioProvider);
@@ -114,11 +115,12 @@ RemoteSongRepository remoteSongRepository(Ref ref) {
 }
 
 /// Provider pour le cache des ressources (images/PDF).
-/// Utilise InMemoryResourceCacheRepository sur le web.
-/// Retourne un Future car nécessite le chemin du répertoire de l'application (hors web).
+/// En mémoire en mode démo (web, aucune URL, ou URL « memory ») : aucune
+/// écriture disque — cf. [inMemoryModeProvider]. Retourne un Future car la
+/// version sur fichiers nécessite le chemin du répertoire de l'application.
 @riverpod
 Future<ResourceCacheRepository> resourceCacheRepository(Ref ref) async {
-  if (kIsWeb) {
+  if (ref.watch(inMemoryModeProvider)) {
     return InMemoryResourceCacheRepository();
   }
   final dio = ref.watch(dioProvider);

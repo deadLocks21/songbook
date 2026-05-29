@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:songbook/core/application/dtos/song.dto.dart';
 import 'package:songbook/core/domain/services/resource_cache.repository.dart';
 import 'package:songbook/core/domain/services/song.repository.dart';
@@ -18,8 +17,12 @@ class SongCatalogService {
   }
 
   Future<void> clearDatabase() async {
-    if (!kIsWeb) {
-      final cacheDir = Directory(_resourceCacheRepository.getCacheDirectory());
+    // Le cache disque n'existe qu'avec une implémentation sur fichiers. En mode
+    // démo/en mémoire, `getCacheDirectory()` renvoie une chaîne vide : il n'y a
+    // rien à supprimer (et surtout pas `Directory('')`, le répertoire courant).
+    final cachePath = _resourceCacheRepository.getCacheDirectory();
+    if (cachePath.isNotEmpty) {
+      final cacheDir = Directory(cachePath);
       if (await cacheDir.exists()) {
         await cacheDir.delete(recursive: true);
       }

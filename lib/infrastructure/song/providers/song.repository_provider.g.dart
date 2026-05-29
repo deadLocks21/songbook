@@ -9,19 +9,40 @@ part of 'song.repository_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// Provider pour l'implémentation du SongRepository.
-/// Utilise InMemorySongRepository sur le web, DriftSongRepository sinon.
+/// En mémoire en mode démo (web, aucune URL, ou URL « memory »),
+/// DriftSongRepository sinon — cf. [inMemoryModeProvider].
+///
+/// En mode démo, [InMemorySongRepository] garde les chants dans un champ
+/// d'instance : on **épingle** alors le provider (`ref.keepAlive`) pour que
+/// l'auto-dispose ne recrée pas une instance vide entre la synchro et l'accueil
+/// (sinon : chants perdus « count=0 » et re-synchros en boucle). Drift persiste
+/// sur disque, donc seul l'in-memory a besoin de cette épingle.
 
 @ProviderFor(songRepository)
 final songRepositoryProvider = SongRepositoryProvider._();
 
 /// Provider pour l'implémentation du SongRepository.
-/// Utilise InMemorySongRepository sur le web, DriftSongRepository sinon.
+/// En mémoire en mode démo (web, aucune URL, ou URL « memory »),
+/// DriftSongRepository sinon — cf. [inMemoryModeProvider].
+///
+/// En mode démo, [InMemorySongRepository] garde les chants dans un champ
+/// d'instance : on **épingle** alors le provider (`ref.keepAlive`) pour que
+/// l'auto-dispose ne recrée pas une instance vide entre la synchro et l'accueil
+/// (sinon : chants perdus « count=0 » et re-synchros en boucle). Drift persiste
+/// sur disque, donc seul l'in-memory a besoin de cette épingle.
 
 final class SongRepositoryProvider
     extends $FunctionalProvider<SongRepository, SongRepository, SongRepository>
     with $Provider<SongRepository> {
   /// Provider pour l'implémentation du SongRepository.
-  /// Utilise InMemorySongRepository sur le web, DriftSongRepository sinon.
+  /// En mémoire en mode démo (web, aucune URL, ou URL « memory »),
+  /// DriftSongRepository sinon — cf. [inMemoryModeProvider].
+  ///
+  /// En mode démo, [InMemorySongRepository] garde les chants dans un champ
+  /// d'instance : on **épingle** alors le provider (`ref.keepAlive`) pour que
+  /// l'auto-dispose ne recrée pas une instance vide entre la synchro et l'accueil
+  /// (sinon : chants perdus « count=0 » et re-synchros en boucle). Drift persiste
+  /// sur disque, donc seul l'in-memory a besoin de cette épingle.
   SongRepositoryProvider._()
     : super(
         from: null,
@@ -55,4 +76,4 @@ final class SongRepositoryProvider
   }
 }
 
-String _$songRepositoryHash() => r'b02592b96a9822e623c250407b567cf62b764642';
+String _$songRepositoryHash() => r'88aa12a20068c38a020970ef14efcc9b1073e3a8';

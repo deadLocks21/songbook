@@ -3,6 +3,11 @@ import 'package:songbook/core/domain/model/remote_song.dart';
 import 'package:songbook/core/domain/services/remote_song.repository.dart';
 
 /// Implémentation du RemoteSongRepository en mémoire.
+///
+/// Reproduit fidèlement le jeu de chants d'exemple servi par l'API
+/// (`GET /api/songs/examples`, cf. `songbook-api` GetSongsExamplesController) :
+/// mêmes id, code, nom, date, ressources et recueils, pour que le mode démo
+/// affiche exactement les mêmes données que le backend.
 class InMemoryRemoteSongRepository implements RemoteSongRepository {
   InMemoryRemoteSongRepository();
 
@@ -13,38 +18,37 @@ class InMemoryRemoteSongRepository implements RemoteSongRepository {
   }) async {
     const jsonList = [
       {
-        'id': '7cba49da-a9d1-4b7f-8e46-bf4ea27570cc',
-        'code': 'JEM799',
-        'name': 'Nous annonçons le Roi',
-        'updatedAt': '2026-01-08T10:00:00Z',
+        'id': '550e8400-e29b-41d4-a716-446655440001',
+        'code': 'JN-001',
+        'name': 'Amazing Grace',
+        'updatedAt': '2024-01-01T00:00:00+00:00',
         'resources': [
           {
-            'id': '33fe9c36-2124-48c3-b6b4-43796e885f0d',
-            'name': 'Partition',
+            'id': '550e8400-e29b-41d4-a716-446655440101',
             'type': 'image',
-            'imageUrls': [
-              'https://timothe.hofmann.fr/Partitions/JEM/jem799/0001.jpg',
-              'https://timothe.hofmann.fr/Partitions/JEM/jem799/0002.jpg',
+            'data': [
+              'http://localhost/api/songs/550e8400-e29b-41d4-a716-446655440001/partitions/1/download',
+              'http://localhost/api/songs/550e8400-e29b-41d4-a716-446655440001/partitions/2/download',
             ],
           },
         ],
+        'recueils': ['REC-001'],
       },
       {
-        'id': '1eef82e2-4ead-4c2b-90c9-adf3af3fe09b',
-        'code': 'JEM876',
-        'name': 'Mon rédempteur vit',
-        'updatedAt': '2026-01-08T10:00:00Z',
-        'resources': [
-          {
-            'id': '58ed430f-4ca9-4fec-9bee-addf92ff2c9e',
-            'name': 'Partition',
-            'type': 'image',
-            'imageUrls': [
-              'https://timothe.hofmann.fr/Partitions/JEM/jem876/0001.jpg',
-              'https://timothe.hofmann.fr/Partitions/JEM/jem876/0002.jpg',
-            ],
-          },
-        ],
+        'id': '550e8400-e29b-41d4-a716-446655440002',
+        'code': 'JMS-001',
+        'name': 'What a Friend We Have in Jesus',
+        'updatedAt': '2024-01-02T00:00:00+00:00',
+        'resources': <Map<String, dynamic>>[],
+        'recueils': ['REC-001'],
+      },
+      {
+        'id': '550e8400-e29b-41d4-a716-446655440003',
+        'code': 'DF-001',
+        'name': 'Be Thou My Vision',
+        'updatedAt': '2024-01-03T00:00:00+00:00',
+        'resources': <Map<String, dynamic>>[],
+        'recueils': <String>[],
       },
     ];
     return jsonList

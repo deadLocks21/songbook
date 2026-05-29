@@ -48,6 +48,30 @@ void main() {
     test('returns the trimmed input unchanged when unparseable', () {
       expect(BackendUrl.normalize('  not a url  '), 'not a url');
     });
+
+    test('keeps the "memory" sentinel unchanged', () {
+      expect(BackendUrl.normalize('  memory  '), 'memory');
+    });
+  });
+
+  group('BackendUrl.isInMemoryUrl', () {
+    test('is true when null', () {
+      expect(BackendUrl.isInMemoryUrl(null), isTrue);
+    });
+
+    test('is true when empty or blank', () {
+      expect(BackendUrl.isInMemoryUrl(''), isTrue);
+      expect(BackendUrl.isInMemoryUrl('   '), isTrue);
+    });
+
+    test('is true for the "memory" sentinel (trimmed)', () {
+      expect(BackendUrl.isInMemoryUrl('memory'), isTrue);
+      expect(BackendUrl.isInMemoryUrl('  memory  '), isTrue);
+    });
+
+    test('is false for a real URL', () {
+      expect(BackendUrl.isInMemoryUrl('https://songbook.dtfh.fr'), isFalse);
+    });
   });
 
   group('BackendUrl.validate', () {
@@ -76,6 +100,11 @@ void main() {
 
     test('rejects a query string', () {
       expect(BackendUrl.validate('https://songbook.dtfh.fr?x=1'), isNotNull);
+    });
+
+    test('accepts the "memory" sentinel', () {
+      expect(BackendUrl.validate('memory'), isNull);
+      expect(BackendUrl.validate('  memory  '), isNull);
     });
   });
 

@@ -1,20 +1,21 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:songbook/core/domain/model/recueil.dart';
 import 'package:songbook/core/domain/model/remote_song.dart';
 import 'package:songbook/core/domain/services/remote_recueil.repository.dart';
 import 'package:songbook/infrastructure/recueil/dio.remote_recueil.repository.dart';
 import 'package:songbook/infrastructure/recueil/in_memory.remote_recueil.repository.dart';
+import 'package:songbook/infrastructure/settings/providers/in_memory_mode.provider.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.service_provider.dart';
 import 'package:songbook/infrastructure/song/providers/sync.providers.dart';
 
 part 'recueil.providers.g.dart';
 
 /// Provider pour le repository des recueils distants.
-/// Utilise l'implémentation en mémoire sur le web (CORS).
+/// En mémoire en mode démo (web, aucune URL, ou URL « memory »),
+/// appels Dio sinon — cf. [inMemoryModeProvider].
 @riverpod
 RemoteRecueilRepository remoteRecueilRepository(Ref ref) {
-  if (kIsWeb) {
+  if (ref.watch(inMemoryModeProvider)) {
     return InMemoryRemoteRecueilRepository();
   }
   return DioRemoteRecueilRepository(ref.watch(dioProvider));
@@ -26,11 +27,12 @@ RemoteRecueilRepository remoteRecueilRepository(Ref ref) {
 /// n'utiliser qu'après connexion.
 @riverpod
 Future<List<Recueil>> availableRecueils(Ref ref) async {
+  // En mode démo (aucune URL ou « memory »), le repo est en mémoire et ignore
+  // l'URL ; sinon l'appel Dio l'utilise (JWT injecté par l'intercepteur).
   final backendUrl = await ref.watch(backendUrlProvider.future);
-  if (backendUrl == null || backendUrl.isEmpty) {
-    return const [];
-  }
-  return ref.watch(remoteRecueilRepositoryProvider).fetchRecueils(backendUrl);
+  return ref
+      .watch(remoteRecueilRepositoryProvider)
+      .fetchRecueils(backendUrl ?? '');
 }
 
 /// Catalogue complet des chants distants (un seul appel `/api/songs`).
@@ -41,10 +43,7 @@ Future<List<Recueil>> availableRecueils(Ref ref) async {
 @riverpod
 Future<List<RemoteSong>> remoteSongCatalog(Ref ref) async {
   final backendUrl = await ref.watch(backendUrlProvider.future);
-  if (backendUrl == null || backendUrl.isEmpty) {
-    return const [];
-  }
-  return ref.watch(remoteSongRepositoryProvider).fetchSongs(backendUrl);
+  return ref.watch(remoteSongRepositoryProvider).fetchSongs(backendUrl ?? '');
 }
 
 /// Statistiques d'un recueil : nombre total de chants et nombre de chants déjà

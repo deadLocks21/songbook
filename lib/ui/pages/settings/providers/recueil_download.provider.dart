@@ -54,12 +54,9 @@ class RecueilDownloadNotifier extends Notifier<RecueilDownloadState> {
 
     state = const RecueilDownloadInProgress(0, 0);
     try {
-      final baseUrl = await ref.read(backendUrlProvider.future);
-      if (baseUrl == null || baseUrl.isEmpty) {
-        state = const RecueilDownloadFailure('Aucun serveur configuré.');
-        return;
-      }
-
+      // En mode démo (aucune URL ou « memory »), les repos sont en mémoire et
+      // l'URL vide est ignorée. Cf. [inMemoryModeProvider].
+      final baseUrl = await ref.read(backendUrlProvider.future) ?? '';
       final songs = await ref
           .read(remoteSongRepositoryProvider)
           .fetchSongs(baseUrl, recueils: selected);
@@ -93,5 +90,5 @@ class RecueilDownloadNotifier extends Notifier<RecueilDownloadState> {
 /// Provider pour le notifier de téléchargement des recueils.
 final recueilDownloadNotifierProvider =
     NotifierProvider<RecueilDownloadNotifier, RecueilDownloadState>(
-  RecueilDownloadNotifier.new,
-);
+      RecueilDownloadNotifier.new,
+    );

@@ -7,6 +7,19 @@
 class BackendUrl {
   const BackendUrl._();
 
+  /// Valeur sentinelle qui, saisie comme URL serveur, force les implémentations
+  /// en mémoire (données factices, ni réseau ni disque) : mode démo/dev sans
+  /// backend. Cf. `inMemoryModeProvider`.
+  static const String memorySentinel = 'memory';
+
+  /// Vrai quand [backendUrl] désigne le mode « en mémoire » : valeur absente /
+  /// vide, ou égale à la sentinelle [memorySentinel]. Le cas web est traité à
+  /// part (cf. `inMemoryModeProvider`).
+  static bool isInMemoryUrl(String? backendUrl) {
+    final trimmed = backendUrl?.trim() ?? '';
+    return trimmed.isEmpty || trimmed == memorySentinel;
+  }
+
   /// Normalises [input] to its origin (`scheme://host[:port]`), dropping any
   /// path, query, fragment and trailing slash. Returns the trimmed input
   /// unchanged when it cannot be parsed as an `http`/`https` URL with a host,
@@ -30,6 +43,10 @@ class BackendUrl {
     final trimmed = input.trim();
     if (trimmed.isEmpty) {
       return 'L\'URL ne peut pas être vide';
+    }
+    if (trimmed == memorySentinel) {
+      // Sentinelle de démo : acceptée telle quelle (cf. [memorySentinel]).
+      return null;
     }
     final uri = Uri.tryParse(trimmed);
     if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {

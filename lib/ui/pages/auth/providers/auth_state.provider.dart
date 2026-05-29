@@ -65,21 +65,15 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
-  /// URL du backend configurée, ou `null` si absente (rien à appeler).
-  Future<String?> _backendUrl() async {
-    final url = await ref.read(backendUrlProvider.future);
-    return (url == null || url.isEmpty) ? null : url;
-  }
-
   /// Demande l'envoi d'un OTP pour [phoneNumber].
   ///
   /// Retourne `null` en cas de succès (l'état passe à [AuthOtpPending]), sinon
   /// un message d'erreur à afficher.
   Future<String?> requestOtp(String phoneNumber) async {
-    final baseUrl = await _backendUrl();
-    if (baseUrl == null) {
-      return 'Configurez d\'abord l\'URL du serveur (roue crantée).';
-    }
+    // Sans backend réel (aucune URL ou « memory »), le repo d'auth est en
+    // mémoire et accepte le couple numéro/OTP de démo ; l'URL passée est alors
+    // ignorée. Cf. [inMemoryModeProvider].
+    final baseUrl = await ref.read(backendUrlProvider.future) ?? '';
     try {
       await _authService.requestOtp(phoneNumber, baseUrl);
       state = AuthOtpPending(phoneNumber);
@@ -102,10 +96,7 @@ class AuthNotifier extends Notifier<AuthState> {
     if (current is! AuthOtpPending) {
       return 'Session expirée. Recommencez.';
     }
-    final baseUrl = await _backendUrl();
-    if (baseUrl == null) {
-      return 'Configurez d\'abord l\'URL du serveur (roue crantée).';
-    }
+    final baseUrl = await ref.read(backendUrlProvider.future) ?? '';
     try {
       await _authService.verifyOtp(current.phoneNumber, otp, baseUrl);
       state = AuthAuthenticated(current.phoneNumber);

@@ -24,40 +24,47 @@ class SyncPage extends ConsumerStatefulWidget {
 }
 
 class _SyncPageState extends ConsumerState<SyncPage> {
-  /// Empêche de relancer plusieurs effets (popup, navigation) pour un même
-  /// état terminal.
-  bool _handled = false;
+  /// Évite un double effet de fin (navigation / popup) pour une même synchro.
+  bool _finished = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final backendUrl = await ref.read(backendUrlProvider.future);
-      if (!mounted) return;
-      if (backendUrl == null || backendUrl.isEmpty) {
-        // Aucun serveur configuré : rien à synchroniser, on continue.
-        _finish(success: false);
-        return;
-      }
-      ref.read(syncStateNotifierProvider.notifier).sync(backendUrl);
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _runSync());
+  }
+
+  /// Lance la synchro puis **navigue d'après son résultat** (le `Future` qu'on
+  /// attend), et non en observant une transition d'état.
+  ///
+  /// `syncStateNotifierProvider` est global : son état reste `SyncSuccess`
+  /// d'une synchro à l'autre. Or une synchro **in-memory** est si rapide que
+  /// `SyncInProgress → SyncSuccess` se produit dans un même cycle de microtasks ;
+  /// si l'état précédent était déjà `SyncSuccess` (relogin, sync manuelle…),
+  /// Riverpod ne voit aucun changement net et un `ref.listen` ne se déclenche
+  /// jamais → l'écran resterait bloqué. Attendre le `Future` est déterministe,
+  /// quelle que soit la vitesse de la synchro (in-memory comme réseau réel).
+  Future<void> _runSync() async {
+    final backendUrl = await ref.read(backendUrlProvider.future);
+    if (!mounted) return;
+    // En mode démo (aucune URL ou « memory »), la synchro tourne sur les repos
+    // en mémoire ; l'URL vide est ignorée. Cf. [inMemoryModeProvider].
+    await ref.read(syncStateNotifierProvider.notifier).sync(backendUrl ?? '');
+    if (!mounted) return;
+
+    switch (ref.read(syncStateProvider)) {
+      case SyncSuccess():
+        _finish(success: true);
+      case SyncFailure(:final message):
+        await _showFailureDialog(message);
+      case SyncInProgress() || SyncCachingPartitions():
+        // Cas 401 (backend réel) : `sync()` sort sans état terminal et la
+        // ré-authentification (intercepteur Dio) pilote la navigation.
+        break;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<SyncState>(syncStateProvider, (previous, next) {
-      switch (next) {
-        case SyncSuccess():
-          _finish(success: true);
-        case SyncFailure(:final message):
-          _showFailureDialog(message);
-        case SyncInProgress():
-          _handled = false;
-        case SyncCachingPartitions():
-          _handled = false;
-      }
-    });
-
     final state = ref.watch(syncStateProvider);
 
     return Scaffold(
@@ -96,16 +103,12 @@ class _SyncPageState extends ConsumerState<SyncPage> {
   }
 
   Future<void> _showFailureDialog(String message) async {
-    if (_handled || !mounted) return;
-    _handled = true;
+    if (!mounted) return;
 
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        icon: Icon(
-          Icons.cloud_off,
-          color: Theme.of(context).colorScheme.error,
-        ),
+        icon: Icon(Icons.cloud_off, color: Theme.of(context).colorScheme.error),
         title: const Text('Synchronisation impossible'),
         content: Text(
           '$message\n\nLes chants déjà enregistrés restent accessibles.',
@@ -125,7 +128,8 @@ class _SyncPageState extends ConsumerState<SyncPage> {
   /// Termine l'écran : navigation vers la home au démarrage, retour à l'écran
   /// précédent sinon.
   void _finish({required bool success}) {
-    if (!mounted) return;
+    if (!mounted || _finished) return;
+    _finished = true;
 
     if (widget.isStartupSync) {
       Navigator.of(context).pushAndRemoveUntil(
