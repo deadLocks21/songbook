@@ -526,24 +526,20 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
             const SizedBox(height: 32),
 
-            // Section Compte
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                'Compte',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ),
-
+            // Déconnexion (séparée du reste des réglages)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: OutlinedButton.icon(
                 key: const Key('logoutButton'),
                 onPressed: _logout,
-                icon: const Icon(Icons.logout),
-                label: const Text('Se déconnecter'),
+                icon: const Icon(Icons.logout, color: Colors.red),
+                label: const Text(
+                  'Se déconnecter',
+                  style: TextStyle(color: Colors.red),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.red),
+                ),
               ),
             ),
 
