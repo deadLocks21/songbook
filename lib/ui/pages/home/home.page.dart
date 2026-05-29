@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/infrastructure/recueil/providers/recueil.providers.dart';
-import 'package:songbook/ui/pages/chord_pro_viewer/chord_pro_viewer.page.dart';
 import 'package:songbook/ui/pages/home/widgets/songs_tab.widget.dart';
 import 'package:songbook/ui/pages/settings/settings.page.dart';
 import 'package:songbook/ui/pages/song_lists/song_lists.page.dart';
@@ -36,18 +35,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Songbook'),
-        actions: [
-          IconButton(
-            tooltip: 'Démo ChordPro',
-            icon: const Icon(Icons.lyrics),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ChordProViewerPage()),
-            ),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Songbook')),
       body: IndexedStack(index: _currentIndex, children: _tabs),
       bottomNavigationBar: Align(
         alignment: Alignment.bottomCenter,

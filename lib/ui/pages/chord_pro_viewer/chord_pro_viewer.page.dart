@@ -1,79 +1,13 @@
 import 'package:chord_pro/chord_pro.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
-
-/// Asset ChordPro affiché par défaut (démo).
-const _demoAsset = 'assets/À cause de ton nom.chordpro';
-
-/// Page de démonstration du rendu ChordPro avec transposition.
-///
-/// Charge [source] si fourni, sinon l'asset [_demoAsset].
-class ChordProViewerPage extends StatefulWidget {
-  const ChordProViewerPage({super.key, this.source});
-
-  /// Contenu ChordPro à afficher. Si `null`, l'asset de démo est chargé.
-  final String? source;
-
-  @override
-  State<ChordProViewerPage> createState() => _ChordProViewerPageState();
-}
-
-class _ChordProViewerPageState extends State<ChordProViewerPage> {
-  Song? _base;
-  int _semitones = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    final source = widget.source ?? await rootBundle.loadString(_demoAsset);
-    if (!mounted) return;
-    setState(() => _base = ChordPro.parseSong(source));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final base = _base;
-    if (base == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-    final song = _semitones == 0 ? base : base.transposed(_semitones);
-    final title = song.metadata.titles.isNotEmpty
-        ? song.metadata.titles.first
-        : 'ChordPro';
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        actions: [
-          IconButton(
-            tooltip: 'Transposer',
-            icon: const Icon(Icons.tune),
-            onPressed: () => showChordProTransposeSheet(
-              context,
-              semitones: _semitones,
-              onTranspose: (delta) => setState(
-                () => _semitones = (_semitones + delta).clamp(-11, 11),
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: ChordProView(song: song),
-    );
-  }
-}
 
 /// Affiche le contenu d'un ChordPro déjà parsé et transposé : en-tête
 /// (métadonnées) puis sections (couplets, refrains, …).
 ///
 /// Sans Scaffold ni AppBar : le widget est conçu pour être intégré dans une
-/// page hôte (la page de démo [ChordProViewerPage] ou la visionneuse de chant).
-/// La transposition est portée par le parent, qui fournit un [song] déjà
-/// transposé et, au besoin, le panneau via [showChordProTransposeSheet].
+/// page hôte (la visionneuse de chant). La transposition est portée par le
+/// parent, qui fournit un [song] déjà transposé et, au besoin, le panneau via
+/// [showChordProTransposeSheet].
 class ChordProView extends StatelessWidget {
   const ChordProView({super.key, required this.song});
 
