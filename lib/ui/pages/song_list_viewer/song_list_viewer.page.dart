@@ -28,6 +28,12 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
   /// ChordPro. Remis à zéro à chaque changement de chant.
   int _semitones = 0;
 
+  /// Tonalité d'origine (`{key:}`) du chant courant, une fois parsé. Remise à
+  /// zéro à chaque changement de chant, comme la transposition. Un
+  /// [ValueNotifier] pour qu'un panneau de transposition déjà ouvert se
+  /// rafraîchisse dès que le parsing la résout.
+  final ValueNotifier<String?> _originalKey = ValueNotifier<String?>(null);
+
   /// Première partition image non vide du chant, le cas échéant.
   ImageResourceDto? _imageOf(SongDto song) => song.resources
       .whereType<ImageResourceDto>()
@@ -51,6 +57,12 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
       if (type == DisplayResourceType.chordPro && hasChordPro) return type;
     }
     return null;
+  }
+
+  @override
+  void dispose() {
+    _originalKey.dispose();
+    super.dispose();
   }
 
   @override
@@ -109,6 +121,7 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
                   onPressed: () => showChordProTransposeSheet(
                     context,
                     semitones: _semitones,
+                    originalKey: _originalKey,
                     onTranspose: (delta) => setState(
                       () => _semitones = (_semitones + delta).clamp(-11, 11),
                     ),
@@ -166,6 +179,7 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
           songId: song.id,
           chordProUrl: _chordProOf(song)!.chordProUrl,
           semitones: _semitones,
+          onOriginalKey: (key) => _originalKey.value = key,
         );
       case null:
         return const Center(
@@ -231,6 +245,7 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
       setState(() {
         _currentIndex--;
         _semitones = 0;
+        _originalKey.value = null;
       });
     }
   }
@@ -242,6 +257,7 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
       setState(() {
         _currentIndex++;
         _semitones = 0;
+        _originalKey.value = null;
       });
     }
   }
@@ -257,6 +273,7 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
       setState(() {
         _currentIndex = selectedIndex;
         _semitones = 0;
+        _originalKey.value = null;
       });
     }
   }

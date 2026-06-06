@@ -26,11 +26,17 @@ class CachedChordProViewer extends ConsumerStatefulWidget {
   final String chordProUrl;
   final int semitones;
 
+  /// Appelé après le parsing avec la tonalité d'origine du chant (`{key:}`),
+  /// ou `null` si le fichier n'en déclare pas. Permet à la page hôte d'afficher
+  /// la tonalité obtenue dans le contrôle de transposition.
+  final ValueChanged<String?>? onOriginalKey;
+
   const CachedChordProViewer({
     super.key,
     required this.songId,
     required this.chordProUrl,
     this.semitones = 0,
+    this.onOriginalKey,
   });
 
   @override
@@ -83,7 +89,9 @@ class _CachedChordProViewerState extends ConsumerState<CachedChordProViewer> {
       } else {
         source = await File(pathOrUrl).readAsString();
       }
-      return ChordPro.parseSong(source);
+      final song = ChordPro.parseSong(source);
+      _notifyOriginalKey(song.metadata.key);
+      return song;
     } catch (e, stack) {
       // L'erreur serait sinon avalée par le FutureBuilder : on la journalise
       // pour pouvoir diagnostiquer (statut HTTP 404/502, encodage du fichier,
@@ -98,6 +106,16 @@ class _CachedChordProViewerState extends ConsumerState<CachedChordProViewer> {
           );
       rethrow;
     }
+  }
+
+  /// Remonte la tonalité d'origine à la page hôte après le frame courant : on
+  /// évite ainsi de déclencher un `setState` parent pendant la phase de build.
+  void _notifyOriginalKey(String? key) {
+    final callback = widget.onOriginalKey;
+    if (callback == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) callback(key);
+    });
   }
 
   @override

@@ -1,4 +1,5 @@
 import 'package:chord_pro/chord_pro.dart';
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 
 /// Affiche le contenu d'un ChordPro déjà parsé et transposé : en-tête
@@ -105,11 +106,13 @@ class ChordProView extends StatelessWidget {
 /// Ouvre le panneau de transposition en bas de l'écran, laissant le contenu
 /// visible au-dessus (barrière non assombrie). [onTranspose] reçoit le delta de
 /// demi-tons à appliquer ; le parent met à jour son état de transposition et
-/// re-rend le contenu transposé.
+/// re-rend le contenu transposé. Si [originalKey] est fournie, la valeur
+/// centrale affiche la tonalité obtenue plutôt que le nombre de demi-tons.
 void showChordProTransposeSheet(
   BuildContext context, {
   required int semitones,
   required ValueChanged<int> onTranspose,
+  ValueListenable<String?>? originalKey,
 }) {
   var current = semitones;
   showModalBottomSheet<void>(
@@ -118,6 +121,7 @@ void showChordProTransposeSheet(
     builder: (_) => StatefulBuilder(
       builder: (context, setSheetState) => _TransposeSheet(
         semitones: current,
+        originalKey: originalKey,
         onTranspose: (delta) {
           current = (current + delta).clamp(-11, 11);
           onTranspose(delta);
@@ -197,42 +201,81 @@ class _Header extends StatelessWidget {
 /// Panneau de transposition affiché en bas de l'écran. Compact, il laisse la
 /// partition visible au-dessus.
 class _TransposeSheet extends StatelessWidget {
-  const _TransposeSheet({required this.semitones, required this.onTranspose});
+  const _TransposeSheet({
+    required this.semitones,
+    required this.onTranspose,
+    this.originalKey,
+  });
 
   final int semitones;
   final ValueChanged<int> onTranspose;
 
+  /// Tonalité d'origine observable : le panneau peut être ouvert avant la fin
+  /// du parsing, il se rafraîchit alors dès qu'elle est résolue.
+  final ValueListenable<String?>? originalKey;
+
   @override
   Widget build(BuildContext context) {
+    final listenable = originalKey;
+    final controls = listenable == null
+        ? ChordProTransposeControls(
+            semitones: semitones,
+            onTranspose: onTranspose,
+          )
+        : ValueListenableBuilder<String?>(
+            valueListenable: listenable,
+            builder: (context, key, _) => ChordProTransposeControls(
+              semitones: semitones,
+              originalKey: key,
+              onTranspose: onTranspose,
+            ),
+          );
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: ChordProTransposeControls(
-          semitones: semitones,
-          onTranspose: onTranspose,
-        ),
+        child: controls,
       ),
     );
   }
 }
 
+/// Tonalité obtenue en transposant [key] de [semitones] demi-tons, ou `null`
+/// quand la tonalité d'origine est inconnue ou n'est pas en notation à lettres
+/// (Nashville/romaine) — l'appelant retombe alors sur l'affichage « +X / -X ».
+///
+/// Calculée comme le package (`Song.transposed`, dièses par défaut), pour rester
+/// cohérent avec les accords et la tonalité de l'en-tête déjà transposés.
+String? _transposedKeyLabel(String? key, int semitones) {
+  if (key == null) return null;
+  final chord = Chord.tryParse(key);
+  if (chord == null || chord.system != ChordSystem.letter) return null;
+  return chord.transpose(semitones).raw;
+}
+
 /// Contrôles de transposition réutilisables : libellé « Transposition » et
-/// boutons −1 / +1 encadrant la valeur courante. Le parent porte l'état et
+/// boutons −1 / +1 encadrant la valeur courante. Quand la tonalité d'origine
+/// ([originalKey]) est connue, la valeur centrale affiche la tonalité obtenue
+/// (ex. « D ») plutôt que le nombre de demi-tons. Le parent porte l'état et
 /// reçoit le delta à appliquer via [onTranspose].
 ///
-/// Utilisé seul dans le panneau de transposition de la démo
-/// ([showChordProTransposeSheet]) comme dans le panneau d'options de la
-/// visionneuse de chant.
+/// Utilisé seul dans le panneau de transposition ([showChordProTransposeSheet])
+/// comme dans le panneau d'options de la visionneuse de chant.
 class ChordProTransposeControls extends StatelessWidget {
   const ChordProTransposeControls({
     super.key,
     required this.semitones,
     required this.onTranspose,
+    this.originalKey,
     this.enabled = true,
   });
 
   final int semitones;
   final ValueChanged<int> onTranspose;
+
+  /// Tonalité d'origine du chant (`{key:}`), si connue. Quand elle l'est, la
+  /// valeur centrale affiche la tonalité obtenue après transposition au lieu du
+  /// nombre de demi-tons ; sinon on retombe sur « +X / -X ».
+  final String? originalKey;
 
   /// Quand `false`, les contrôles restent affichés mais grisés et inactifs
   /// (ex. transposition non pertinente sur la vue Partition).
@@ -243,6 +286,8 @@ class ChordProTransposeControls extends StatelessWidget {
     final theme = Theme.of(context);
     // onPressed null désactive et grise automatiquement les IconButton.
     final disabledColor = theme.colorScheme.onSurface.withValues(alpha: 0.38);
+    // Tonalité obtenue après transposition, si la tonalité d'origine est connue.
+    final keyLabel = _transposedKeyLabel(originalKey, semitones);
     return Row(
       children: [
         Text(
@@ -258,9 +303,9 @@ class ChordProTransposeControls extends StatelessWidget {
           onPressed: enabled ? () => onTranspose(-1) : null,
         ),
         SizedBox(
-          width: 44,
+          width: 56,
           child: Text(
-            semitones > 0 ? '+$semitones' : '$semitones',
+            keyLabel ?? (semitones > 0 ? '+$semitones' : '$semitones'),
             textAlign: TextAlign.center,
             style: theme.textTheme.titleMedium?.copyWith(
               color: enabled ? null : disabledColor,
@@ -347,10 +392,7 @@ class _SectionView extends StatelessWidget {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(left: 15),
-      child: content,
-    );
+    return Padding(padding: const EdgeInsets.only(left: 15), child: content);
   }
 }
 
@@ -541,7 +583,10 @@ class _Segment extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [chordWidget, Text(' ', style: textStyle)],
+          children: [
+            chordWidget,
+            Text(' ', style: textStyle),
+          ],
         ),
       );
     }

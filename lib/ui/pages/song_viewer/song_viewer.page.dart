@@ -38,6 +38,18 @@ class _SongViewerPageState extends ConsumerState<SongViewerPage> {
   /// Demi-tons de transposition pour la vue ChordPro.
   int _semitones = 0;
 
+  /// Tonalité d'origine du fichier ChordPro (`{key:}`), une fois parsé, pour
+  /// afficher la tonalité obtenue dans le contrôle de transposition. Un
+  /// [ValueNotifier] (plutôt qu'un simple champ) pour qu'un panneau de
+  /// transposition déjà ouvert se rafraîchisse dès que le parsing la résout.
+  final ValueNotifier<String?> _originalKey = ValueNotifier<String?>(null);
+
+  @override
+  void dispose() {
+    _originalKey.dispose();
+    super.dispose();
+  }
+
   /// Première partition image non vide, le cas échéant.
   ImageResourceDto? get _image => widget.song.resources
       .whereType<ImageResourceDto>()
@@ -129,7 +141,8 @@ class _SongViewerPageState extends ConsumerState<SongViewerPage> {
       builder: (_) => StatefulBuilder(
         builder: (context, setSheetState) {
           final index = views.isEmpty ? 0 : _index.clamp(0, views.length - 1);
-          final isChords = views.isNotEmpty &&
+          final isChords =
+              views.isNotEmpty &&
               views[index].kind == DisplayResourceType.chordPro;
           return SafeArea(
             child: Padding(
@@ -167,16 +180,27 @@ class _SongViewerPageState extends ConsumerState<SongViewerPage> {
                     ],
                     if (views.length > 1) const SizedBox(height: 16),
                     // Toujours affichée, mais désactivée hors vue Accords.
-                    ChordProTransposeControls(
-                      enabled: isChords,
-                      semitones: _semitones,
-                      onTranspose: (delta) {
-                        setState(
-                          () =>
-                              _semitones = (_semitones + delta).clamp(-11, 11),
-                        );
-                        setSheetState(() {});
-                      },
+                    // Le panneau peut être ouvert avant la fin du parsing : le
+                    // ValueListenableBuilder le rafraîchit dès que la tonalité
+                    // d'origine est résolue (sinon « 0 » resterait affiché
+                    // jusqu'au premier +/-).
+                    ValueListenableBuilder<String?>(
+                      valueListenable: _originalKey,
+                      builder: (context, originalKey, _) =>
+                          ChordProTransposeControls(
+                            enabled: isChords,
+                            semitones: _semitones,
+                            originalKey: originalKey,
+                            onTranspose: (delta) {
+                              setState(
+                                () => _semitones = (_semitones + delta).clamp(
+                                  -11,
+                                  11,
+                                ),
+                              );
+                              setSheetState(() {});
+                            },
+                          ),
                     ),
                   ],
                 ),
@@ -206,6 +230,7 @@ class _SongViewerPageState extends ConsumerState<SongViewerPage> {
           songId: widget.song.id,
           chordProUrl: chordPro!.chordProUrl,
           semitones: _semitones,
+          onOriginalKey: (key) => _originalKey.value = key,
         );
       case null:
         return const Center(
