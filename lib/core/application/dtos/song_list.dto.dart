@@ -27,6 +27,7 @@ class SongListDto {
         id: entry.id.value,
         songId: entry.songId.value,
         position: entry.position,
+        savedSemitones: entry.savedSemitones,
         songCode: info?.code ?? '???',
         songName: info?.name ?? 'Chant supprimé',
       );
@@ -54,6 +55,7 @@ class SongListDto {
               id: UuidValue.parse(e.value.id),
               songId: UuidValue.parse(e.value.songId),
               position: e.key,
+              savedSemitones: e.value.savedSemitones,
             ),
           )
           .toList(),
@@ -67,6 +69,11 @@ class SongListEntryDto {
   final String id;
   final String songId;
   final int position;
+
+  /// Transposition enregistree pour ce chant dans cette liste, en demi-tons.
+  /// `null` = aucune tonalite enregistree (chant a sa tonalite d'origine).
+  final int? savedSemitones;
+
   final String songCode;
   final String songName;
 
@@ -74,6 +81,7 @@ class SongListEntryDto {
     required this.id,
     required this.songId,
     required this.position,
+    this.savedSemitones,
     required this.songCode,
     required this.songName,
   });
@@ -82,6 +90,7 @@ class SongListEntryDto {
     String? id,
     String? songId,
     int? position,
+    int? savedSemitones,
     String? songCode,
     String? songName,
   }) {
@@ -89,6 +98,7 @@ class SongListEntryDto {
       id: id ?? this.id,
       songId: songId ?? this.songId,
       position: position ?? this.position,
+      savedSemitones: savedSemitones ?? this.savedSemitones,
       songCode: songCode ?? this.songCode,
       songName: songName ?? this.songName,
     );

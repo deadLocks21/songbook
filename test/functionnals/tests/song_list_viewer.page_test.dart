@@ -34,7 +34,11 @@ void main() {
             .build(),
       ];
 
-      final viewerData = SongListViewerData(songList: songList, songs: songs);
+      final viewerData = SongListViewerData(
+        songList: songList,
+        entries: songList.entries,
+        songs: songs,
+      );
 
       await (await startInSongListViewerPage(tester, viewerData: viewerData))
           .expectSongCodeIs('AG01')
@@ -57,7 +61,11 @@ void main() {
         aSong().withId('song-3').withCode('S03').withName('Song 3').build(),
       ];
 
-      final viewerData = SongListViewerData(songList: songList, songs: songs);
+      final viewerData = SongListViewerData(
+        songList: songList,
+        entries: songList.entries,
+        songs: songs,
+      );
 
       await (await startInSongListViewerPage(tester, viewerData: viewerData))
           .expectPositionIs('1/3')
@@ -79,7 +87,11 @@ void main() {
         aSong().withId('song-2').withCode('S02').withName('Song 2').build(),
       ];
 
-      final viewerData = SongListViewerData(songList: songList, songs: songs);
+      final viewerData = SongListViewerData(
+        songList: songList,
+        entries: songList.entries,
+        songs: songs,
+      );
 
       await (await startInSongListViewerPage(tester, viewerData: viewerData))
           .tapNextButton()
@@ -102,7 +114,11 @@ void main() {
         aSong().withId('song-2').withCode('S02').withName('Song 2').build(),
       ];
 
-      final viewerData = SongListViewerData(songList: songList, songs: songs);
+      final viewerData = SongListViewerData(
+        songList: songList,
+        entries: songList.entries,
+        songs: songs,
+      );
 
       await (await startInSongListViewerPage(
         tester,
@@ -122,7 +138,11 @@ void main() {
         aSong().withId('song-2').withCode('S02').withName('Song 2').build(),
       ];
 
-      final viewerData = SongListViewerData(songList: songList, songs: songs);
+      final viewerData = SongListViewerData(
+        songList: songList,
+        entries: songList.entries,
+        songs: songs,
+      );
 
       await (await startInSongListViewerPage(tester, viewerData: viewerData))
           .tapNextButton()
@@ -141,7 +161,11 @@ void main() {
         aSong().withId('song-1').withCode('S01').withName('Song 1').build(),
       ];
 
-      final viewerData = SongListViewerData(songList: songList, songs: songs);
+      final viewerData = SongListViewerData(
+        songList: songList,
+        entries: songList.entries,
+        songs: songs,
+      );
 
       await (await startInSongListViewerPage(tester, viewerData: viewerData))
           .expectPreviousButtonNotVisible()

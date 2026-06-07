@@ -74,7 +74,7 @@ final class SongListViewerDataProvider
 }
 
 String _$songListViewerDataHash() =>
-    r'9baceaff1db960ac4421776dc515dc29e43e2b2a';
+    r'16008ac72c18cdfcaa773dcb3848c00fb2bfce3e';
 
 /// Provider qui resout une liste de chants en SongDto complets
 /// (avec resources/images) pour la visualisation.

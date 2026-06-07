@@ -32,7 +32,7 @@ class AppDatabase {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -73,6 +73,13 @@ class AppDatabase {
     if (oldVersion < 2) {
       await _createSongListTables(db);
     }
+    if (oldVersion < 3) {
+      // Transposition enregistree par chant et par liste (nullable : pas de
+      // backfill, les lignes existantes restent a NULL).
+      await db.execute(
+        'ALTER TABLE song_list_entries ADD COLUMN savedSemitones INTEGER',
+      );
+    }
   }
 
   static Future<void> _createSongListTables(Database db) async {
@@ -90,6 +97,7 @@ class AppDatabase {
         songListId TEXT NOT NULL,
         songId TEXT NOT NULL,
         position INTEGER NOT NULL,
+        savedSemitones INTEGER,
         FOREIGN KEY (songListId) REFERENCES song_lists (id) ON DELETE CASCADE,
         FOREIGN KEY (songId) REFERENCES songs (id) ON DELETE CASCADE
       )

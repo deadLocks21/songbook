@@ -72,6 +72,7 @@ class DriftSongListRepository implements SongListRepository {
           'songListId': songList.id.value,
           'songId': entry.songId.value,
           'position': entry.position,
+          'savedSemitones': entry.savedSemitones,
         });
       }
     });
@@ -107,6 +108,7 @@ class DriftSongListRepository implements SongListRepository {
           'songListId': songList.id.value,
           'songId': entry.songId.value,
           'position': entry.position,
+          'savedSemitones': entry.savedSemitones,
         });
       }
     });
@@ -143,6 +145,7 @@ class DriftSongListRepository implements SongListRepository {
       id: UuidValue.parse(row['id'] as String),
       songId: UuidValue.parse(row['songId'] as String),
       position: row['position'] as int,
+      savedSemitones: row['savedSemitones'] as int?,
     );
   }
 }

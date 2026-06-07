@@ -56,17 +56,29 @@ class SongListEntry {
   final UuidValue songId;
   final int position;
 
+  /// Transposition enregistree pour ce chant dans cette liste, en demi-tons.
+  /// `null` signifie « aucune tonalite enregistree » : le chant s'affiche a sa
+  /// tonalite d'origine.
+  final int? savedSemitones;
+
   SongListEntry({
     required this.id,
     required this.songId,
     required this.position,
+    this.savedSemitones,
   });
 
-  SongListEntry copyWith({UuidValue? id, UuidValue? songId, int? position}) {
+  SongListEntry copyWith({
+    UuidValue? id,
+    UuidValue? songId,
+    int? position,
+    int? savedSemitones,
+  }) {
     return SongListEntry(
       id: id ?? this.id,
       songId: songId ?? this.songId,
       position: position ?? this.position,
+      savedSemitones: savedSemitones ?? this.savedSemitones,
     );
   }
 
