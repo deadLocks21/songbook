@@ -25,7 +25,20 @@ class SongViewerPage extends ConsumerStatefulWidget {
   final SongDto song;
   final List<Widget>? actions;
 
-  const SongViewerPage({super.key, required this.song, this.actions});
+  /// Transposition appliquée à l'ouverture (demi-tons).
+  final int initialSemitones;
+
+  /// Appelé à chaque changement de transposition. Permet à l'appelant (p. ex.
+  /// l'édition de liste) d'enregistrer la nouvelle tonalité du chant.
+  final ValueChanged<int>? onSemitonesChanged;
+
+  const SongViewerPage({
+    super.key,
+    required this.song,
+    this.actions,
+    this.initialSemitones = 0,
+    this.onSemitonesChanged,
+  });
 
   @override
   ConsumerState<SongViewerPage> createState() => _SongViewerPageState();
@@ -36,7 +49,7 @@ class _SongViewerPageState extends ConsumerState<SongViewerPage> {
   int _index = 0;
 
   /// Demi-tons de transposition pour la vue ChordPro.
-  int _semitones = 0;
+  late int _semitones = widget.initialSemitones;
 
   /// Tonalité d'origine du fichier ChordPro (`{key:}`), une fois parsé, pour
   /// afficher la tonalité obtenue dans le contrôle de transposition. Un
@@ -198,6 +211,7 @@ class _SongViewerPageState extends ConsumerState<SongViewerPage> {
                                   11,
                                 ),
                               );
+                              widget.onSemitonesChanged?.call(_semitones);
                               setSheetState(() {});
                             },
                           ),

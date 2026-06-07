@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:songbook/core/application/dtos/resource.dto.dart';
 
 import '../../builders/builders.dart';
 import '../utils/index.dart';
@@ -127,6 +128,46 @@ void main() {
           .goToSongListEdit()
           .expectTitle('Modifier la liste')
           .execute();
+    });
+
+    testWidgets('should render entries for ChordPro songs without crashing', (
+      tester,
+    ) async {
+      // Régression : la résolution de l'URL ChordPro (pour le chip de tonalité)
+      // passait par un `songsById` au type `dynamic`, ce qui faisait échouer
+      // `whereType().firstOrNull` au runtime (NoSuchMethodError) dès qu'un chant
+      // ChordPro était présent dans la liste.
+      final songList = aSongList()
+          .withId('list-1')
+          .withSongEntry(
+            songId: 'song-1',
+            songName: 'Amazing Grace',
+            songCode: 'C001',
+          )
+          .build();
+
+      final song = aSong()
+          .withId('song-1')
+          .withCode('C001')
+          .withName('Amazing Grace')
+          .withResource(
+            const ChordProResourceDto(
+              id: 'res-1',
+              name: 'ChordPro',
+              chordProUrl: 'https://example.com/song-1.cho',
+            ),
+          )
+          .build();
+
+      final app = anApp().withSongsList([song]).withSongLists([
+        songList,
+      ]).build();
+
+      await (await startInSongListDetailPage(
+        tester,
+        app: app,
+        songListId: 'list-1',
+      )).expectTextVisible('Amazing Grace').execute();
     });
   });
 }

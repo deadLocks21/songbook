@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/dtos/resource.dto.dart';
+import 'package:songbook/core/application/dtos/song.dto.dart';
 import 'package:songbook/core/application/dtos/song_list.dto.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
 import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
-import 'package:songbook/ui/pages/chord_pro_viewer/chord_pro_viewer.page.dart';
-import 'package:songbook/ui/pages/chord_pro_viewer/providers/song_original_key.provider.dart';
 import 'package:songbook/ui/pages/song_list_edit/widgets/song_list_entry_tile.widget.dart';
 import 'package:songbook/ui/pages/song_list_edit/widgets/song_picker.widget.dart';
 import 'package:songbook/ui/pages/song_viewer/song_viewer.page.dart';
@@ -26,10 +25,6 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
   late DateTime _scheduledAt;
   late List<SongListEntryDto> _entries;
   bool _isSaving = false;
-
-  /// Tonalité d'origine transmise au panneau de transposition réutilisable.
-  /// Un seul notifier réutilisé entre ouvertures (mis à jour avant chaque tap).
-  final ValueNotifier<String?> _transposeKey = ValueNotifier<String?>(null);
 
   bool get _isNew => widget.songList.entries.isEmpty;
 
@@ -54,16 +49,9 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
   }
 
   @override
-  void dispose() {
-    _transposeKey.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final songsById = {
-      for (final song in ref.watch(songsProvider).value ?? []) song.id: song,
-    };
+    final List<SongDto> songs = ref.watch(songsProvider).value ?? const [];
+    final songsById = {for (final song in songs) song.id: song};
     return PopScope(
       canPop: !_hasChanges || _isSaving,
       onPopInvokedWithResult: (didPop, result) async {
@@ -169,15 +157,8 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
                               index: index,
                               totalCount: _entries.length,
                               onRemove: () => _removeEntry(index),
-                              onTap: () => _viewSong(entry),
+                              onTap: () => _viewSong(index),
                               chordProUrl: chordProUrl,
-                              onChangeKey: chordProUrl == null
-                                  ? null
-                                  : () => _changeKey(
-                                      index,
-                                      entry.songId,
-                                      chordProUrl,
-                                    ),
                               onMoveUp: index > 0
                                   ? () => _onReorder(index, index - 1)
                                   : null,
@@ -265,39 +246,32 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
     );
   }
 
-  void _viewSong(SongListEntryDto entry) {
+  /// Ouvre la visualisation du chant de l'entrée [index]. Si l'utilisateur y
+  /// transpose le chant, la nouvelle tonalité est répercutée sur l'entrée
+  /// (0 demi-ton => aucune tonalité enregistrée) et sera persistée avec la liste
+  /// via le bouton « Enregistrer ».
+  void _viewSong(int index) {
+    final entry = _entries[index];
     final songs = ref.read(songsProvider).value;
     if (songs == null) return;
     final song = songs.where((s) => s.id == entry.songId).firstOrNull;
     if (song == null) return;
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => SongViewerPage(song: song)),
-    );
-  }
-
-  /// Ouvre le panneau de transposition réutilisable pour modifier la tonalité
-  /// enregistrée de l'entrée [index]. Le delta met à jour [_entries] (0 demi-ton
-  /// => aucune tonalité enregistrée) ; la sauvegarde se fait via le bouton
-  /// « Enregistrer » de la page.
-  void _changeKey(int index, String songId, String chordProUrl) {
-    _transposeKey.value = ref
-        .read(songOriginalKeyProvider(songId, chordProUrl))
-        .value;
-    showChordProTransposeSheet(
-      context,
-      semitones: _entries[index].savedSemitones ?? 0,
-      originalKey: _transposeKey,
-      onTranspose: (delta) {
-        setState(() {
-          final current = _entries[index].savedSemitones ?? 0;
-          final next = (current + delta).clamp(-11, 11);
-          _entries[index] = _withSavedSemitones(
-            _entries[index],
-            next == 0 ? null : next,
-          );
-        });
-      },
+      MaterialPageRoute(
+        builder: (context) => SongViewerPage(
+          song: song,
+          initialSemitones: entry.savedSemitones ?? 0,
+          onSemitonesChanged: (semitones) {
+            setState(() {
+              _entries[index] = _withSavedSemitones(
+                _entries[index],
+                semitones == 0 ? null : semitones,
+              );
+            });
+          },
+        ),
+      ),
     );
   }
 

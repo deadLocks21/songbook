@@ -13,11 +13,8 @@ class SongListEntryTile extends StatelessWidget {
   final VoidCallback? onTap;
 
   /// URL du fichier ChordPro du chant, si transposable. `null` = pas de
-  /// ChordPro : ni chip de tonalité ni bouton de transposition.
+  /// ChordPro : pas de chip de tonalité.
   final String? chordProUrl;
-
-  /// Ouvre le panneau de transposition pour modifier la tonalité de l'entrée.
-  final VoidCallback? onChangeKey;
 
   const SongListEntryTile({
     super.key,
@@ -29,7 +26,6 @@ class SongListEntryTile extends StatelessWidget {
     this.onMoveDown,
     this.onTap,
     this.chordProUrl,
-    this.onChangeKey,
   });
 
   bool get _isFirst => index == 0;
@@ -97,12 +93,7 @@ class SongListEntryTile extends StatelessWidget {
                       chordProUrl: chordProUrl!,
                       savedSemitones: entry.savedSemitones,
                     ),
-                    if (onChangeKey != null)
-                      _KeyButton(
-                        onPressed: onChangeKey!,
-                        colorScheme: colorScheme,
-                      ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 8),
                   ],
                   if (isDesktop) ...[
                     _ArrowButton(
@@ -181,27 +172,6 @@ class _ArrowButton extends StatelessWidget {
       constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
       color: colorScheme.onSurfaceVariant,
       disabledColor: colorScheme.onSurfaceVariant.withAlpha(60),
-    );
-  }
-}
-
-class _KeyButton extends StatelessWidget {
-  final VoidCallback onPressed;
-  final ColorScheme colorScheme;
-
-  const _KeyButton({required this.onPressed, required this.colorScheme});
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      key: const Key('changeSongKeyButton'),
-      icon: const Icon(Icons.tune, size: 18),
-      onPressed: onPressed,
-      tooltip: 'Tonalité',
-      visualDensity: VisualDensity.compact,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-      color: colorScheme.onSurfaceVariant,
     );
   }
 }

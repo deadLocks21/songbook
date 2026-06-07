@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/dtos/resource.dto.dart';
+import 'package:songbook/core/application/dtos/song.dto.dart';
 import 'package:songbook/core/application/dtos/song_list.dto.dart';
 import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
@@ -49,9 +50,8 @@ class SongListDetailPage extends ConsumerWidget {
   ) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final songsById = {
-      for (final song in ref.watch(songsProvider).value ?? []) song.id: song,
-    };
+    final List<SongDto> songs = ref.watch(songsProvider).value ?? const [];
+    final songsById = {for (final song in songs) song.id: song};
 
     return Scaffold(
       appBar: AppBar(
