@@ -7,6 +7,7 @@ import 'package:songbook/infrastructure/settings/providers/settings.service_prov
 import 'package:songbook/ui/pages/chord_pro_viewer/chord_pro_viewer.page.dart';
 import 'package:songbook/ui/pages/chord_pro_viewer/widgets/cached_chord_pro_viewer.widget.dart';
 import 'package:songbook/ui/pages/song_viewer/widgets/cached_image_viewer.widget.dart';
+import 'package:songbook/ui/widgets/save_key_dialog.dart';
 
 /// Ordre d'affichage par défaut tant que la préférence n'est pas chargée.
 const _defaultDisplayOrder = [
@@ -28,8 +29,9 @@ class SongViewerPage extends ConsumerStatefulWidget {
   /// Transposition appliquée à l'ouverture (demi-tons).
   final int initialSemitones;
 
-  /// Appelé à chaque changement de transposition. Permet à l'appelant (p. ex.
-  /// l'édition de liste) d'enregistrer la nouvelle tonalité du chant.
+  /// Appelé quand l'utilisateur confirme l'enregistrement de la transposition
+  /// (via le dialog affiché en quittant la visionneuse). `null` = visionneuse
+  /// simple, sans enregistrement de tonalité ni dialog.
   final ValueChanged<int>? onSemitonesChanged;
 
   const SongViewerPage({
@@ -73,6 +75,31 @@ class _SongViewerPageState extends ConsumerState<SongViewerPage> {
   ChordProResourceDto? get _chordPro =>
       widget.song.resources.whereType<ChordProResourceDto>().firstOrNull;
 
+  /// `true` si la transposition a changé et qu'un enregistrement est possible
+  /// (chant ouvert depuis une liste).
+  bool get _isKeyDirty =>
+      widget.onSemitonesChanged != null &&
+      _semitones != widget.initialSemitones;
+
+  /// Demande éventuellement à enregistrer la tonalité avant de quitter.
+  /// Renvoie `true` si l'on peut quitter (enregistré ou abandonné), `false` si
+  /// l'utilisateur annule.
+  Future<bool> _confirmLeave() async {
+    if (!_isKeyDirty) return true;
+    final action = await showSaveKeyDialog(context);
+    if (!mounted) return false;
+    switch (action) {
+      case SaveKeyAction.save:
+        widget.onSemitonesChanged!.call(_semitones);
+        return true;
+      case SaveKeyAction.discard:
+        return true;
+      case SaveKeyAction.cancel:
+      case null:
+        return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final image = _image;
@@ -108,38 +135,45 @@ class _SongViewerPageState extends ConsumerState<SongViewerPage> {
     final current = views.isEmpty ? null : views[index].kind;
 
     final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.song.code,
-              key: const Key('songCode'),
-              style: theme.textTheme.titleLarge,
-            ),
-            Text(
-              widget.song.name,
-              key: const Key('songName'),
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+    return PopScope(
+      canPop: !_isKeyDirty,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (await _confirmLeave() && context.mounted) Navigator.pop(context);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.song.code,
+                key: const Key('songCode'),
+                style: theme.textTheme.titleLarge,
               ),
-            ),
+              Text(
+                widget.song.name,
+                key: const Key('songName'),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            // Un seul bouton « Options » : choix de la vue (si plusieurs) et
+            // transposition (en vue Accords) sont regroupés dans un panneau.
+            if (views.length > 1 || current == DisplayResourceType.chordPro)
+              IconButton(
+                tooltip: 'Options',
+                icon: const Icon(Icons.tune),
+                onPressed: () => _openOptions(views),
+              ),
+            ...?widget.actions,
           ],
         ),
-        actions: [
-          // Un seul bouton « Options » : choix de la vue (si plusieurs) et
-          // transposition (en vue Accords) sont regroupés dans un panneau.
-          if (views.length > 1 || current == DisplayResourceType.chordPro)
-            IconButton(
-              tooltip: 'Options',
-              icon: const Icon(Icons.tune),
-              onPressed: () => _openOptions(views),
-            ),
-          ...?widget.actions,
-        ],
+        body: _buildBody(current, image, chordPro),
       ),
-      body: _buildBody(current, image, chordPro),
     );
   }
 
@@ -211,7 +245,6 @@ class _SongViewerPageState extends ConsumerState<SongViewerPage> {
                                   11,
                                 ),
                               );
-                              widget.onSemitonesChanged?.call(_semitones);
                               setSheetState(() {});
                             },
                           ),

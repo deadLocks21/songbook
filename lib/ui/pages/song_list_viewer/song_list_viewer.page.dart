@@ -11,6 +11,7 @@ import 'package:songbook/ui/pages/chord_pro_viewer/widgets/cached_chord_pro_view
 import 'package:songbook/ui/pages/song_list_viewer/providers/song_list_viewer.provider.dart';
 import 'package:songbook/ui/pages/song_list_viewer/widgets/song_list_overview_sheet.widget.dart';
 import 'package:songbook/ui/pages/song_viewer/widgets/cached_image_viewer.widget.dart';
+import 'package:songbook/ui/widgets/save_key_dialog.dart';
 
 /// Page de visualisation d'une liste de chants.
 /// Affiche les partitions avec navigation precedent/suivant.
@@ -296,47 +297,18 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
   /// `false` si l'utilisateur annule.
   Future<bool> _confirmLeaveCurrentSong() async {
     if (!_isKeyDirty) return true;
-    final action = await _showSaveKeyDialog();
+    final action = await showSaveKeyDialog(context);
     if (!mounted) return false;
     switch (action) {
-      case _SaveKeyAction.save:
+      case SaveKeyAction.save:
         await _persistCurrentKey();
         return true;
-      case _SaveKeyAction.discard:
+      case SaveKeyAction.discard:
         return true;
-      case _SaveKeyAction.cancel:
+      case SaveKeyAction.cancel:
       case null:
         return false;
     }
-  }
-
-  Future<_SaveKeyAction?> _showSaveKeyDialog() {
-    return showDialog<_SaveKeyAction>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Tonalité modifiée'),
-        content: const Text(
-          'Enregistrer cette tonalité pour ce chant dans cette liste ?',
-        ),
-        actions: [
-          TextButton(
-            key: const Key('cancelSaveKeyButton'),
-            onPressed: () => Navigator.pop(context, _SaveKeyAction.cancel),
-            child: const Text('Annuler'),
-          ),
-          TextButton(
-            key: const Key('discardSaveKeyButton'),
-            onPressed: () => Navigator.pop(context, _SaveKeyAction.discard),
-            child: const Text('Ne pas enregistrer'),
-          ),
-          TextButton(
-            key: const Key('confirmSaveKeyButton'),
-            onPressed: () => Navigator.pop(context, _SaveKeyAction.save),
-            child: const Text('Enregistrer'),
-          ),
-        ],
-      ),
-    );
   }
 
   /// Persiste la transposition courante sur l'entrée du chant courant (0 demi-
@@ -422,6 +394,3 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
     setState(() => _applySavedKey(data, selectedIndex));
   }
 }
-
-/// Choix de l'utilisateur dans la boîte de dialogue de sauvegarde de tonalité.
-enum _SaveKeyAction { save, discard, cancel }
