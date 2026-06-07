@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:songbook/core/application/dtos/resource.dto.dart';
 import 'package:songbook/core/application/dtos/song_list.dto.dart';
+import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
 import 'package:songbook/ui/pages/song_list_edit/song_list_edit.page.dart';
 import 'package:songbook/ui/pages/song_list_viewer/song_list_viewer.page.dart';
 import 'package:songbook/ui/utils/date_format.dart';
+import 'package:songbook/ui/widgets/song_key_badge.widget.dart';
 
 /// Page de detail en lecture seule d'une liste de chants.
 /// Permet de naviguer vers l'edition ou le visionnage.
@@ -46,6 +49,9 @@ class SongListDetailPage extends ConsumerWidget {
   ) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final songsById = {
+      for (final song in ref.watch(songsProvider).value ?? []) song.id: song,
+    };
 
     return Scaffold(
       appBar: AppBar(
@@ -83,7 +89,11 @@ class SongListDetailPage extends ConsumerWidget {
                   return _buildHeader(context, songList);
                 }
                 final entry = songList.entries[index - 1];
-                return _buildSongTile(context, entry, index - 1);
+                final chordProUrl = songsById[entry.songId]?.resources
+                    .whereType<ChordProResourceDto>()
+                    .firstOrNull
+                    ?.chordProUrl;
+                return _buildSongTile(context, entry, index - 1, chordProUrl);
               },
             ),
     );
@@ -156,6 +166,7 @@ class SongListDetailPage extends ConsumerWidget {
     BuildContext context,
     SongListEntryDto entry,
     int index,
+    String? chordProUrl,
   ) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -207,6 +218,12 @@ class SongListDetailPage extends ConsumerWidget {
                 ],
               ),
             ),
+            if (chordProUrl != null)
+              SongKeyBadge(
+                songId: entry.songId,
+                chordProUrl: chordProUrl,
+                savedSemitones: entry.savedSemitones,
+              ),
           ],
         ),
       ),

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:songbook/core/application/dtos/resource.dto.dart';
 import 'package:songbook/core/application/dtos/song_list.dto.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
 import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
+import 'package:songbook/ui/pages/chord_pro_viewer/chord_pro_viewer.page.dart';
+import 'package:songbook/ui/pages/chord_pro_viewer/providers/song_original_key.provider.dart';
 import 'package:songbook/ui/pages/song_list_edit/widgets/song_list_entry_tile.widget.dart';
 import 'package:songbook/ui/pages/song_list_edit/widgets/song_picker.widget.dart';
 import 'package:songbook/ui/pages/song_viewer/song_viewer.page.dart';
@@ -24,6 +27,10 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
   late List<SongListEntryDto> _entries;
   bool _isSaving = false;
 
+  /// Tonalité d'origine transmise au panneau de transposition réutilisable.
+  /// Un seul notifier réutilisé entre ouvertures (mis à jour avant chaque tap).
+  final ValueNotifier<String?> _transposeKey = ValueNotifier<String?>(null);
+
   bool get _isNew => widget.songList.entries.isEmpty;
 
   bool get _hasChanges {
@@ -31,6 +38,10 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
     if (_entries.length != widget.songList.entries.length) return true;
     for (int i = 0; i < _entries.length; i++) {
       if (_entries[i].songId != widget.songList.entries[i].songId) return true;
+      if (_entries[i].savedSemitones !=
+          widget.songList.entries[i].savedSemitones) {
+        return true;
+      }
     }
     return false;
   }
@@ -43,8 +54,16 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
   }
 
   @override
+  void dispose() {
+    _transposeKey.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    ref.watch(songsProvider);
+    final songsById = {
+      for (final song in ref.watch(songsProvider).value ?? []) song.id: song,
+    };
     return PopScope(
       canPop: !_hasChanges || _isSaving,
       onPopInvokedWithResult: (didPop, result) async {
@@ -139,6 +158,11 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
                           onReorder: _onReorder,
                           itemBuilder: (context, index) {
                             final entry = _entries[index];
+                            final chordProUrl = songsById[entry.songId]
+                                ?.resources
+                                .whereType<ChordProResourceDto>()
+                                .firstOrNull
+                                ?.chordProUrl;
                             return SongListEntryTile(
                               key: ValueKey(entry.id),
                               entry: entry,
@@ -146,6 +170,14 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
                               totalCount: _entries.length,
                               onRemove: () => _removeEntry(index),
                               onTap: () => _viewSong(entry),
+                              chordProUrl: chordProUrl,
+                              onChangeKey: chordProUrl == null
+                                  ? null
+                                  : () => _changeKey(
+                                      index,
+                                      entry.songId,
+                                      chordProUrl,
+                                    ),
                               onMoveUp: index > 0
                                   ? () => _onReorder(index, index - 1)
                                   : null,
@@ -241,6 +273,44 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => SongViewerPage(song: song)),
+    );
+  }
+
+  /// Ouvre le panneau de transposition réutilisable pour modifier la tonalité
+  /// enregistrée de l'entrée [index]. Le delta met à jour [_entries] (0 demi-ton
+  /// => aucune tonalité enregistrée) ; la sauvegarde se fait via le bouton
+  /// « Enregistrer » de la page.
+  void _changeKey(int index, String songId, String chordProUrl) {
+    _transposeKey.value = ref
+        .read(songOriginalKeyProvider(songId, chordProUrl))
+        .value;
+    showChordProTransposeSheet(
+      context,
+      semitones: _entries[index].savedSemitones ?? 0,
+      originalKey: _transposeKey,
+      onTranspose: (delta) {
+        setState(() {
+          final current = _entries[index].savedSemitones ?? 0;
+          final next = (current + delta).clamp(-11, 11);
+          _entries[index] = _withSavedSemitones(
+            _entries[index],
+            next == 0 ? null : next,
+          );
+        });
+      },
+    );
+  }
+
+  /// Reconstruit l'entrée directement (copyWith ne sait pas remettre à null)
+  /// pour pouvoir effacer la tonalité enregistrée.
+  SongListEntryDto _withSavedSemitones(SongListEntryDto entry, int? semitones) {
+    return SongListEntryDto(
+      id: entry.id,
+      songId: entry.songId,
+      position: entry.position,
+      savedSemitones: semitones,
+      songCode: entry.songCode,
+      songName: entry.songName,
     );
   }
 

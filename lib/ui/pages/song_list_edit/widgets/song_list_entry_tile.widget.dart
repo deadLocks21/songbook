@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:songbook/core/application/dtos/song_list.dto.dart';
+import 'package:songbook/ui/widgets/song_key_badge.widget.dart';
 
 /// Card representant une entree dans la liste reordonnnable.
 class SongListEntryTile extends StatelessWidget {
@@ -11,6 +12,13 @@ class SongListEntryTile extends StatelessWidget {
   final VoidCallback? onMoveDown;
   final VoidCallback? onTap;
 
+  /// URL du fichier ChordPro du chant, si transposable. `null` = pas de
+  /// ChordPro : ni chip de tonalité ni bouton de transposition.
+  final String? chordProUrl;
+
+  /// Ouvre le panneau de transposition pour modifier la tonalité de l'entrée.
+  final VoidCallback? onChangeKey;
+
   const SongListEntryTile({
     super.key,
     required this.entry,
@@ -20,6 +28,8 @@ class SongListEntryTile extends StatelessWidget {
     this.onMoveUp,
     this.onMoveDown,
     this.onTap,
+    this.chordProUrl,
+    this.onChangeKey,
   });
 
   bool get _isFirst => index == 0;
@@ -81,6 +91,19 @@ class SongListEntryTile extends StatelessWidget {
                       ],
                     ),
                   ),
+                  if (chordProUrl != null) ...[
+                    SongKeyBadge(
+                      songId: entry.songId,
+                      chordProUrl: chordProUrl!,
+                      savedSemitones: entry.savedSemitones,
+                    ),
+                    if (onChangeKey != null)
+                      _KeyButton(
+                        onPressed: onChangeKey!,
+                        colorScheme: colorScheme,
+                      ),
+                    const SizedBox(width: 4),
+                  ],
                   if (isDesktop) ...[
                     _ArrowButton(
                       icon: Icons.arrow_upward,
@@ -158,6 +181,27 @@ class _ArrowButton extends StatelessWidget {
       constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
       color: colorScheme.onSurfaceVariant,
       disabledColor: colorScheme.onSurfaceVariant.withAlpha(60),
+    );
+  }
+}
+
+class _KeyButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final ColorScheme colorScheme;
+
+  const _KeyButton({required this.onPressed, required this.colorScheme});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      key: const Key('changeSongKeyButton'),
+      icon: const Icon(Icons.tune, size: 18),
+      onPressed: onPressed,
+      tooltip: 'Tonalité',
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+      color: colorScheme.onSurfaceVariant,
     );
   }
 }

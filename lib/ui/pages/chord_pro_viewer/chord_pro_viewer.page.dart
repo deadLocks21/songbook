@@ -1,6 +1,7 @@
 import 'package:chord_pro/chord_pro.dart';
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
+import 'package:songbook/ui/pages/chord_pro_viewer/key_label.dart';
 
 /// Affiche le contenu d'un ChordPro déjà parsé et transposé : en-tête
 /// (métadonnées) puis sections (couplets, refrains, …).
@@ -239,19 +240,6 @@ class _TransposeSheet extends StatelessWidget {
   }
 }
 
-/// Tonalité obtenue en transposant [key] de [semitones] demi-tons, ou `null`
-/// quand la tonalité d'origine est inconnue ou n'est pas en notation à lettres
-/// (Nashville/romaine) — l'appelant retombe alors sur l'affichage « +X / -X ».
-///
-/// Calculée comme le package (`Song.transposed`, dièses par défaut), pour rester
-/// cohérent avec les accords et la tonalité de l'en-tête déjà transposés.
-String? _transposedKeyLabel(String? key, int semitones) {
-  if (key == null) return null;
-  final chord = Chord.tryParse(key);
-  if (chord == null || chord.system != ChordSystem.letter) return null;
-  return chord.transpose(semitones).raw;
-}
-
 /// Contrôles de transposition réutilisables : libellé « Transposition » et
 /// boutons −1 / +1 encadrant la valeur courante. Quand la tonalité d'origine
 /// ([originalKey]) est connue, la valeur centrale affiche la tonalité obtenue
@@ -287,7 +275,7 @@ class ChordProTransposeControls extends StatelessWidget {
     // onPressed null désactive et grise automatiquement les IconButton.
     final disabledColor = theme.colorScheme.onSurface.withValues(alpha: 0.38);
     // Tonalité obtenue après transposition, si la tonalité d'origine est connue.
-    final keyLabel = _transposedKeyLabel(originalKey, semitones);
+    final keyLabel = transposedKeyLabel(originalKey, semitones);
     return Row(
       children: [
         Text(
