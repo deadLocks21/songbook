@@ -1,4 +1,5 @@
 import 'package:songbook/core/domain/model/remote_song.dart';
+import 'package:songbook/core/domain/model/song.dart';
 import 'package:songbook/core/domain/model/sync_diff.dart';
 import 'package:songbook/core/domain/services/song.repository.dart';
 
@@ -33,8 +34,11 @@ class ComputeSyncDiffUseCase {
       if (local == null) {
         // Song nouveau, absent localement
         toAdd.add(SongToAdd(remoteSong: remote));
-      } else if (remote.updatedAt.isAfter(local.updatedAt)) {
-        // Song existant mais avec une version plus récente sur le serveur
+      } else if (remote.updatedAt.isAfter(local.updatedAt) ||
+          _resourcesDiffer(local, remote)) {
+        // Song existant mais modifié sur le serveur : soit une version plus
+        // récente, soit un changement de ses ressources (ajout/suppression) qui
+        // ne bouge pas forcément `updatedAt` du chant porteur.
         toUpdate.add(SongToUpdate(localSong: local, remoteSong: remote));
       }
       // Sinon, le song local est à jour, rien à faire
@@ -48,5 +52,14 @@ class ComputeSyncDiffUseCase {
     }
 
     return SyncDiff(toAdd: toAdd, toUpdate: toUpdate, toDelete: toDelete);
+  }
+
+  /// Vrai si l'ensemble des ressources (identifiées par leur UUID) diffère entre
+  /// la version locale et la version distante du chant.
+  bool _resourcesDiffer(Song local, RemoteSong remote) {
+    final localIds = {for (final r in local.resources) r.id};
+    final remoteIds = {for (final r in remote.resources) r.id};
+    return localIds.length != remoteIds.length ||
+        !localIds.containsAll(remoteIds);
   }
 }
