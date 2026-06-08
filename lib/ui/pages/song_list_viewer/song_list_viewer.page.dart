@@ -6,10 +6,11 @@ import 'package:songbook/core/application/dtos/song_list.dto.dart';
 import 'package:songbook/core/domain/model/display_resource_type.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.service_provider.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
-import 'package:songbook/ui/pages/chord_pro_viewer/widgets/cached_chord_pro_viewer.widget.dart';
+import 'package:songbook/ui/pages/chord_pro_viewer/widgets/chord_pro_zoom_view.widget.dart';
 import 'package:songbook/ui/pages/song_list_viewer/providers/song_list_viewer.provider.dart';
 import 'package:songbook/ui/pages/song_list_viewer/widgets/song_list_overview_sheet.widget.dart';
 import 'package:songbook/ui/pages/song_viewer/widgets/cached_image_viewer.widget.dart';
+import 'package:songbook/ui/pages/song_viewer/widgets/zoomable_image_viewer.widget.dart';
 import 'package:songbook/ui/widgets/save_key_dialog.dart';
 import 'package:songbook/ui/widgets/song_options_sheet.dart';
 
@@ -60,6 +61,13 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
   /// présentation : appliquée à chaque chant si elle y est disponible, sinon
   /// repli sur la préférence d'affichage. `null` = suit la préférence.
   DisplayResourceType? _viewOverride;
+
+  /// Facteur de zoom du texte ChordPro, conservé sur toute la présentation
+  /// (éphémère : réinitialisé à la fermeture).
+  double _textScale = 1.0;
+
+  /// Niveau de zoom de la vue image, conservé sur toute la présentation.
+  double _imageScale = 1.0;
 
   /// Tonalité d'origine (`{key:}`) du chant courant, une fois parsé. Remise à
   /// zéro à chaque changement de chant, comme la transposition. Un
@@ -207,6 +215,19 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
                       onTranspose: (delta) => setState(
                         () => _semitones = (_semitones + delta).clamp(-11, 11),
                       ),
+                      scale: showsChordPro ? _textScale : _imageScale,
+                      onScaleChanged: (scale) => setState(() {
+                        if (showsChordPro) {
+                          _textScale = scale;
+                        } else {
+                          _imageScale = scale;
+                        }
+                      }),
+                      minScale: showsChordPro ? minChordProScale : imageZoomMin,
+                      maxScale: showsChordPro ? maxChordProScale : imageZoomMax,
+                      scaleStep: showsChordPro
+                          ? chordProScaleStep
+                          : imageZoomStep,
                       originalKey: _originalKey,
                     ),
                   ),
@@ -256,14 +277,18 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
           key: ValueKey('viewer_${_currentIndex}_${song.id}'),
           songId: song.id,
           imageUrls: _imageOf(song)!.imageUrls,
+          scale: _imageScale,
+          onScaleChanged: (scale) => setState(() => _imageScale = scale),
         );
       case DisplayResourceType.chordPro:
-        return CachedChordProViewer(
+        return ChordProZoomView(
           key: ValueKey('viewerChordPro_${_currentIndex}_${song.id}'),
           songId: song.id,
           chordProUrl: _chordProOf(song)!.chordProUrl,
           semitones: _semitones,
           onOriginalKey: (key) => _originalKey.value = key,
+          textScale: _textScale,
+          onTextScaleChanged: (scale) => setState(() => _textScale = scale),
         );
       case null:
         return const Center(

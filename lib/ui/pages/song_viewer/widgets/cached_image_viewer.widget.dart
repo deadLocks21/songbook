@@ -15,10 +15,18 @@ class CachedImageViewer extends ConsumerStatefulWidget {
   final String songId;
   final List<String> imageUrls;
 
+  /// Échelle pilotée de l'extérieur (boutons du panneau d'options).
+  final double scale;
+
+  /// Remonte l'échelle courante de l'image (pinch/molette/double-tap).
+  final ValueChanged<double>? onScaleChanged;
+
   const CachedImageViewer({
     super.key,
     required this.songId,
     required this.imageUrls,
+    this.scale = 1.0,
+    this.onScaleChanged,
   });
 
   @override
@@ -62,7 +70,11 @@ class _CachedImageViewerState extends ConsumerState<CachedImageViewer> {
         if (snapshot.hasError || snapshot.data == null) {
           return _buildError();
         }
-        return ZoomableImageViewer(imagePaths: snapshot.data!);
+        return ZoomableImageViewer(
+          imagePaths: snapshot.data!,
+          scale: widget.scale,
+          onScaleChanged: widget.onScaleChanged,
+        );
       },
     );
   }

@@ -11,22 +11,45 @@ import 'package:songbook/ui/pages/chord_pro_viewer/key_label.dart';
 /// parent, qui fournit un [song] déjà transposé et, au besoin, le panneau via
 /// [showChordProTransposeSheet].
 class ChordProView extends StatelessWidget {
-  const ChordProView({super.key, required this.song});
+  const ChordProView({
+    super.key,
+    required this.song,
+    this.textScale = 1.0,
+    this.scrollController,
+  });
 
   /// Le chant ChordPro à afficher, déjà transposé si nécessaire.
   final Song song;
 
+  /// Facteur de zoom du texte (1.0 = taille par défaut). Applique le facteur à
+  /// tout le texte et aux dimensions de la ligne d'accords (via le
+  /// [TextScaler]), pour rester proportionnel.
+  final double textScale;
+
+  /// Quand fourni, le défilement est piloté de l'extérieur (geste de
+  /// pinch/scroll) : la vue n'a plus de physique de défilement propre.
+  final ScrollController? scrollController;
+
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _Header(metadata: song.metadata),
-          const SizedBox(height: 20),
-          ..._buildSections(song.sections),
-        ],
+    return MediaQuery(
+      data: MediaQuery.of(
+        context,
+      ).copyWith(textScaler: TextScaler.linear(textScale)),
+      child: SingleChildScrollView(
+        controller: scrollController,
+        physics: scrollController == null
+            ? null
+            : const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _Header(metadata: song.metadata),
+            const SizedBox(height: 20),
+            ..._buildSections(song.sections),
+          ],
+        ),
       ),
     );
   }
@@ -574,6 +597,11 @@ class _Segment extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // La ligne d'accords et l'espacement suivent le zoom du texte (TextScaler)
+    // pour rester proportionnels à la taille des paroles.
+    final scaler = MediaQuery.textScalerOf(context);
+    final chordRowHeight = scaler.scale(_chordRowHeight);
+    final chordGap = scaler.scale(_chordGap);
     final chordStyle = theme.textTheme.labelLarge?.copyWith(
       fontWeight: FontWeight.bold,
       color: theme.colorScheme.primary,
@@ -586,7 +614,7 @@ class _Segment extends StatelessWidget {
     final chordWidget = chord.isEmpty
         ? null
         : SizedBox(
-            height: _chordRowHeight,
+            height: chordRowHeight,
             child: Text(chord, style: chordStyle, softWrap: false),
           );
 
@@ -603,7 +631,7 @@ class _Segment extends StatelessWidget {
     // Accord seul (sans parole) : il occupe sa propre largeur.
     if (text.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.only(right: 6),
+        padding: EdgeInsets.only(right: chordGap),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -625,7 +653,7 @@ class _Segment extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(right: _chordGap),
+          padding: EdgeInsets.only(right: chordGap),
           child: chordWidget,
         ),
         Text(lyric, style: textStyle, softWrap: false),

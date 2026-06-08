@@ -31,12 +31,21 @@ class CachedChordProViewer extends ConsumerStatefulWidget {
   /// la tonalité obtenue dans le contrôle de transposition.
   final ValueChanged<String?>? onOriginalKey;
 
+  /// Facteur de zoom du texte (1.0 = défaut).
+  final double textScale;
+
+  /// Controller de défilement, quand le défilement est piloté de l'extérieur
+  /// (geste de pinch/scroll).
+  final ScrollController? scrollController;
+
   const CachedChordProViewer({
     super.key,
     required this.songId,
     required this.chordProUrl,
     this.semitones = 0,
     this.onOriginalKey,
+    this.textScale = 1.0,
+    this.scrollController,
   });
 
   @override
@@ -133,7 +142,11 @@ class _CachedChordProViewerState extends ConsumerState<CachedChordProViewer> {
         final song = widget.semitones == 0
             ? base
             : base.transposed(widget.semitones);
-        return ChordProView(song: song);
+        return ChordProView(
+          song: song,
+          textScale: widget.textScale,
+          scrollController: widget.scrollController,
+        );
       },
     );
   }

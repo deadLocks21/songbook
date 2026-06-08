@@ -57,10 +57,16 @@ Future<void> showSongOptionsSheet(
   required ValueChanged<DisplayResourceType> onSelectView,
   required int semitones,
   required ValueChanged<int> onTranspose,
+  required double scale,
+  required ValueChanged<double> onScaleChanged,
+  required double minScale,
+  required double maxScale,
+  required double scaleStep,
   ValueListenable<String?>? originalKey,
 }) {
   var selectedType = selected;
   var currentSemitones = semitones;
+  var currentScale = scale;
 
   return showModalBottomSheet<void>(
     context: context,
@@ -126,6 +132,60 @@ Future<void> showSongOptionsSheet(
                       valueListenable: originalKey,
                       builder: (context, key, _) => controls(key),
                     ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Text('Zoom', style: theme.textTheme.titleSmall),
+                      const Spacer(),
+                      IconButton(
+                        tooltip: 'Réinitialiser le zoom',
+                        icon: const Icon(Icons.restart_alt),
+                        onPressed: currentScale != 1.0
+                            ? () {
+                                currentScale = 1.0;
+                                onScaleChanged(1.0);
+                                setSheetState(() {});
+                              }
+                            : null,
+                      ),
+                      IconButton.filledTonal(
+                        tooltip: 'Dézoomer',
+                        icon: const Icon(Icons.remove),
+                        onPressed: currentScale > minScale
+                            ? () {
+                                currentScale = (currentScale - scaleStep).clamp(
+                                  minScale,
+                                  maxScale,
+                                );
+                                onScaleChanged(currentScale);
+                                setSheetState(() {});
+                              }
+                            : null,
+                      ),
+                      SizedBox(
+                        width: 56,
+                        child: Text(
+                          '${(currentScale * 100).round()}%',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                      ),
+                      IconButton.filledTonal(
+                        tooltip: 'Zoomer',
+                        icon: const Icon(Icons.add),
+                        onPressed: currentScale < maxScale
+                            ? () {
+                                currentScale = (currentScale + scaleStep).clamp(
+                                  minScale,
+                                  maxScale,
+                                );
+                                onScaleChanged(currentScale);
+                                setSheetState(() {});
+                              }
+                            : null,
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),

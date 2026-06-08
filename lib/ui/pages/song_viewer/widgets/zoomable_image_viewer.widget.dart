@@ -5,13 +5,32 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
+/// Bornes du zoom image piloté par les boutons du panneau d'options (le pinch
+/// peut descendre plus bas pour ajuster l'image à l'écran). 1.0 = ajusté.
+const double imageZoomMin = 1.0;
+const double imageZoomMax = 4.0;
+const double imageZoomStep = 0.25;
+
 /// Widget de visualisation d'images avec zoom et pan.
 /// Affiche une liste d'images horizontalement avec support du pinch-to-zoom,
 /// du pan, et du double-tap pour reset.
 class ZoomableImageViewer extends StatefulWidget {
   final List<String> imagePaths;
 
-  const ZoomableImageViewer({super.key, required this.imagePaths});
+  /// Échelle pilotée de l'extérieur (boutons du panneau d'options). 1.0 = image
+  /// ajustée à l'écran.
+  final double scale;
+
+  /// Remonte l'échelle courante à chaque changement (pinch, molette, double-tap)
+  /// pour que l'appelant conserve le niveau de zoom de l'image.
+  final ValueChanged<double>? onScaleChanged;
+
+  const ZoomableImageViewer({
+    super.key,
+    required this.imagePaths,
+    this.scale = 1.0,
+    this.onScaleChanged,
+  });
 
   @override
   State<ZoomableImageViewer> createState() => _ZoomableImageViewerState();
@@ -27,19 +46,61 @@ class _ZoomableImageViewerState extends State<ZoomableImageViewer> {
   double _viewportWidth = 0;
   double _viewportHeight = 0;
   double _contentWidth = 0;
+  double _minScale = 1.0;
+
+  /// Vrai pendant l'application d'une échelle externe : évite de remonter ce
+  /// changement (sinon boucle avec [didUpdateWidget]).
+  bool _applyingExternalScale = false;
+  double _lastReportedScale = 1.0;
 
   @override
   void initState() {
     super.initState();
     _transformationController.addListener(_clampTranslation);
+    _transformationController.addListener(_reportScale);
     _loadImageSizes();
+  }
+
+  @override
+  void didUpdateWidget(ZoomableImageViewer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.scale != oldWidget.scale) {
+      final current = _transformationController.value.getMaxScaleOnAxis();
+      if ((widget.scale - current).abs() > 0.001) {
+        _applyExternalScale(widget.scale);
+      }
+    }
   }
 
   @override
   void dispose() {
     _transformationController.removeListener(_clampTranslation);
+    _transformationController.removeListener(_reportScale);
     _transformationController.dispose();
     super.dispose();
+  }
+
+  /// Remonte l'échelle courante (pinch/molette/double-tap) vers l'appelant.
+  void _reportScale() {
+    if (_applyingExternalScale) return;
+    final scale = _transformationController.value.getMaxScaleOnAxis();
+    if ((scale - _lastReportedScale).abs() < 0.001) return;
+    _lastReportedScale = scale;
+    widget.onScaleChanged?.call(scale);
+  }
+
+  /// Applique une échelle demandée de l'extérieur (boutons), centrée. Le
+  /// [_clampTranslation] recadre ensuite la translation.
+  void _applyExternalScale(double target) {
+    _applyingExternalScale = true;
+    final clamped = target.clamp(_minScale, 4.0).toDouble();
+    _transformationController.value = Matrix4.diagonal3Values(
+      clamped,
+      clamped,
+      1.0,
+    );
+    _lastReportedScale = clamped;
+    _applyingExternalScale = false;
   }
 
   /// Vérifie si un chemin est une URL réseau.
@@ -200,6 +261,7 @@ class _ZoomableImageViewerState extends State<ZoomableImageViewer> {
           _contentWidth = _viewportWidth;
         }
         final minScale = _calculateMinScale(_viewportWidth, _contentWidth);
+        _minScale = minScale;
 
         return GestureDetector(
           onDoubleTap: _resetZoom,

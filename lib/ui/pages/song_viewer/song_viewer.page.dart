@@ -4,8 +4,9 @@ import 'package:songbook/core/application/dtos/resource.dto.dart';
 import 'package:songbook/core/application/dtos/song.dto.dart';
 import 'package:songbook/core/domain/model/display_resource_type.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.service_provider.dart';
-import 'package:songbook/ui/pages/chord_pro_viewer/widgets/cached_chord_pro_viewer.widget.dart';
+import 'package:songbook/ui/pages/chord_pro_viewer/widgets/chord_pro_zoom_view.widget.dart';
 import 'package:songbook/ui/pages/song_viewer/widgets/cached_image_viewer.widget.dart';
+import 'package:songbook/ui/pages/song_viewer/widgets/zoomable_image_viewer.widget.dart';
 import 'package:songbook/ui/widgets/save_key_dialog.dart';
 import 'package:songbook/ui/widgets/song_options_sheet.dart';
 
@@ -52,6 +53,12 @@ class _SongViewerPageState extends ConsumerState<SongViewerPage> {
 
   /// Demi-tons de transposition pour la vue ChordPro.
   late int _semitones = widget.initialSemitones;
+
+  /// Facteur de zoom du texte ChordPro (éphémère, propre à cette ouverture).
+  double _textScale = 1.0;
+
+  /// Niveau de zoom de la vue image (propre, séparé du zoom texte).
+  double _imageScale = 1.0;
 
   /// Tonalité d'origine du fichier ChordPro (`{key:}`), une fois parsé, pour
   /// afficher la tonalité obtenue dans le contrôle de transposition. Un
@@ -161,9 +168,11 @@ class _SongViewerPageState extends ConsumerState<SongViewerPage> {
     );
   }
 
-  /// Ouvre le panneau d'options partagé (sélecteur de vue + transposition).
+  /// Ouvre le panneau d'options partagé (sélecteur de vue + transposition +
+  /// zoom). Le zoom contrôle la vue affichée à l'ouverture (texte ou image).
   void _openOptions(List<SongView> views) {
     final index = views.isEmpty ? 0 : _index.clamp(0, views.length - 1);
+    final isImage = views[index].type == DisplayResourceType.partition;
     showSongOptionsSheet(
       context,
       views: views,
@@ -174,6 +183,17 @@ class _SongViewerPageState extends ConsumerState<SongViewerPage> {
       semitones: _semitones,
       onTranspose: (delta) =>
           setState(() => _semitones = (_semitones + delta).clamp(-11, 11)),
+      scale: isImage ? _imageScale : _textScale,
+      onScaleChanged: (scale) => setState(() {
+        if (isImage) {
+          _imageScale = scale;
+        } else {
+          _textScale = scale;
+        }
+      }),
+      minScale: isImage ? imageZoomMin : minChordProScale,
+      maxScale: isImage ? imageZoomMax : maxChordProScale,
+      scaleStep: isImage ? imageZoomStep : chordProScaleStep,
       originalKey: _originalKey,
     );
   }
@@ -189,14 +209,18 @@ class _SongViewerPageState extends ConsumerState<SongViewerPage> {
           key: const Key('imageViewer'),
           songId: widget.song.id,
           imageUrls: image!.imageUrls,
+          scale: _imageScale,
+          onScaleChanged: (scale) => setState(() => _imageScale = scale),
         );
       case DisplayResourceType.chordPro:
-        return CachedChordProViewer(
+        return ChordProZoomView(
           key: const Key('chordProViewer'),
           songId: widget.song.id,
           chordProUrl: chordPro!.chordProUrl,
           semitones: _semitones,
           onOriginalKey: (key) => _originalKey.value = key,
+          textScale: _textScale,
+          onTextScaleChanged: (scale) => setState(() => _textScale = scale),
         );
       case null:
         return const Center(
