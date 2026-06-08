@@ -55,6 +55,20 @@ class _ServerUrlSheetState extends ConsumerState<_ServerUrlSheet> {
         .setBackendUrl(BackendUrl.normalize(raw));
 
     if (!mounted) return;
+
+    // Le notifier avale ses exceptions et bascule en AsyncError au lieu de
+    // relancer : sans cette vérification, on afficherait « enregistrée » même
+    // quand l'écriture a échoué (ex. SharedPreferences indisponible sur
+    // Windows), ce qui masque le vrai problème.
+    final saved = ref.read(backendUrlProvider);
+    if (saved.hasError) {
+      setState(() {
+        _isSaving = false;
+        _error = 'Échec de l\'enregistrement : ${saved.error}';
+      });
+      return;
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('URL du serveur enregistrée'),
