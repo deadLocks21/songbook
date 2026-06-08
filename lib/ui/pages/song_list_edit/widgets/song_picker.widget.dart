@@ -43,6 +43,7 @@ class _SongPickerSheetState extends ConsumerState<_SongPickerSheet> {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
+              autofocus: true,
               decoration: InputDecoration(
                 hintText: 'Rechercher un chant...',
                 prefixIcon: const Icon(Icons.search),
