@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/dtos/resource.dto.dart';
 import 'package:songbook/core/application/dtos/song.dto.dart';
 import 'package:songbook/core/application/dtos/song_list.dto.dart';
+import 'package:songbook/core/application/usecases/cache_song_resources.usecase.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
+import 'package:songbook/infrastructure/logger/providers/logger.service_provider.dart';
 import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
+import 'package:songbook/infrastructure/song/providers/sync.providers.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
 import 'package:songbook/ui/pages/song_list_edit/widgets/song_list_entry_tile.widget.dart';
 import 'package:songbook/ui/pages/song_list_edit/widgets/song_picker.widget.dart';
@@ -242,8 +245,26 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
             ),
           );
         });
+        _cacheSongResources(song);
       },
     );
+  }
+
+  /// Met en cache, en arrière-plan (best-effort), les ressources du chant ajouté
+  /// pour qu'il soit consultable hors-ligne sans attendre son premier affichage.
+  void _cacheSongResources(SongDto song) {
+    final logger = ref.read(loggerProvider);
+    ref
+        .read(resourceCacheRepositoryProvider.future)
+        .then((cache) => CacheSongResourcesUseCase(cache, logger).execute(song))
+        .catchError((Object e, StackTrace s) {
+          logger.error(
+            'setlist.cache_song.failed',
+            attrs: {'songId': song.id},
+            error: e,
+            stack: s,
+          );
+        });
   }
 
   /// Ouvre la visualisation du chant de l'entrée [index]. Si l'utilisateur y
