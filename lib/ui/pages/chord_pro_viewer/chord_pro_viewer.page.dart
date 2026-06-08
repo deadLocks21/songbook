@@ -60,6 +60,10 @@ class ChordProView extends StatelessWidget {
     final widgets = <Widget>[];
     final copyrightLines = <Line>[];
     var verseNumber = 0;
+    // Commentaire isolé juste avant une section (`{c: …}` suivi d'un
+    // `{start_of_verse/chorus…}`) : il sert de titre à cette section au lieu
+    // du libellé par défaut. Consommé par la section suivante.
+    String? pendingHeading;
 
     void addSection(Section section, String? heading, {bool isChorus = false}) {
       if (widgets.isNotEmpty) widgets.add(const SizedBox(height: 48));
@@ -68,34 +72,64 @@ class ChordProView extends StatelessWidget {
       );
     }
 
-    for (final section in sections) {
+    // Indique si la section d'indice [from] (ou la suivante non vide) est une
+    // vraie section taggée à laquelle un commentaire en titre peut s'appliquer.
+    bool nextIsTitleable(int from) {
+      for (var j = from; j < sections.length; j++) {
+        if (sections[j].lines.isEmpty) continue;
+        return sections[j].kind != SectionKind.loose;
+      }
+      return false;
+    }
+
+    for (var index = 0; index < sections.length; index++) {
+      final section = sections[index];
       if (section.lines.isEmpty) continue;
 
       // Les lignes « loose » qui ne sont que des commentaires (copyright,
       // attribution en tête de chant) ne sont pas un couplet : on les met de
       // côté pour les afficher en pied de page, et le reste devient le couplet.
       if (section.kind == SectionKind.loose) {
+        final lines = section.lines;
+        // Le dernier groupe de commentaires d'une section loose, lorsqu'une
+        // vraie section le suit, est son titre (ex. `{c: Strophe 1}` puis
+        // `{start_of_verse}`). Les lignes vides sont ignorées ; ce qui précède
+        // ce groupe (copyright, attribution) part en pied de page.
+        var end = lines.length;
+        while (end > 0 && _isBlankLine(lines[end - 1])) {
+          end--;
+        }
+        if (end > 0 &&
+            lines[end - 1].kind == LineKind.comment &&
+            nextIsTitleable(index + 1)) {
+          copyrightLines.addAll(
+            lines
+                .sublist(0, end - 1)
+                .where((l) => l.kind == LineKind.comment),
+          );
+          pendingHeading = lines[end - 1].comment;
+          continue;
+        }
+
         var i = 0;
-        while (i < section.lines.length &&
-            section.lines[i].kind == LineKind.comment) {
+        while (i < lines.length && lines[i].kind == LineKind.comment) {
           i++;
         }
-        copyrightLines.addAll(section.lines.sublist(0, i));
-        final body = section.lines.sublist(i);
-        if (body.isEmpty) continue;
-        verseNumber++;
+        copyrightLines.addAll(lines.sublist(0, i));
+        final body = lines.sublist(i);
+        if (body.every(_isBlankLine)) continue;
         addSection(
           Section(kind: SectionKind.loose, lines: body, span: section.span),
-          'Couplet $verseNumber',
+          pendingHeading ?? 'Couplet ${++verseNumber}',
         );
+        pendingHeading = null;
         continue;
       }
 
       String? heading;
       switch (section.kind) {
         case SectionKind.verse:
-          verseNumber++;
-          heading = 'Couplet $verseNumber';
+          heading = pendingHeading ?? 'Couplet ${++verseNumber}';
         case SectionKind.chorus:
           heading = section.isChorusRecall ? 'Refrain (reprise)' : 'Refrain';
         case SectionKind.bridge:
@@ -111,6 +145,12 @@ class ChordProView extends StatelessWidget {
       if (section.label != null && section.label!.isNotEmpty) {
         heading = section.label;
       }
+      // Un commentaire placé juste avant la section prime sur tout le reste.
+      final pending = pendingHeading;
+      if (pending != null && pending.isNotEmpty) {
+        heading = pending;
+      }
+      pendingHeading = null;
 
       addSection(
         section,
@@ -126,6 +166,11 @@ class ChordProView extends StatelessWidget {
     return widgets;
   }
 }
+
+/// Une ligne « structurée » sans contenu visible (ligne vide du source).
+bool _isBlankLine(Line line) =>
+    line.kind == LineKind.structured &&
+    line.tokens.every((t) => t is TextToken && t.text.trim().isEmpty);
 
 /// Ouvre le panneau de transposition en bas de l'écran, laissant le contenu
 /// visible au-dessus (barrière non assombrie). [onTranspose] reçoit le delta de
