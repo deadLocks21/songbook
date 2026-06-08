@@ -508,6 +508,15 @@ List<List<_Pair>> _words(List<_Pair> segments) {
   return words;
 }
 
+final _wordCharStart = RegExp(r'^[\p{L}\p{N}]', unicode: true);
+final _wordCharEnd = RegExp(r'[\p{L}\p{N}]$', unicode: true);
+
+/// Deux morceaux se joignent comme des syllabes (et méritent un tiret de
+/// continuation) quand le premier finit et le second commence par une
+/// lettre/chiffre. Évite un tiret parasite devant une ponctuation (« mot-, »).
+bool _joinsAsSyllables(String left, String right) =>
+    _wordCharEnd.hasMatch(left) && _wordCharStart.hasMatch(right);
+
 /// Affiche un mot insécable : ses syllabes sont alignées côte à côte et ne
 /// peuvent pas être séparées par un retour à la ligne.
 class _WordView extends StatelessWidget {
@@ -521,8 +530,16 @@ class _WordView extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        for (final piece in pieces)
-          _Segment(chord: piece.chord, text: piece.text),
+        for (var i = 0; i < pieces.length; i++)
+          _Segment(
+            chord: pieces[i].chord,
+            text: pieces[i].text,
+            // Tiret de continuation seulement entre deux vraies syllabes (pas
+            // devant une ponctuation qui termine le mot).
+            continuesWord:
+                i < pieces.length - 1 &&
+                _joinsAsSyllables(pieces[i].text, pieces[i + 1].text),
+          ),
       ],
     );
   }
@@ -532,15 +549,27 @@ class _WordView extends StatelessWidget {
 /// d'une même ligne partagent la même ligne de base.
 const double _chordRowHeight = 22;
 
+/// Espace minimal à droite d'un accord, pour que deux accords rapprochés ne se
+/// touchent pas même au-dessus d'une parole étroite.
+const double _chordGap = 8;
+
 /// Un fragment de parole avec son accord positionné au-dessus de son début.
 ///
 /// La largeur du segment est dictée par la parole : l'accord flotte par-dessus,
 /// aligné à gauche, et peut déborder à droite sans étirer le texte.
 class _Segment extends StatelessWidget {
-  const _Segment({required this.chord, required this.text});
+  const _Segment({
+    required this.chord,
+    required this.text,
+    this.continuesWord = false,
+  });
 
   final String chord;
   final String text;
+
+  /// Vrai quand cette syllabe est suivie d'une autre du même mot (mot découpé
+  /// par les accords) : on ajoute alors un tiret de continuation.
+  final bool continuesWord;
 
   @override
   Widget build(BuildContext context) {
@@ -550,6 +579,9 @@ class _Segment extends StatelessWidget {
       color: theme.colorScheme.primary,
     );
     final textStyle = theme.textTheme.bodyLarge;
+
+    // Parole affichée : tiret de continuation si le mot se poursuit après.
+    final lyric = continuesWord && text.isNotEmpty ? '$text-' : text;
 
     final chordWidget = chord.isEmpty
         ? null
@@ -561,7 +593,11 @@ class _Segment extends StatelessWidget {
     // Mot sans accord : pas de bande réservée, juste la parole. Aligné par le
     // bas avec ses voisins, sa ligne de base reste celle de la ligne.
     if (chordWidget == null) {
-      return Text(text.isEmpty ? ' ' : text, style: textStyle, softWrap: false);
+      return Text(
+        lyric.isEmpty ? ' ' : lyric,
+        style: textStyle,
+        softWrap: false,
+      );
     }
 
     // Accord seul (sans parole) : il occupe sa propre largeur.
@@ -579,20 +615,20 @@ class _Segment extends StatelessWidget {
       );
     }
 
-    // Parole avec accord : la largeur suit le texte, l'accord flotte par-dessus
-    // et réserve sa bande au-dessus de la parole.
-    return Stack(
-      clipBehavior: Clip.none,
+    // Parole avec accord : la largeur est le max entre la parole et l'accord
+    // (+ un petit espace) pour que deux accords rapprochés ne se chevauchent
+    // pas. L'accord reste aligné au début de sa parole ; s'il est plus large,
+    // il pousse la suite vers la droite — l'alignement accord/parole est
+    // préservé, seuls les endroits trop serrés s'écartent.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: _chordRowHeight),
-            Text(text, style: textStyle, softWrap: false),
-          ],
+        Padding(
+          padding: const EdgeInsets.only(right: _chordGap),
+          child: chordWidget,
         ),
-        Positioned(left: 0, top: 0, child: chordWidget),
+        Text(lyric, style: textStyle, softWrap: false),
       ],
     );
   }
