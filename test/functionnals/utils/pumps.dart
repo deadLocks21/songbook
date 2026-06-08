@@ -171,6 +171,7 @@ Future<SongListEditPageActions> startInSongListEditPage(
 Future<SongListViewerPageActions> startInSongListViewerPage(
   WidgetTester tester, {
   required SongListViewerData viewerData,
+  String? initialEntryId,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -180,7 +181,10 @@ Future<SongListViewerPageActions> startInSongListViewerPage(
         ),
       ],
       child: MaterialApp(
-        home: SongListViewerPage(songListId: viewerData.songList.id),
+        home: SongListViewerPage(
+          songListId: viewerData.songList.id,
+          initialEntryId: initialEntryId,
+        ),
       ),
     ),
   );

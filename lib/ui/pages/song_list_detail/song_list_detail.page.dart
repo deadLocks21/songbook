@@ -93,7 +93,13 @@ class SongListDetailPage extends ConsumerWidget {
                     .whereType<ChordProResourceDto>()
                     .firstOrNull
                     ?.chordProUrl;
-                return _buildSongTile(context, entry, index - 1, chordProUrl);
+                return _buildSongTile(
+                  context,
+                  songList,
+                  entry,
+                  index - 1,
+                  chordProUrl,
+                );
               },
             ),
     );
@@ -164,6 +170,7 @@ class SongListDetailPage extends ConsumerWidget {
 
   Widget _buildSongTile(
     BuildContext context,
+    SongListDto songList,
     SongListEntryDto entry,
     int index,
     String? chordProUrl,
@@ -174,67 +181,78 @@ class SongListDetailPage extends ConsumerWidget {
     return Card(
       key: Key('songListDetailEntry_$index'),
       margin: const EdgeInsets.only(bottom: 10),
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                '${index + 1}',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: colorScheme.onPrimaryContainer,
-                  fontWeight: FontWeight.bold,
+      child: InkWell(
+        onTap: () => _viewList(context, songList, initialEntryId: entry.id),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '${index + 1}',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    entry.songName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      entry.songName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  Text(
-                    entry.songCode,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                    Text(
+                      entry.songCode,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            if (chordProUrl != null)
-              SongKeyBadge(
-                songId: entry.songId,
-                chordProUrl: chordProUrl,
-                savedSemitones: entry.savedSemitones,
-              ),
-          ],
+              if (chordProUrl != null)
+                SongKeyBadge(
+                  songId: entry.songId,
+                  chordProUrl: chordProUrl,
+                  savedSemitones: entry.savedSemitones,
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  void _viewList(BuildContext context, SongListDto songList) {
+  void _viewList(
+    BuildContext context,
+    SongListDto songList, {
+    String? initialEntryId,
+  }) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => SongListViewerPage(songListId: songList.id),
+        builder: (context) => SongListViewerPage(
+          songListId: songList.id,
+          initialEntryId: initialEntryId,
+        ),
       ),
     );
   }

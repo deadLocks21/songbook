@@ -18,7 +18,15 @@ import 'package:songbook/ui/widgets/song_options_sheet.dart';
 class SongListViewerPage extends ConsumerStatefulWidget {
   final String songListId;
 
-  const SongListViewerPage({super.key, required this.songListId});
+  /// Id de l'entrée sur laquelle démarrer la présentation (ex. chant tapé dans
+  /// la vue détail). `null` = démarre au premier chant.
+  final String? initialEntryId;
+
+  const SongListViewerPage({
+    super.key,
+    required this.songListId,
+    this.initialEntryId,
+  });
 
   @override
   ConsumerState<SongListViewerPage> createState() => _SongListViewerPageState();
@@ -26,6 +34,10 @@ class SongListViewerPage extends ConsumerStatefulWidget {
 
 class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
   int _currentIndex = 0;
+
+  /// Vrai une fois que [SongListViewerPage.initialEntryId] a positionné l'index
+  /// de départ (appliqué une seule fois, à la première résolution des données).
+  bool _initialIndexApplied = false;
 
   /// Demi-tons de transposition du chant courant lorsqu'il est affiché en
   /// ChordPro. Pré-rempli avec la tonalité enregistrée pour ce chant dans cette
@@ -103,6 +115,18 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
             appBar: AppBar(title: const Text('Liste vide')),
             body: const Center(child: Text('Aucun chant dans cette liste')),
           );
+        }
+
+        // Démarre sur le chant tapé dans la vue détail (par id d'entrée, car la
+        // présentation ignore les chants introuvables au catalogue). Une seule
+        // fois, à la première résolution des données.
+        if (!_initialIndexApplied) {
+          _initialIndexApplied = true;
+          final entryId = widget.initialEntryId;
+          if (entryId != null) {
+            final index = data.entries.indexWhere((e) => e.id == entryId);
+            if (index >= 0) _currentIndex = index;
+          }
         }
 
         // Clamp index in case songs were removed

@@ -151,6 +151,35 @@ void main() {
           .execute();
     });
 
+    testWidgets('should start at the entry matching initialEntryId', (
+      tester,
+    ) async {
+      final songList = aSongList()
+          .withId('list-1')
+          .withSongEntry(songId: 'song-1', songName: 'Song 1', songCode: 'S01')
+          .withSongEntry(songId: 'song-2', songName: 'Song 2', songCode: 'S02')
+          .withSongEntry(songId: 'song-3', songName: 'Song 3', songCode: 'S03')
+          .build();
+
+      final songs = [
+        aSong().withId('song-1').withCode('S01').withName('Song 1').build(),
+        aSong().withId('song-2').withCode('S02').withName('Song 2').build(),
+        aSong().withId('song-3').withCode('S03').withName('Song 3').build(),
+      ];
+
+      final viewerData = SongListViewerData(
+        songList: songList,
+        entries: songList.entries,
+        songs: songs,
+      );
+
+      await (await startInSongListViewerPage(
+        tester,
+        viewerData: viewerData,
+        initialEntryId: songList.entries[1].id,
+      )).expectPositionIs('2/3').expectSongCodeIs('S02').execute();
+    });
+
     testWidgets('should hide both buttons with single song', (tester) async {
       final songList = aSongList()
           .withId('list-1')
