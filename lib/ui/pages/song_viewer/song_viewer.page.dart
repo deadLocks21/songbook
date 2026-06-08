@@ -4,10 +4,10 @@ import 'package:songbook/core/application/dtos/resource.dto.dart';
 import 'package:songbook/core/application/dtos/song.dto.dart';
 import 'package:songbook/core/domain/model/display_resource_type.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.service_provider.dart';
-import 'package:songbook/ui/pages/chord_pro_viewer/chord_pro_viewer.page.dart';
 import 'package:songbook/ui/pages/chord_pro_viewer/widgets/cached_chord_pro_viewer.widget.dart';
 import 'package:songbook/ui/pages/song_viewer/widgets/cached_image_viewer.widget.dart';
 import 'package:songbook/ui/widgets/save_key_dialog.dart';
+import 'package:songbook/ui/widgets/song_options_sheet.dart';
 
 /// Ordre d'affichage par défaut tant que la préférence n'est pas chargée.
 const _defaultDisplayOrder = [
@@ -107,32 +107,16 @@ class _SongViewerPageState extends ConsumerState<SongViewerPage> {
     final order =
         ref.watch(resourceDisplayOrderProvider).value ?? _defaultDisplayOrder;
 
-    // Vues affichables, indexées par type. (Le PDF n'a pas de visionneuse, il
-    // n'est donc pas listé.)
-    final available = <DisplayResourceType, _View>{
-      if (image != null)
-        DisplayResourceType.partition: const _View(
-          kind: DisplayResourceType.partition,
-          label: 'Partition',
-          icon: Icons.music_note,
-        ),
-      if (chordPro != null)
-        DisplayResourceType.chordPro: const _View(
-          kind: DisplayResourceType.chordPro,
-          label: 'Accords',
-          icon: Icons.lyrics,
-        ),
-    };
-
-    // Ordonnées selon la préférence : la première disponible est la vue par
-    // défaut (index 0).
-    final views = [
-      for (final type in order)
-        if (available[type] case final view?) view,
-    ];
+    // Vues affichables, ordonnées selon la préférence : la première disponible
+    // est la vue par défaut (index 0).
+    final views = availableSongViews(
+      hasImage: image != null,
+      hasChordPro: chordPro != null,
+      order: order,
+    );
 
     final index = views.isEmpty ? 0 : _index.clamp(0, views.length - 1);
-    final current = views.isEmpty ? null : views[index].kind;
+    final current = views.isEmpty ? null : views[index].type;
 
     final theme = Theme.of(context);
     return PopScope(
@@ -177,85 +161,20 @@ class _SongViewerPageState extends ConsumerState<SongViewerPage> {
     );
   }
 
-  /// Ouvre le panneau d'options en bas de l'écran (barrière transparente, le
-  /// contenu reste visible) : sélection de la vue puis, en vue Accords, les
-  /// contrôles de transposition.
-  void _openOptions(List<_View> views) {
-    final theme = Theme.of(context);
-    showModalBottomSheet<void>(
-      context: context,
-      barrierColor: Colors.transparent,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setSheetState) {
-          final index = views.isEmpty ? 0 : _index.clamp(0, views.length - 1);
-          final isChords =
-              views.isNotEmpty &&
-              views[index].kind == DisplayResourceType.chordPro;
-          return SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-              // Sans largeur explicite, le fond de la sheet se rétrécit à la
-              // largeur du contenu (Column en min) et se centre : on force la
-              // pleine largeur, contenu aligné à gauche.
-              child: SizedBox(
-                width: double.infinity,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (views.length > 1) ...[
-                      Text('Vue', style: theme.textTheme.titleSmall),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        width: double.infinity,
-                        child: SegmentedButton<int>(
-                          segments: [
-                            for (var i = 0; i < views.length; i++)
-                              ButtonSegment<int>(
-                                value: i,
-                                label: Text(views[i].label),
-                                icon: Icon(views[i].icon),
-                              ),
-                          ],
-                          selected: {index},
-                          onSelectionChanged: (selection) {
-                            setState(() => _index = selection.first);
-                            setSheetState(() {});
-                          },
-                        ),
-                      ),
-                    ],
-                    if (views.length > 1) const SizedBox(height: 16),
-                    // Toujours affichée, mais désactivée hors vue Accords.
-                    // Le panneau peut être ouvert avant la fin du parsing : le
-                    // ValueListenableBuilder le rafraîchit dès que la tonalité
-                    // d'origine est résolue (sinon « 0 » resterait affiché
-                    // jusqu'au premier +/-).
-                    ValueListenableBuilder<String?>(
-                      valueListenable: _originalKey,
-                      builder: (context, originalKey, _) =>
-                          ChordProTransposeControls(
-                            enabled: isChords,
-                            semitones: _semitones,
-                            originalKey: originalKey,
-                            onTranspose: (delta) {
-                              setState(
-                                () => _semitones = (_semitones + delta).clamp(
-                                  -11,
-                                  11,
-                                ),
-                              );
-                              setSheetState(() {});
-                            },
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
+  /// Ouvre le panneau d'options partagé (sélecteur de vue + transposition).
+  void _openOptions(List<SongView> views) {
+    final index = views.isEmpty ? 0 : _index.clamp(0, views.length - 1);
+    showSongOptionsSheet(
+      context,
+      views: views,
+      selected: views[index].type,
+      onSelectView: (type) => setState(
+        () => _index = views.indexWhere((view) => view.type == type),
       ),
+      semitones: _semitones,
+      onTranspose: (delta) =>
+          setState(() => _semitones = (_semitones + delta).clamp(-11, 11)),
+      originalKey: _originalKey,
     );
   }
 
@@ -286,13 +205,4 @@ class _SongViewerPageState extends ConsumerState<SongViewerPage> {
         );
     }
   }
-}
-
-/// Décrit une vue affichable (libellé + icône) pour le sélecteur.
-class _View {
-  final DisplayResourceType kind;
-  final String label;
-  final IconData icon;
-
-  const _View({required this.kind, required this.label, required this.icon});
 }

@@ -6,12 +6,12 @@ import 'package:songbook/core/application/dtos/song_list.dto.dart';
 import 'package:songbook/core/domain/model/display_resource_type.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.service_provider.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
-import 'package:songbook/ui/pages/chord_pro_viewer/chord_pro_viewer.page.dart';
 import 'package:songbook/ui/pages/chord_pro_viewer/widgets/cached_chord_pro_viewer.widget.dart';
 import 'package:songbook/ui/pages/song_list_viewer/providers/song_list_viewer.provider.dart';
 import 'package:songbook/ui/pages/song_list_viewer/widgets/song_list_overview_sheet.widget.dart';
 import 'package:songbook/ui/pages/song_viewer/widgets/cached_image_viewer.widget.dart';
 import 'package:songbook/ui/widgets/save_key_dialog.dart';
+import 'package:songbook/ui/widgets/song_options_sheet.dart';
 
 /// Page de visualisation d'une liste de chants.
 /// Affiche les partitions avec navigation precedent/suivant.
@@ -43,6 +43,11 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
 
   /// Verrou anti double-tap pendant l'attente d'une boîte de dialogue.
   bool _switching = false;
+
+  /// Vue choisie manuellement (accords/partition), conservée pendant toute la
+  /// présentation : appliquée à chaque chant si elle y est disponible, sinon
+  /// repli sur la préférence d'affichage. `null` = suit la préférence.
+  DisplayResourceType? _viewOverride;
 
   /// Tonalité d'origine (`{key:}`) du chant courant, une fois parsé. Remise à
   /// zéro à chaque changement de chant, comme la transposition. Un
@@ -107,8 +112,22 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
 
         final currentSong = data.songs[_currentIndex];
         final totalSongs = data.songs.length;
-        // Type affiché selon la préférence ; transposable seulement en ChordPro.
-        final chosenType = _chosenTypeOf(currentSong, order);
+        // Vue affichée : l'override manuel s'il est disponible pour ce chant,
+        // sinon la préférence d'affichage. Bascule possible si les deux vues
+        // (accords + partition) existent. Transposable seulement en ChordPro.
+        final hasImage = _imageOf(currentSong) != null;
+        final hasChordPro = _chordProOf(currentSong) != null;
+        final views = availableSongViews(
+          hasImage: hasImage,
+          hasChordPro: hasChordPro,
+          order: order,
+        );
+        final overrideAvailable =
+            (_viewOverride == DisplayResourceType.partition && hasImage) ||
+            (_viewOverride == DisplayResourceType.chordPro && hasChordPro);
+        final chosenType = overrideAvailable
+            ? _viewOverride
+            : _chosenTypeOf(currentSong, order);
         final showsChordPro = chosenType == DisplayResourceType.chordPro;
 
         // Pré-remplit la tonalité enregistrée à l'arrivée sur un chant
@@ -149,17 +168,22 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
                 ],
               ),
               actions: [
-                if (showsChordPro)
+                if (views.length > 1 || showsChordPro)
                   IconButton(
-                    tooltip: 'Transposer',
+                    key: const Key('viewerOptionsButton'),
+                    tooltip: 'Options',
                     icon: const Icon(Icons.tune),
-                    onPressed: () => showChordProTransposeSheet(
+                    onPressed: () => showSongOptionsSheet(
                       context,
+                      views: views,
+                      selected: chosenType!,
+                      onSelectView: (type) =>
+                          setState(() => _viewOverride = type),
                       semitones: _semitones,
-                      originalKey: _originalKey,
                       onTranspose: (delta) => setState(
                         () => _semitones = (_semitones + delta).clamp(-11, 11),
                       ),
+                      originalKey: _originalKey,
                     ),
                   ),
                 Center(
@@ -287,6 +311,8 @@ class _SongListViewerPageState extends ConsumerState<SongListViewerPage> {
     _semitones = saved ?? 0;
     _presetIndex = index;
     _originalKey.value = null;
+    // _viewOverride n'est volontairement PAS réinitialisé : le choix de vue
+    // (image/accords) est conservé sur toute la durée de la présentation.
   }
 
   /// `true` si la transposition courante diffère de la tonalité enregistrée.
