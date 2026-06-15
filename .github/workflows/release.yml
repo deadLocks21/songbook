@@ -260,11 +260,13 @@ jobs:
 
       - name: Build App Bundle (.aab)
         env:
+          SIGNOZ_INGEST_URL: ${{ secrets.SIGNOZ_INGEST_URL }}
           SIGNOZ_INGESTION_KEY: ${{ secrets.SIGNOZ_INGESTION_KEY }}
         run: |
           flutter build appbundle --release \
             --build-name="$VERSION" \
             --build-number="${{ steps.build-number.outputs.build_number }}" \
+            --dart-define=APP_VERSION="$VERSION+${{ steps.build-number.outputs.build_number }}" \
             --dart-define=SIGNOZ_INGEST_URL="$SIGNOZ_INGEST_URL" \
             --dart-define=SIGNOZ_INGESTION_KEY="$SIGNOZ_INGESTION_KEY" \
             --dart-define=SIGNOZ_ENV="$SIGNOZ_ENV"
