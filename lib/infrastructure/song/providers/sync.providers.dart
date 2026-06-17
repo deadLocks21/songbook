@@ -2,12 +2,14 @@ import 'package:dio/dio.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:songbook/core/application/services/logger_application.service.dart';
 import 'package:songbook/core/application/services/sync.service.dart';
 import 'package:songbook/core/domain/services/auth_token_store.dart';
 import 'package:songbook/core/domain/services/remote_song.repository.dart';
 import 'package:songbook/core/domain/services/resource_cache.repository.dart';
 import 'package:songbook/infrastructure/auth/providers/auth_token_store.provider.dart';
 import 'package:songbook/infrastructure/auth/providers/session_revocation.provider.dart';
+import 'package:songbook/infrastructure/logger/providers/logger.service_provider.dart';
 import 'package:songbook/infrastructure/resource/dio.resource_cache.repository.dart';
 import 'package:songbook/infrastructure/resource/in_memory.resource_cache.repository.dart';
 import 'package:songbook/infrastructure/settings/providers/in_memory_mode.provider.dart';
@@ -41,8 +43,9 @@ class _VersionInterceptor extends Interceptor {
 class _AuthInterceptor extends Interceptor {
   final AuthTokenStore _tokenStore;
   final void Function() _onUnauthorized;
+  final LoggerApplicationService _logger;
 
-  _AuthInterceptor(this._tokenStore, this._onUnauthorized);
+  _AuthInterceptor(this._tokenStore, this._onUnauthorized, this._logger);
 
   @override
   Future<void> onRequest(
@@ -68,7 +71,12 @@ class _AuthInterceptor extends Interceptor {
     final code = data is Map<String, dynamic> ? data['code'] : null;
     if (err.response?.statusCode == 401 && code == 'invalid_token') {
       // Token absent/expiré/invalide : on purge la session locale et on
-      // signale l'UI pour relancer le flux OTP (cf. API.md).
+      // signale l'UI pour relancer le flux OTP (cf. API.md). On trace la cause
+      // (401 serveur) pour la distinguer d'une disparition externe du token.
+      _logger.warn(
+        'auth.token.revoked_401',
+        attrs: {'request.path': err.requestOptions.uri.path},
+      );
       await _tokenStore.clear();
       _onUnauthorized();
     }
@@ -96,6 +104,7 @@ Dio dio(Ref ref) {
     _AuthInterceptor(
       ref.watch(authTokenStoreProvider),
       () => ref.read(sessionRevocationProvider.notifier).signal(),
+      ref.watch(loggerProvider),
     ),
   );
 

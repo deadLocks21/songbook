@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:songbook/core/domain/services/auth_token_store.dart';
 import 'package:songbook/infrastructure/auth/in_memory.auth_token_store.dart';
 import 'package:songbook/infrastructure/auth/shared_preferences.auth_token_store.dart';
+import 'package:songbook/infrastructure/logger/providers/logger.service_provider.dart';
 
 part 'auth_token_store.provider.g.dart';
 
@@ -16,5 +17,5 @@ AuthTokenStore authTokenStore(Ref ref) {
   if (kIsWeb) {
     return InMemoryAuthTokenStore();
   }
-  return SharedPreferencesAuthTokenStore();
+  return SharedPreferencesAuthTokenStore(ref.watch(loggerProvider));
 }
