@@ -111,10 +111,13 @@ class Installer {
       // pointée par `current` (dossier versions/<v>), pas sur config.json :
       // ainsi un config.json bidouillé (test) ne fausse pas la décision.
       final appVersion = _installedVersionOnDisk(config);
-      final canSplash =
-          showUi && compareVersions(appVersion, _minAppVersionForSplash) >= 0;
-      final canPrompt =
-          showUi && compareVersions(appVersion, _minAppVersionForPrompt) >= 0;
+      // ⚠️ TEMP TEST — À REVERT avant merge. Court-circuite le garde-fou de
+      // version (`|| true`) pour prévisualiser la fenêtre de MAJ sur une
+      // install < 1.5.0. Restaurer en retirant les deux `|| true`.
+      final canSplash = showUi &&
+          (compareVersions(appVersion, _minAppVersionForSplash) >= 0 || true);
+      final canPrompt = showUi &&
+          (compareVersions(appVersion, _minAppVersionForPrompt) >= 0 || true);
 
       if (canPrompt) {
         ui = await ProgressWindow.startPrompt(layout, log, release.version);
