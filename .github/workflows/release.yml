@@ -604,6 +604,57 @@ jobs:
           retention-days: 14
           if-no-files-found: error
 
+  # ───────────────────────────────────────────────────────────────────────
+  # UPDATER — Binaire installateur/launcher/auto-updater (Windows + Linux).
+  # Indépendant des builds d'app : c'est un petit CLI Dart (tool/updater)
+  # attaché à la release pour que l'utilisateur le télécharge une seule fois.
+  # Bootstrap : téléchargé UNE fois, ensuite il met à jour l'app ET lui-même.
+  # ───────────────────────────────────────────────────────────────────────
+
+  build-updater:
+    name: Build Updater (${{ matrix.label }})
+    needs: prepare
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            label: Windows
+            out: songbook-updater-windows.exe
+            artifact: songbook-updater-windows
+          - os: ubuntu-22.04
+            label: Linux
+            out: songbook-updater-linux
+            artifact: songbook-updater-linux
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Resolve updater deps
+        working-directory: tool/updater
+        run: dart pub get
+
+      # CLI console autonome (pas de Flutter) : `dart compile exe` produit un
+      # binaire natif. Les lancements quotidiens passent par un wrapper caché
+      # (VBS Windows / .desktop Linux) généré à l'installation.
+      - name: Compile updater
+        working-directory: tool/updater
+        run: dart compile exe bin/songbook_updater.dart -o "${{ matrix.out }}"
+
+      - name: Upload updater artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: tool/updater/${{ matrix.out }}
+          retention-days: 14
+          if-no-files-found: error
+
   # ═══════════════════════════════════════════════════════════════════════
   # BUILD GATE — Sentinelle qui valide que les builds sont verts
   # ═══════════════════════════════════════════════════════════════════════
@@ -764,7 +815,8 @@ jobs:
     name: Create GitHub Release
     # publish-ios retiré (désactivé) — le rajouter ici en réactivant iOS.
     # publish-macos retiré (désactivé) — le rajouter ici en réactivant macOS.
-    needs: [prepare, publish-android]
+    # build-updater : attend les binaires updater pour les attacher à la release.
+    needs: [prepare, publish-android, build-updater]
     # TEMPORAIRE : condition `if: startsWith(github.ref, 'refs/tags/v')`
     # désactivée pour pouvoir tester le job release via workflow_dispatch
     # sans avoir à tagger. À RESTAURER une fois la validation faite.
@@ -801,7 +853,9 @@ jobs:
             ASSETS+=("$f")
           done < <(find artifacts -type f \
             \( -name '*.aab' -o -name 'mapping.txt' -o -name '*.pkg' \
-               -o -name '*.zip' -o -name '*.AppImage' \) | sort)
+               -o -name '*.zip' -o -name '*.AppImage' \
+               -o -name 'songbook-updater-windows.exe' \
+               -o -name 'songbook-updater-linux' \) | sort)
 
           if [ ${#ASSETS[@]} -eq 0 ]; then
             echo "ERROR: no release assets found"

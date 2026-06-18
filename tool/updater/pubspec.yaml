@@ -1,0 +1,15 @@
+name: songbook_updater
+description: >-
+  Installateur / launcher / auto-updater silencieux de Songbook desktop
+  (Windows & Linux). Récupère la dernière release GitHub, gère un layout
+  versionné à base de liens (jonction Windows / symlink Linux) et lance l'app.
+publish_to: 'none'
+version: 1.0.0
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  args: ^2.5.0
+  path: ^1.9.0
+  archive: ^3.6.1

@@ -10,8 +10,20 @@ import 'package:songbook/infrastructure/auth/providers/session_revocation.provid
 import 'package:songbook/infrastructure/settings/providers/settings.service_provider.dart';
 import 'package:songbook/ui/pages/auth/auth_gate.dart';
 import 'package:songbook/ui/pages/auth/providers/auth_state.provider.dart';
+import 'package:songbook/updating_splash.dart';
 
-Future<void> main() async {
+Future<void> main(List<String> args) async {
+  // Mode « fenêtre de mise à jour » : l'updater desktop (tool/updater) lance
+  // `songbook --updating …` pour afficher une petite fenêtre (prompt +
+  // progression) pendant qu'il télécharge/installe la nouvelle version. On NE
+  // démarre PAS l'app complète dans ce cas — le splash gère lui-même
+  // `ensureInitialized` + `runApp`. Doit rester AVANT toute init lourde
+  // (container Riverpod, migrations, préchargement du backend…).
+  if (args.contains('--updating')) {
+    runUpdatingSplash(args);
+    return;
+  }
+
   WidgetsFlutterBinding.ensureInitialized();
 
   // Build the Riverpod container manually so we can read the logger
