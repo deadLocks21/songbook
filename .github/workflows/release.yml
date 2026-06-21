@@ -17,7 +17,7 @@
 #   3) build-gate     Job sentinelle qui vérifie que les builds sont verts.
 #
 #   4) Publishes parallèle (déclenchés après build-gate) :
-#        publish-ios     → TestFlight (groupe « Songbook Internal »)
+#        publish-ios     → TestFlight (groupe externe « Songbook Beta »)
 #        publish-macos   → DÉSACTIVÉ (commenté)
 #        publish-android → Play Store piste "internal"
 #      Windows et Linux n'ont pas de store dans ce pipeline (artifacts only).
@@ -704,7 +704,7 @@ jobs:
           name: songbook-ios
           path: artifacts/
 
-      - name: Publish to TestFlight (internal beta group)
+      - name: Publish to TestFlight (external beta group)
         run: |
           WHATS_NEW=$(jq -r '.[] | select(.language=="fr-FR") | .text' release_notes.json)
           IPA_PATH=$(find artifacts -type f -name '*.ipa' | head -1)
@@ -712,7 +712,7 @@ jobs:
           app-store-connect publish \
             --path "$IPA_PATH" \
             --testflight \
-            --beta-group "Songbook Internal" \
+            --beta-group "Songbook Beta" \
             --expire-build-submitted-for-review \
             --locale fr-FR \
             --whats-new "$WHATS_NEW" \
