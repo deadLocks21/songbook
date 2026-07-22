@@ -33,13 +33,22 @@ RemoteSongListRepository remoteSongListRepository(Ref ref) {
 /// Provider pour le service de synchronisation des listes de chants.
 @riverpod
 SongListSyncService songListSyncService(Ref ref) {
+  // Le notifier est résolu **maintenant**, et c'est sa méthode qu'on passe au
+  // service — pas une fermeture qui capturerait `ref`.
+  //
+  // Ce provider est auto-dispose et l'appelant ne fait que le lire : il est
+  // donc jeté aussitôt, pendant que la synchro qu'il vient de démarrer continue
+  // sur le réseau. Une fermeture sur `ref` explosait au retour, quand elle
+  // voulait rapporter l'état amont. `upstreamStatesProvider` est `keepAlive`,
+  // son instance survit sans risque à la disparition de ce provider-ci.
+  final upstreamStates = ref.watch(upstreamStatesProvider.notifier);
+
   return SongListSyncService(
     ref.watch(songListRepositoryProvider),
     ref.watch(remoteSongListRepositoryProvider),
     // Seule occasion de savoir où en sont les sources suivies : c'est le pull
     // qui les rapporte, et l'UI en a besoin pour signaler un tirage disponible.
-    onUpstreamStates: (states) =>
-        ref.read(upstreamStatesProvider.notifier).record(states),
+    onUpstreamStates: upstreamStates.record,
   );
 }
 
