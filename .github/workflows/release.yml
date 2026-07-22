@@ -9,7 +9,8 @@
 #   2) Builds parallèle (gate strict) :
 #        build-ios      → IPA signé (artifact) puis TestFlight
 #        build-macos    → DÉSACTIVÉ (commenté) — pas de build macOS pour le moment
-#        build-android  → AAB signé (artifact, pas encore publié)
+#        build-android  → AAB signé (artifact, pas encore publié) + APK
+#                         universel (sideload, attaché à la GitHub Release)
 #        build-windows  → .zip non signé
 #        build-linux    → .AppImage
 #      Si UN SEUL plante, aucun upload store n'est tenté.
@@ -269,12 +270,29 @@ jobs:
             --dart-define=SIGNOZ_INGESTION_KEY="$SIGNOZ_INGESTION_KEY" \
             --dart-define=SIGNOZ_ENV="$SIGNOZ_ENV"
 
-      - name: Upload AAB + mapping artifact
+      - name: Build APK (.apk)
+        # APK universel attaché à la GitHub Release pour install directe /
+        # sideload. Le Play Store reçoit l'AAB (cf. job publish-android) ;
+        # l'APK ne sert qu'à la distribution hors store. Mêmes `--dart-define`.
+        env:
+          SIGNOZ_INGEST_URL: ${{ secrets.SIGNOZ_INGEST_URL }}
+          SIGNOZ_INGESTION_KEY: ${{ secrets.SIGNOZ_INGESTION_KEY }}
+        run: |
+          flutter build apk --release \
+            --build-name="$VERSION" \
+            --build-number="${{ steps.build-number.outputs.build_number }}" \
+            --dart-define=APP_VERSION="$VERSION+${{ steps.build-number.outputs.build_number }}" \
+            --dart-define=SIGNOZ_INGEST_URL="$SIGNOZ_INGEST_URL" \
+            --dart-define=SIGNOZ_INGESTION_KEY="$SIGNOZ_INGESTION_KEY" \
+            --dart-define=SIGNOZ_ENV="$SIGNOZ_ENV"
+
+      - name: Upload AAB + APK + mapping artifact
         uses: actions/upload-artifact@v4
         with:
           name: songbook-android
           path: |
             build/app/outputs/bundle/release/*.aab
+            build/app/outputs/flutter-apk/*.apk
             build/app/outputs/mapping/release/mapping.txt
           retention-days: 14
           if-no-files-found: error
@@ -848,7 +866,8 @@ jobs:
             echo "  - $f"
             ASSETS+=("$f")
           done < <(find artifacts -type f \
-            \( -name '*.ipa' -o -name '*.aab' -o -name 'mapping.txt' -o -name '*.pkg' \
+            \( -name '*.ipa' -o -name '*.aab' -o -name '*.apk' \
+               -o -name 'mapping.txt' -o -name '*.pkg' \
                -o -name '*.zip' -o -name '*.AppImage' \
                -o -name 'songbook-updater-windows.exe' \
                -o -name 'songbook-updater-linux' \) | sort)
