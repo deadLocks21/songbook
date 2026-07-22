@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Universal Links : iOS ouvre https://songbook.dtfh.fr/l/… dans l'app
+	     plutôt que dans Safari, après avoir vérifié auprès de ses propres
+	     serveurs que le domaine sert bien un apple-app-site-association
+	     désignant cette app.
+
+	     Exige que la capability « Associated Domains » soit activée sur l'App
+	     ID fr.dtfh.songbook dans le portail Apple Developer, et les profils de
+	     provisioning régénérés en conséquence — sans quoi la signature échoue. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:songbook.dtfh.fr</string>
+	</array>
+</dict>
+</plist>

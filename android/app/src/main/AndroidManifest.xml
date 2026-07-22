@@ -27,6 +27,29 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- App Links : les liens de partage ouvrent l'app plutôt que le
+                 navigateur.
+
+                 `autoVerify` demande à Android de vérifier, à l'installation,
+                 que https://songbook.dtfh.fr/.well-known/assetlinks.json
+                 déclare bien cette app et son empreinte de signature. Sans
+                 vérification réussie, rien n'échoue bruyamment : les liens
+                 continuent simplement de s'ouvrir dans le navigateur.
+
+                 Le domaine est figé ici et ne peut pas l'être ailleurs : il est
+                 lu par le système avant tout code applicatif, bien avant que
+                 l'URL de backend saisie par l'utilisateur ne soit connue. Un
+                 lien émis par une autre instance est donc rattrapé côté Dart
+                 (cf. ShareLinkParser), pas ici. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data
+                    android:scheme="https"
+                    android:host="songbook.dtfh.fr"
+                    android:pathPrefix="/l/"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

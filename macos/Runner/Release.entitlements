@@ -6,5 +6,16 @@
 	<true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
+	<!-- Universal Links, release uniquement.
+
+	     Volontairement absent de DebugProfile.entitlements : cette capability
+	     exige une signature avec un certificat de développement, que les builds
+	     macOS locaux n'ont pas — l'ajouter des deux côtés casse `flutter run`
+	     sur la machine du développeur. Les liens ne se testent de toute façon
+	     que sur une app signée et publiée, face au vrai domaine. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:songbook.dtfh.fr</string>
+	</array>
 </dict>
 </plist>

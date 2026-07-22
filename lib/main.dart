@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/services/logger_application.service.dart';
+import 'package:songbook/core/application/services/song_list_sharing.service.dart';
+import 'package:songbook/infrastructure/deeplink/providers/share_link_handler.provider.dart';
 import 'package:songbook/infrastructure/device/providers/device_identity.service_provider.dart';
 import 'package:songbook/infrastructure/logger/providers/logger.service_provider.dart';
 import 'package:songbook/infrastructure/migrations/providers/migration_runner.provider.dart';
@@ -10,6 +12,7 @@ import 'package:songbook/infrastructure/auth/providers/session_revocation.provid
 import 'package:songbook/infrastructure/settings/providers/settings.service_provider.dart';
 import 'package:songbook/ui/pages/auth/auth_gate.dart';
 import 'package:songbook/ui/pages/auth/providers/auth_state.provider.dart';
+import 'package:songbook/ui/pages/song_list_detail/song_list_detail.page.dart';
 import 'package:songbook/updating_splash.dart';
 
 Future<void> main(List<String> args) async {
@@ -122,6 +125,11 @@ class MyApp extends ConsumerStatefulWidget {
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
 
+  /// Permet d'annoncer un événement venu de l'extérieur de l'arbre — un lien de
+  /// partage reçu — sans dépendre de l'écran affiché à cet instant.
+  static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
+
   @override
   ConsumerState<MyApp> createState() => _MyAppState();
 }
@@ -156,6 +164,50 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     }
   }
 
+  /// Rend visible l'issue d'un lien de partage, quel que soit l'écran affiché.
+  ///
+  /// L'événement est acquitté dans tous les cas : c'est un fait ponctuel, pas
+  /// un état, et le laisser en place le rejouerait au prochain rebuild.
+  void _onShareLinkEvent(ShareLinkEvent event) {
+    switch (event) {
+      case ShareLinkFollowed(:final outcome):
+        _announce(switch (outcome.status) {
+          FollowStatus.copied =>
+            'Liste copiée. Elle est à vous, modifiez-la comme vous voulez.',
+          FollowStatus.alreadyOwner => 'Cette liste est déjà la vôtre.',
+          FollowStatus.alreadyFollowing => 'Vous suivez déjà cette liste.',
+        });
+
+        final listId = outcome.listId;
+        if (listId != null) {
+          MyApp.navigatorKey.currentState?.push(
+            MaterialPageRoute(
+              builder: (_) => SongListDetailPage(songListId: listId.value),
+            ),
+          );
+        }
+      case ShareLinkFromElsewhere(:final origin):
+        _announce(
+          'Ce lien vient de $origin, alors que vous êtes connecté à un autre '
+          'serveur. Demandez un lien émis depuis le vôtre.',
+        );
+      case ShareLinkFailed(:final rejected):
+        _announce(
+          rejected
+              ? 'Ce lien ne correspond à aucune liste partagée.'
+              : 'Serveur injoignable. Réessayez dans un instant.',
+        );
+    }
+
+    ref.read(shareLinkHandlerProvider.notifier).acknowledge();
+  }
+
+  void _announce(String message) {
+    MyApp.scaffoldMessengerKey.currentState?.showSnackBar(
+      SnackBar(key: const Key('shareLinkMessage'), content: Text(message)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Observer le mode de thème actuel
@@ -176,10 +228,18 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       }
     });
 
+    // Un lien de partage cliqué depuis une conversation. Le gestionnaire est
+    // `keepAlive` et démarre ici : il doit être à l'écoute avant même que le
+    // premier écran soit construit, sinon le lien qui a lancé l'app est manqué.
+    ref.listen(shareLinkHandlerProvider, (_, event) {
+      if (event != null) _onShareLinkEvent(event);
+    });
+
     return themeModeAsync.when(
       data: (appThemeMode) => MaterialApp(
         title: 'Songbook',
         navigatorKey: MyApp.navigatorKey,
+        scaffoldMessengerKey: MyApp.scaffoldMessengerKey,
         theme: AppThemeData.buildLightTheme(),
         darkTheme: AppThemeData.buildDarkTheme(),
         themeMode: AppThemeData.toFlutterThemeMode(appThemeMode),
