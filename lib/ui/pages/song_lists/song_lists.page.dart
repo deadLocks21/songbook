@@ -4,6 +4,7 @@ import 'package:songbook/core/application/dtos/song_list.dto.dart';
 import 'package:songbook/core/domain/model/song_list.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
+import 'package:songbook/infrastructure/song_list/providers/song_list_sync.provider.dart';
 import 'package:songbook/ui/pages/song_list_detail/song_list_detail.page.dart';
 import 'package:songbook/ui/pages/song_list_edit/song_list_edit.page.dart';
 import 'package:songbook/ui/pages/song_list_viewer/song_list_viewer.page.dart';
@@ -20,7 +21,11 @@ class SongListsPage extends ConsumerWidget {
 
     return Scaffold(
       body: songListsAsync.when(
-        data: (songLists) => _buildList(context, ref, songLists),
+        data: (songLists) => RefreshIndicator(
+          key: const Key('songListsRefresh'),
+          onRefresh: () => _refresh(context, ref),
+          child: _buildList(context, ref, songLists),
+        ),
         loading: () => const Center(
           child: CircularProgressIndicator(key: Key('songListsLoading')),
         ),
@@ -40,18 +45,27 @@ class SongListsPage extends ConsumerWidget {
     WidgetRef ref,
     List<SongListDto> songLists,
   ) {
+    // Même vide, la vue doit rester tirable : c'est justement là qu'on veut
+    // pouvoir aller chercher ses listes depuis un autre appareil.
     if (songLists.isEmpty) {
-      return const Center(
-        child: Text(
-          'Aucune liste de chants',
-          key: Key('songListsEmpty'),
-          style: TextStyle(fontSize: 18.0, color: Colors.grey),
-        ),
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          SizedBox(height: 120.0),
+          Center(
+            child: Text(
+              'Aucune liste de chants',
+              key: Key('songListsEmpty'),
+              style: TextStyle(fontSize: 18.0, color: Colors.grey),
+            ),
+          ),
+        ],
       );
     }
 
     return ListView.builder(
       key: const Key('songListsListView'),
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16.0),
       itemCount: songLists.length,
       itemBuilder: (context, index) {
@@ -65,6 +79,28 @@ class SongListsPage extends ConsumerWidget {
           onDelete: () => _confirmDelete(context, ref, songList),
         );
       },
+    );
+  }
+
+  /// Synchro manuelle : pousse ce qui attend puis récupère l'état du serveur,
+  /// pour retrouver ici les listes créées ou modifiées sur un autre appareil.
+  ///
+  /// Le rafraîchissement de l'affichage est déclenché par la synchro elle-même ;
+  /// on ne signale que l'échec, un succès se voit dans la liste.
+  Future<void> _refresh(BuildContext context, WidgetRef ref) async {
+    final succeeded = await ref
+        .read(songListSyncProvider.notifier)
+        .sync();
+
+    if (succeeded || !context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        key: Key('songListsSyncFailed'),
+        content: Text(
+          'Synchronisation impossible. Vos listes restent disponibles hors ligne.',
+        ),
+      ),
     );
   }
 

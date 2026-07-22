@@ -48,7 +48,7 @@ final class SetlistServiceProvider
   }
 }
 
-String _$setlistServiceHash() => r'f85fd1ca7cdbedea6b0d2aded107b647144a78ca';
+String _$setlistServiceHash() => r'2d79aa4f4240e0e658f171ffd09215fde3a29163';
 
 @ProviderFor(songLists)
 final songListsProvider = SongListsProvider._();

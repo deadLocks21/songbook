@@ -9,11 +9,22 @@ class SongList {
   final DateTime createdAt;
   final List<SongListEntry> entries;
 
+  /// Titre libre, gere par le serveur mais pas encore expose dans l'UI. Conserve
+  /// et renvoye tel quel pour qu'un aller-retour de synchro ne l'efface pas.
+  final String? title;
+
+  /// Version connue du canon serveur. `null` signifie « jamais poussee » : la
+  /// liste n'existe pour l'instant que sur cet appareil. Toute ecriture serveur
+  /// annonce cette version, et le serveur la refuse si elle est perimee.
+  final int? version;
+
   SongList({
     required this.id,
     required this.scheduledAt,
     required this.createdAt,
     required this.entries,
+    this.title,
+    this.version,
   });
 
   SongList copyWith({
@@ -21,12 +32,16 @@ class SongList {
     DateTime? scheduledAt,
     DateTime? createdAt,
     List<SongListEntry>? entries,
+    String? title,
+    int? version,
   }) {
     return SongList(
       id: id ?? this.id,
       scheduledAt: scheduledAt ?? this.scheduledAt,
       createdAt: createdAt ?? this.createdAt,
       entries: entries ?? this.entries,
+      title: title ?? this.title,
+      version: version ?? this.version,
     );
   }
 

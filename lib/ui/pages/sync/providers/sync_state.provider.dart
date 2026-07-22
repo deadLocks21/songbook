@@ -7,6 +7,7 @@ import 'package:songbook/infrastructure/logger/providers/logger.service_provider
 import 'package:songbook/infrastructure/settings/providers/settings.service_provider.dart';
 import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
 import 'package:songbook/infrastructure/song/providers/sync.providers.dart';
+import 'package:songbook/infrastructure/song_list/providers/song_list_sync.provider.dart';
 
 /// État de la synchronisation de la liste des chants.
 sealed class SyncState {
@@ -57,6 +58,12 @@ class SyncStateNotifier extends Notifier<SyncState> {
     try {
       final remoteSongs = await _syncService.syncSongList(baseUrl);
       ref.invalidate(songsProvider);
+
+      // Listes de chants : synchro bidirectionnelle, après le catalogue dont
+      // elles référencent les chants. Best effort et silencieuse — elle avale
+      // et trace ses propres erreurs, ce qui n'est pas passé repartira à la
+      // synchro suivante, et les listes locales restent utilisables.
+      await ref.read(songListSyncProvider.notifier).sync();
 
       // Cache des partitions des recueils sélectionnés (téléchargement
       // bloquant, avec progression). Best effort : un échec ici ne remet pas en

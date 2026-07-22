@@ -32,7 +32,7 @@ class AppDatabase {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -80,14 +80,41 @@ class AppDatabase {
         'ALTER TABLE song_list_entries ADD COLUMN savedSemitones INTEGER',
       );
     }
+    if (oldVersion < 4) {
+      // Passage des listes en ressource serveur synchronisee.
+      //
+      // `dirty` vaut 1 par defaut : les listes deja presentes sur l'appareil
+      // n'ont jamais ete poussees, elles partiront donc au premier push. Avec
+      // `serverVersion` a NULL, ce push sera une creation.
+      await db.execute('ALTER TABLE song_lists ADD COLUMN title TEXT');
+      await db.execute('ALTER TABLE song_lists ADD COLUMN serverVersion INTEGER');
+      await db.execute(
+        'ALTER TABLE song_lists ADD COLUMN dirty INTEGER NOT NULL DEFAULT 1',
+      );
+      await db.execute(
+        'ALTER TABLE song_lists ADD COLUMN pendingDeletion INTEGER NOT NULL DEFAULT 0',
+      );
+    }
   }
+
+  /// Crée les tables des listes de chants au schéma courant.
+  ///
+  /// Exposé pour que les tests montent une base en mémoire avec exactement le
+  /// même schéma que l'application, plutôt qu'une copie du DDL qui pourrait en
+  /// diverger sans que rien ne le signale.
+  static Future<void> createSongListTables(Database db) =>
+      _createSongListTables(db);
 
   static Future<void> _createSongListTables(Database db) async {
     await db.execute('''
       CREATE TABLE song_lists (
         id TEXT PRIMARY KEY,
         scheduledAt TEXT NOT NULL,
-        createdAt TEXT NOT NULL
+        createdAt TEXT NOT NULL,
+        title TEXT,
+        serverVersion INTEGER,
+        dirty INTEGER NOT NULL DEFAULT 1,
+        pendingDeletion INTEGER NOT NULL DEFAULT 0
       )
     ''');
 

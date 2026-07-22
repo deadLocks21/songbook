@@ -13,6 +13,10 @@ class BackendEndpoints {
   /// Collections de chants (recueils) disponibles sur le serveur.
   static const String recueils = '/api/recueils';
 
+  /// Listes de chants de l'utilisateur connecté (lecture et écriture).
+  /// Une liste précise s'adresse en suffixant `/{id}`.
+  static const String songLists = '/api/song-lists';
+
   /// Demande d'un code OTP par SMS (public).
   static const String requestOtp = '/api/auth/request-otp';
 

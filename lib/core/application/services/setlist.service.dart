@@ -7,7 +7,19 @@ class SetlistService {
   final SongListRepository _songListRepository;
   final SongRepository _songRepository;
 
-  const SetlistService(this._songListRepository, this._songRepository);
+  /// Appelé après chaque écriture locale aboutie, pour que la modification
+  /// parte vers le serveur sans attendre la prochaine synchro.
+  ///
+  /// Branché ici plutôt qu'à chaque endroit de l'UI qui enregistre : toute
+  /// écriture passe par ce service, donc aucune ne peut être oubliée. Le rappel
+  /// ne doit ni bloquer ni échouer — l'écriture locale, elle, est déjà faite.
+  final void Function()? _onLocalChange;
+
+  const SetlistService(
+    this._songListRepository,
+    this._songRepository, {
+    void Function()? onLocalChange,
+  }) : _onLocalChange = onLocalChange;
 
   Future<List<SongListDto>> getAllSetlists() async {
     final songLists = await _songListRepository.getAllSongLists();
@@ -46,13 +58,21 @@ class SetlistService {
     final existing = await _songListRepository.getSongListById(songList.id);
 
     if (existing != null) {
-      await _songListRepository.updateSongList(songList);
+      // La version serveur connue n'appartient pas au DTO (l'UI n'en fait
+      // rien) : on la reprend de la copie locale, sinon chaque enregistrement
+      // repartirait comme une création.
+      await _songListRepository.updateSongList(
+        songList.copyWith(version: existing.version, title: existing.title),
+      );
     } else {
       await _songListRepository.addSongList(songList);
     }
+
+    _onLocalChange?.call();
   }
 
   Future<void> delete(String songListId) async {
     await _songListRepository.deleteSongList(UuidValue.parse(songListId));
+    _onLocalChange?.call();
   }
 }
