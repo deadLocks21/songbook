@@ -20,6 +20,19 @@ class SongListsPageFinders {
   /// FAB de création de liste.
   Finder get createFab => find.byKey(const Key('createSongListFab'));
 
+  /// FAB pour suivre la liste de quelqu'un d'autre.
+  Finder get followFab => find.byKey(const Key('followSongListFab'));
+
+  /// Champ de saisie du code de partage.
+  Finder get followCodeField => find.byKey(const Key('followCodeField'));
+
+  /// Bouton confirmant la saisie du code.
+  Finder get confirmFollowButton =>
+      find.byKey(const Key('confirmFollowButton'));
+
+  /// Badge signalant une liste reprise de quelqu'un d'autre.
+  Finder get followedBadge => find.byKey(const Key('songListFollowedBadge'));
+
   /// Carte d'une liste par son ID.
   Finder songListCardById(String id) => find.byKey(Key('songListCard_$id'));
 
@@ -41,4 +54,7 @@ class SongListsPageFinders {
 
   /// Menu contextuel "Supprimer".
   Finder get contextMenuDelete => find.text('Supprimer');
+
+  /// Menu contextuel "Partager".
+  Finder get contextMenuShare => find.text('Partager');
 }

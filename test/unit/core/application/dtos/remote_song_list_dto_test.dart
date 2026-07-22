@@ -1,12 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:songbook/core/application/dtos/remote_song_list.dto.dart';
 import 'package:songbook/core/domain/model/song_list.dart';
+import 'package:songbook/core/domain/model/upstream_link.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
 
 void main() {
   final listId = UuidValue.parse('11111111-1111-4111-8111-111111111111');
   final entryId = UuidValue.parse('22222222-2222-4222-8222-222222222222');
   final songId = UuidValue.parse('33333333-3333-4333-8333-333333333333');
+  final sourceId = UuidValue.parse('55555555-5555-4555-8555-555555555555');
 
   SongList songList(DateTime scheduledAt) => SongList(
     id: listId,
@@ -109,6 +111,64 @@ void main() {
       expect(list.version, 4);
       expect(list.entries.single.songId, songId);
       expect(list.entries.single.savedSemitones, isNull);
+    });
+
+    test('relit le lien amont d\'une copie', () {
+      final list = RemoteSongListDto.fromJson({
+        'id': listId.value,
+        'title': null,
+        'scheduledAt': '2026-08-02T10:00:00+00:00',
+        'version': 4,
+        'createdAt': '2026-07-21T12:00:00+00:00',
+        'sourceListId': sourceId.value,
+        'sourceVersion': 7,
+        'entries': const [],
+      }).toDomain();
+
+      expect(list.upstream?.sourceListId, sourceId);
+      expect(list.upstream?.sourceVersion, 7);
+      expect(list.isFollowing, isTrue);
+    });
+
+    test('n\'invente pas de lien amont sur une liste originale', () {
+      final list = RemoteSongListDto.fromJson({
+        'id': listId.value,
+        'title': null,
+        'scheduledAt': '2026-08-02T10:00:00+00:00',
+        'version': 4,
+        'createdAt': '2026-07-21T12:00:00+00:00',
+        'sourceListId': null,
+        'sourceVersion': null,
+        'entries': const [],
+      }).toDomain();
+
+      expect(list.upstream, isNull);
+      expect(list.isFollowing, isFalse);
+    });
+
+    test('renvoie le lien amont à chaque écriture', () {
+      // Redonné et pas sous-entendu : c'est ce qui fait avancer le repère au
+      // tirage. L'omettre couperait l'abonnement au premier enregistrement.
+      final copy = songList(DateTime(2026, 8, 2)).copyWith(
+        upstream: UpstreamLink(sourceListId: sourceId, sourceVersion: 7),
+      );
+
+      final payload = RemoteSongListDto.writePayload(copy, baseVersion: 3);
+
+      expect(payload['sourceListId'], sourceId.value);
+      expect(payload['sourceVersion'], 7);
+    });
+
+    test('envoie explicitement un lien amont vide pour une originale', () {
+      // `null` explicite plutôt que champ absent : c'est ainsi qu'un
+      // désabonnement se propage au serveur.
+      final payload = RemoteSongListDto.writePayload(
+        songList(DateTime(2026, 8, 2)),
+      );
+
+      expect(payload.containsKey('sourceListId'), isTrue);
+      expect(payload['sourceListId'], isNull);
+      expect(payload['sourceVersion'], isNull);
     });
   });
 }

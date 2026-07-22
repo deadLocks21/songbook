@@ -8,11 +8,17 @@ class SongListDto {
   final DateTime createdAt;
   final List<SongListEntryDto> entries;
 
+  /// Cette liste est la copie de celle de quelqu'un d'autre, et suit encore sa
+  /// source. L'UI s'en sert pour la distinguer ; le lien lui-même n'a pas à
+  /// remonter jusqu'ici, il est repris de la copie locale a l'enregistrement.
+  final bool isFollowing;
+
   const SongListDto({
     required this.id,
     required this.scheduledAt,
     required this.createdAt,
     required this.entries,
+    this.isFollowing = false,
   });
 
   /// Cree un SongListDto depuis une entite SongList domain
@@ -38,6 +44,7 @@ class SongListDto {
       scheduledAt: songList.scheduledAt,
       createdAt: songList.createdAt,
       entries: entries,
+      isFollowing: songList.isFollowing,
     );
   }
 

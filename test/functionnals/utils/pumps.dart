@@ -107,6 +107,12 @@ Future<SongListsPageActions> startInSongListsPage(
       overrides: [
         songsProvider.overrideWith((ref) async => mockSongs),
         songListsProvider.overrideWith((ref) async => mockSongLists),
+        // Sans quoi tout ce qui touche au backend (partage, abonnement,
+        // synchro) irait chercher l'URL dans les vraies préférences et
+        // resterait suspendu.
+        settingsRepositoryProvider.overrideWithValue(
+          InMemorySettingsRepository(),
+        ),
       ],
       child: const MaterialApp(home: SongListsPage()),
     ),

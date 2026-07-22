@@ -1,6 +1,8 @@
 import 'package:songbook/core/domain/exceptions/song_list_sync.exception.dart';
+import 'package:songbook/core/domain/model/share_link.dart';
 import 'package:songbook/core/domain/model/song_list.dart';
 import 'package:songbook/core/domain/model/song_list_snapshot.dart';
+import 'package:songbook/core/domain/model/subscription_result.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
 import 'package:songbook/core/domain/services/remote_song_list.repository.dart';
 
@@ -13,6 +15,9 @@ import 'package:songbook/core/domain/services/remote_song_list.repository.dart';
 class InMemoryRemoteSongListRepository implements RemoteSongListRepository {
   final Map<String, SongList> _lists = {};
   final Set<String> _deletedIds = {};
+
+  /// Secrets émis par liste, gardés pour que `share` reste idempotent.
+  final Map<String, ({String token, String code})> _shares = {};
 
   @override
   Future<SongListSnapshot> fetchAll(String baseUrl) async {
@@ -62,5 +67,47 @@ class InMemoryRemoteSongListRepository implements RemoteSongListRepository {
     // La ligne reste : c'est elle qui portera la pierre tombale renvoyée aux
     // autres appareils.
     _deletedIds.add(id.value);
+  }
+
+  @override
+  Future<ShareLink> share(String baseUrl, UuidValue id) async {
+    // Idempotent comme le serveur : le lien est permanent, en émettre un
+    // nouveau casserait celui déjà transmis.
+    final secrets = _shares[id.value] ??= (
+      token: 'DEMO${_shares.length}${id.value.replaceAll('-', '').toUpperCase()}',
+      code: 'DEMO${_shares.length.toString().padLeft(4, '0')}',
+    );
+
+    return ShareLink(
+      token: secrets.token,
+      code: secrets.code,
+      link: 'https://demo.songbook.local/l/${secrets.token}',
+    );
+  }
+
+  @override
+  Future<SubscriptionResult> subscribe(
+    String baseUrl, {
+    String? token,
+    String? code,
+  }) async {
+    final listId = _shares.entries
+        .where((e) => e.value.token == token || e.value.code == code)
+        .map((e) => e.key)
+        .firstOrNull;
+
+    final source = listId == null ? null : _lists[listId];
+    if (source == null || _deletedIds.contains(listId)) {
+      throw const ShareLinkNotFoundException();
+    }
+
+    // Le mode démo n'a qu'un utilisateur : tout lien émis ici revient
+    // forcément à son auteur. C'est ce que dirait le serveur, et l'app se
+    // contentera d'ouvrir la liste au lieu de la dupliquer.
+    return SubscriptionResult(
+      source: source,
+      alreadyOwner: true,
+      existingCopyId: null,
+    );
   }
 }

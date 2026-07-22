@@ -10,6 +10,7 @@ class SongListCard extends StatelessWidget {
   final VoidCallback? onView;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final VoidCallback? onShare;
 
   const SongListCard({
     super.key,
@@ -18,6 +19,7 @@ class SongListCard extends StatelessWidget {
     this.onView,
     this.onEdit,
     this.onDelete,
+    this.onShare,
   });
 
   @override
@@ -46,9 +48,17 @@ class SongListCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4.0),
-                      Text(
-                        '${songList.entries.length} chant${songList.entries.length > 1 ? 's' : ''}',
-                        style: Theme.of(context).textTheme.bodySmall,
+                      Row(
+                        children: [
+                          Text(
+                            '${songList.entries.length} chant${songList.entries.length > 1 ? 's' : ''}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          if (songList.isFollowing) ...[
+                            const SizedBox(width: 8.0),
+                            _followedBadge(context),
+                          ],
+                        ],
                       ),
                     ],
                   ),
@@ -61,6 +71,35 @@ class SongListCard extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// Signale une liste reprise de quelqu'un d'autre. La copie est bien à
+  /// l'utilisateur — il l'édite comme les siennes — mais savoir qu'elle a une
+  /// source change ce qu'il en attend : elle peut évoluer en amont.
+  Widget _followedBadge(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
+      decoration: BoxDecoration(
+        color: colors.secondaryContainer,
+        borderRadius: BorderRadius.circular(8.0),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.link, size: 12.0, color: colors.onSecondaryContainer),
+          const SizedBox(width: 4.0),
+          Text(
+            'Suivie',
+            key: const Key('songListFollowedBadge'),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: colors.onSecondaryContainer,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -93,6 +132,15 @@ class SongListCard extends StatelessWidget {
               contentPadding: EdgeInsets.zero,
             ),
           ),
+        if (onShare != null)
+          const PopupMenuItem(
+            value: 'share',
+            child: ListTile(
+              leading: Icon(Icons.ios_share),
+              title: Text('Partager'),
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
         if (onDelete != null)
           const PopupMenuItem(
             value: 'delete',
@@ -110,6 +158,8 @@ class SongListCard extends StatelessWidget {
         onView?.call();
       case 'edit':
         onEdit?.call();
+      case 'share':
+        onShare?.call();
       case 'delete':
         onDelete?.call();
     }

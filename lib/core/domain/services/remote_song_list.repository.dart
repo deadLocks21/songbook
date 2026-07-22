@@ -1,5 +1,7 @@
+import 'package:songbook/core/domain/model/share_link.dart';
 import 'package:songbook/core/domain/model/song_list.dart';
 import 'package:songbook/core/domain/model/song_list_snapshot.dart';
+import 'package:songbook/core/domain/model/subscription_result.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
 
 /// Acces aux listes de chants stockees sur le serveur, pour le compte de
@@ -24,4 +26,20 @@ abstract interface class RemoteSongListRepository {
 
   /// Supprime la liste cote serveur. Rejouable.
   Future<void> delete(String baseUrl, UuidValue id);
+
+  /// Ouvre une liste aux abonnements et rend de quoi la partager.
+  ///
+  /// Idempotent : rappeler rend les memes secrets, sinon le lien deja envoye
+  /// cesserait de fonctionner. Reserve au proprietaire de la liste.
+  Future<ShareLink> share(String baseUrl, UuidValue id);
+
+  /// Echange un [token] (venu d'un lien) **ou** un [code] (tape a la main)
+  /// contre le droit de lire la liste, et recupere celle-ci en entier.
+  ///
+  /// Leve [ShareLinkNotFoundException] si le secret ne mene a rien.
+  Future<SubscriptionResult> subscribe(
+    String baseUrl, {
+    String? token,
+    String? code,
+  });
 }

@@ -1,3 +1,5 @@
+import 'package:flutter_test/flutter_test.dart';
+
 import '../../base.dart';
 import '../song_list_detail/actions.dart';
 import '../song_list_edit/actions.dart';
@@ -22,6 +24,24 @@ class SongListsPageActions extends FluentActionsBase {
   /// Tape sur le FAB de création.
   SongListsPageActions tapCreateFab() {
     addCommand(TapCreateFabCommand(tester, _finders));
+    return this;
+  }
+
+  /// Ouvre la boîte « Suivre une liste ».
+  SongListsPageActions tapFollowFab() {
+    addCommand(TapFollowFabCommand(tester, _finders));
+    return this;
+  }
+
+  /// Saisit un code de partage.
+  SongListsPageActions enterFollowCode(String code) {
+    addCommand(EnterFollowCodeCommand(tester, _finders, code));
+    return this;
+  }
+
+  /// Valide la saisie du code.
+  SongListsPageActions submitFollowCode() {
+    addCommand(SubmitFollowCodeCommand(tester, _finders));
     return this;
   }
 
@@ -84,6 +104,42 @@ class SongListsPageActions extends FluentActionsBase {
   /// Vérifie qu'un texte est visible.
   SongListsPageActions expectTextVisible(String text) {
     addCommand(ExpectTextVisibleCommand(text));
+    return this;
+  }
+
+  /// Vérifie le nombre de listes signalées comme suivies.
+  SongListsPageActions expectFollowedBadgeCount(int count) {
+    addCommand(
+      ExpectFinderCommand(
+        _finders.followedBadge,
+        findsNWidgets(count),
+        'Il devrait y avoir $count liste(s) signalée(s) comme suivie(s)',
+      ),
+    );
+    return this;
+  }
+
+  /// Vérifie que la boîte de saisie du code est ouverte.
+  SongListsPageActions expectFollowDialogVisible() {
+    addCommand(
+      ExpectFinderCommand(
+        _finders.followCodeField,
+        findsOneWidget,
+        'La boîte « Suivre une liste » devrait être ouverte',
+      ),
+    );
+    return this;
+  }
+
+  /// Vérifie que le menu contextuel propose le partage.
+  SongListsPageActions expectShareActionVisible() {
+    addCommand(
+      ExpectFinderCommand(
+        _finders.contextMenuShare,
+        findsOneWidget,
+        'Le menu contextuel devrait proposer « Partager »',
+      ),
+    );
     return this;
   }
 

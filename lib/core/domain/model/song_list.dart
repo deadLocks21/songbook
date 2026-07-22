@@ -1,3 +1,4 @@
+import 'package:songbook/core/domain/model/upstream_link.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
 
 /// Entite metier representant une liste de chants.
@@ -18,6 +19,11 @@ class SongList {
   /// annonce cette version, et le serveur la refuse si elle est perimee.
   final int? version;
 
+  /// Renseigne quand cette liste est la copie de celle de quelqu'un d'autre.
+  /// La copie reste une liste ordinaire : librement modifiable, synchronisee
+  /// comme les autres, et elle survit a la disparition de sa source.
+  final UpstreamLink? upstream;
+
   SongList({
     required this.id,
     required this.scheduledAt,
@@ -25,7 +31,11 @@ class SongList {
     required this.entries,
     this.title,
     this.version,
+    this.upstream,
   });
+
+  /// Cette liste suit-elle encore une source ?
+  bool get isFollowing => upstream != null;
 
   SongList copyWith({
     UuidValue? id,
@@ -34,6 +44,7 @@ class SongList {
     List<SongListEntry>? entries,
     String? title,
     int? version,
+    UpstreamLink? upstream,
   }) {
     return SongList(
       id: id ?? this.id,
@@ -42,6 +53,38 @@ class SongList {
       entries: entries ?? this.entries,
       title: title ?? this.title,
       version: version ?? this.version,
+      upstream: upstream ?? this.upstream,
+    );
+  }
+
+  /// Duplique [source] en une liste a moi, qui la suit.
+  ///
+  /// Tout est re-identifie : la liste, et chacune de ses entrees. Cote serveur
+  /// ces identifiants sont uniques et rattaches a un proprietaire, donc les
+  /// reprendre ferait entrer ma copie en collision avec l'originale.
+  ///
+  /// La copie part sans `version` : elle n'existe encore que sur cet appareil,
+  /// son premier push sera une creation.
+  static SongList copyOf(SongList source, {DateTime? now}) {
+    final version = source.version;
+    if (version == null) {
+      throw ArgumentError(
+        'Impossible de suivre une liste que le serveur ne connait pas.',
+      );
+    }
+
+    return SongList(
+      id: UuidValue.generate(),
+      scheduledAt: source.scheduledAt,
+      createdAt: now ?? DateTime.now(),
+      entries: source.entries
+          .map((entry) => entry.copyWith(id: UuidValue.generate()))
+          .toList(),
+      title: source.title,
+      upstream: UpstreamLink(
+        sourceListId: source.id,
+        sourceVersion: version,
+      ),
     );
   }
 

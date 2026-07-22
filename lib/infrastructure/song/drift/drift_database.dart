@@ -32,7 +32,7 @@ class AppDatabase {
 
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -95,6 +95,14 @@ class AppDatabase {
         'ALTER TABLE song_lists ADD COLUMN pendingDeletion INTEGER NOT NULL DEFAULT 0',
       );
     }
+    if (oldVersion < 5) {
+      // Abonnement : une liste peut desormais etre la copie de celle d'un
+      // autre. Les colonnes restent NULL sur l'existant, qui n'est constitue
+      // que d'originales.
+      await db.execute('ALTER TABLE song_lists ADD COLUMN sourceListId TEXT');
+      await db.execute('ALTER TABLE song_lists ADD COLUMN sourceVersion INTEGER');
+      await _createUpstreamSnapshotTables(db);
+    }
   }
 
   /// Crée les tables des listes de chants au schéma courant.
@@ -105,6 +113,15 @@ class AppDatabase {
   static Future<void> createSongListTables(Database db) =>
       _createSongListTables(db);
 
+  /// Fait passer une base d'une version de schéma à une autre.
+  ///
+  /// Exposé pour la même raison, mais l'enjeu est plus grand : contrairement à
+  /// une création, une migration s'exécute sur la base d'un utilisateur qui a
+  /// déjà des données. La rejouer en test est le seul moyen de vérifier qu'une
+  /// mise à jour de l'app ne casse pas une installation existante.
+  static Future<void> migrate(Database db, int oldVersion, int newVersion) =>
+      _onUpgrade(db, oldVersion, newVersion);
+
   static Future<void> _createSongListTables(Database db) async {
     await db.execute('''
       CREATE TABLE song_lists (
@@ -114,7 +131,9 @@ class AppDatabase {
         title TEXT,
         serverVersion INTEGER,
         dirty INTEGER NOT NULL DEFAULT 1,
-        pendingDeletion INTEGER NOT NULL DEFAULT 0
+        pendingDeletion INTEGER NOT NULL DEFAULT 0,
+        sourceListId TEXT,
+        sourceVersion INTEGER
       )
     ''');
 
@@ -127,6 +146,42 @@ class AppDatabase {
         savedSemitones INTEGER,
         FOREIGN KEY (songListId) REFERENCES song_lists (id) ON DELETE CASCADE,
         FOREIGN KEY (songId) REFERENCES songs (id) ON DELETE CASCADE
+      )
+    ''');
+
+    await _createUpstreamSnapshotTables(db);
+  }
+
+  /// L'état de la source au dernier tirage, pour chaque liste suivie.
+  ///
+  /// Purement local : il ne transite pas par le serveur, et sert de **base** au
+  /// tirage assisté — sans lui, « l'auteur a ajouté ce chant » et « je l'avais
+  /// retiré » sont la même différence.
+  ///
+  /// Les entrées portent les identifiants **de la source**, pas ceux de la
+  /// copie, qui sont regénérés à la duplication. Pas de clé étrangère vers
+  /// `songs` pour la même raison que côté serveur : l'instantané doit survivre
+  /// à la disparition d'un chant du catalogue.
+  static Future<void> _createUpstreamSnapshotTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE song_list_upstream_snapshots (
+        songListId TEXT PRIMARY KEY,
+        sourceVersion INTEGER NOT NULL,
+        title TEXT,
+        scheduledAt TEXT NOT NULL,
+        capturedAt TEXT NOT NULL,
+        FOREIGN KEY (songListId) REFERENCES song_lists (id) ON DELETE CASCADE
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE song_list_upstream_snapshot_entries (
+        id TEXT PRIMARY KEY,
+        songListId TEXT NOT NULL,
+        songId TEXT NOT NULL,
+        position INTEGER NOT NULL,
+        savedSemitones INTEGER,
+        FOREIGN KEY (songListId) REFERENCES song_list_upstream_snapshots (songListId) ON DELETE CASCADE
       )
     ''');
   }
@@ -144,6 +199,8 @@ class AppDatabase {
     final db = await database;
 
     // Supprimer toutes les tables
+    await db.delete('song_list_upstream_snapshot_entries');
+    await db.delete('song_list_upstream_snapshots');
     await db.delete('song_list_entries');
     await db.delete('song_lists');
     await db.delete('resources');

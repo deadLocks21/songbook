@@ -6,6 +6,13 @@ class SongListBuilder {
   DateTime _scheduledAt = DateTime(2025, 3, 16, 10, 0);
   DateTime _createdAt = DateTime(2025, 3, 10);
   List<SongListEntryDto> _entries = [];
+  bool _isFollowing = false;
+
+  /// Marque la liste comme reprise de quelqu'un d'autre.
+  SongListBuilder following() {
+    _isFollowing = true;
+    return this;
+  }
 
   /// Définit l'ID de la liste.
   SongListBuilder withId(String id) {
@@ -64,6 +71,7 @@ class SongListBuilder {
       scheduledAt: _scheduledAt,
       createdAt: _createdAt,
       entries: _entries,
+      isFollowing: _isFollowing,
     );
   }
 }

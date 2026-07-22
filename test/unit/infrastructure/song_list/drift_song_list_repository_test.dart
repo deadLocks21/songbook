@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:songbook/core/domain/model/song_list.dart';
+import 'package:songbook/core/domain/model/upstream_link.dart';
+import 'package:songbook/core/domain/model/upstream_snapshot.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
 import 'package:songbook/infrastructure/song/drift/drift_database.dart';
 import 'package:songbook/infrastructure/song_list/drift.song_list.repository.dart';
@@ -151,12 +153,109 @@ void main() {
       expect(stored.entries.map((e) => e.position), [0, 1]);
     });
   });
+
+  group('DriftSongListRepository — abonnement', () {
+    test('conserve le lien amont d\'une copie', () async {
+      await repository.addSongList(followingList());
+
+      final stored = (await repository.getSongListById(listId))!;
+      expect(stored.upstream?.sourceListId, sourceId);
+      expect(stored.upstream?.sourceVersion, 7);
+    });
+
+    test('conserve le lien amont à travers une modification', () async {
+      // Le piège : une écriture qui oublierait le lien désabonnerait la liste
+      // au premier enregistrement, sans que rien ne le signale.
+      await repository.addSongList(followingList());
+      final stored = (await repository.getSongListById(listId))!;
+
+      await repository.updateSongList(
+        stored.copyWith(scheduledAt: DateTime(2026, 9, 6)),
+      );
+
+      final updated = (await repository.getSongListById(listId))!;
+      expect(updated.upstream?.sourceListId, sourceId);
+      expect(updated.upstream?.sourceVersion, 7);
+    });
+
+    test('fait avancer le repère quand la copie tire sa source', () async {
+      await repository.addSongList(followingList());
+      final stored = (await repository.getSongListById(listId))!;
+
+      await repository.updateSongList(
+        stored.copyWith(upstream: stored.upstream!.pulledAt(9)),
+      );
+
+      final updated = (await repository.getSongListById(listId))!;
+      expect(updated.upstream?.sourceVersion, 9);
+    });
+
+    test('retrouve la copie faite depuis une source', () async {
+      await repository.addSongList(followingList());
+
+      final copy = await repository.findCopyOf(sourceId);
+
+      expect(copy?.id, listId);
+    });
+
+    test('ne retrouve rien pour une source jamais suivie', () async {
+      await repository.addSongList(songList());
+
+      expect(await repository.findCopyOf(sourceId), isNull);
+    });
+
+    test('enregistre et relit l\'instantané de la source', () async {
+      await repository.addSongList(followingList());
+
+      await repository.saveUpstreamSnapshot(
+        UpstreamSnapshot.of(listId, sourceSongList()),
+      );
+
+      final snapshot = await repository.getUpstreamSnapshot(listId);
+      expect(snapshot!.sourceVersion, 7);
+      expect(snapshot.title, 'Dimanche');
+      // Les identifiants sont ceux de la source, pas ceux de la copie : c'est
+      // ce qui permettra de diffuser base → amont sans ambiguïté.
+      expect(snapshot.entries.map((e) => e.id), [entryId, otherEntryId]);
+      expect(snapshot.entries.first.savedSemitones, 2);
+    });
+
+    test('remplace l\'instantané précédent au tirage suivant', () async {
+      await repository.addSongList(followingList());
+      await repository.saveUpstreamSnapshot(
+        UpstreamSnapshot.of(listId, sourceSongList()),
+      );
+
+      await repository.saveUpstreamSnapshot(
+        UpstreamSnapshot.of(listId, sourceSongList(version: 9)),
+      );
+
+      final snapshot = await repository.getUpstreamSnapshot(listId);
+      expect(snapshot!.sourceVersion, 9);
+      expect(snapshot.entries, hasLength(2));
+    });
+
+    test('efface l\'instantané avec la liste', () async {
+      // Les cascades du schéma ne se déclenchent pas : sqflite n'active pas
+      // `PRAGMA foreign_keys`. Sans effacement explicite, l'instantané
+      // survivrait à sa liste et serait resservi à une homonyme.
+      await repository.addSongList(followingList());
+      await repository.saveUpstreamSnapshot(
+        UpstreamSnapshot.of(listId, sourceSongList()),
+      );
+
+      await repository.purge(listId);
+
+      expect(await repository.getUpstreamSnapshot(listId), isNull);
+    });
+  });
 }
 
 final listId = UuidValue.parse('11111111-1111-4111-8111-111111111111');
 final entryId = UuidValue.parse('22222222-2222-4222-8222-222222222222');
 final otherEntryId = UuidValue.parse('44444444-4444-4444-8444-444444444444');
 final songId = UuidValue.parse('33333333-3333-4333-8333-333333333333');
+final sourceId = UuidValue.parse('55555555-5555-4555-8555-555555555555');
 
 SongList songList({DateTime? scheduledAt}) {
   return SongList(
@@ -172,5 +271,24 @@ SongList songList({DateTime? scheduledAt}) {
       ),
       SongListEntry(id: otherEntryId, songId: songId, position: 1),
     ],
+  );
+}
+
+/// La même liste, mais copiée de celle de quelqu'un d'autre.
+SongList followingList() {
+  return songList().copyWith(
+    upstream: UpstreamLink(sourceListId: sourceId, sourceVersion: 7),
+  );
+}
+
+/// La liste d'origine, telle que le serveur la rend.
+SongList sourceSongList({int version = 7}) {
+  return SongList(
+    id: sourceId,
+    scheduledAt: DateTime(2026, 8, 2),
+    createdAt: DateTime(2026, 7, 21),
+    title: 'Dimanche',
+    version: version,
+    entries: songList().entries,
   );
 }

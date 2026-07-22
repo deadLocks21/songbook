@@ -1,4 +1,5 @@
 import 'package:songbook/core/domain/model/song_list.dart';
+import 'package:songbook/core/domain/model/upstream_link.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
 
 /// DTO pour parser le JSON de l'API pour une liste de chants distante,
@@ -11,6 +12,11 @@ class RemoteSongListDto {
   final DateTime createdAt;
   final List<RemoteSongListEntryDto> entries;
 
+  /// Lien amont d'une copie : la source, et la version de celle-ci au dernier
+  /// tirage. `null` sur une liste originale.
+  final String? sourceListId;
+  final int? sourceVersion;
+
   const RemoteSongListDto({
     required this.id,
     required this.title,
@@ -18,6 +24,8 @@ class RemoteSongListDto {
     required this.version,
     required this.createdAt,
     required this.entries,
+    this.sourceListId,
+    this.sourceVersion,
   });
 
   factory RemoteSongListDto.fromJson(Map<String, dynamic> json) {
@@ -30,6 +38,8 @@ class RemoteSongListDto {
       entries: (json['entries'] as List<dynamic>? ?? const [])
           .map((e) => RemoteSongListEntryDto.fromJson(e as Map<String, dynamic>))
           .toList(),
+      sourceListId: json['sourceListId'] as String?,
+      sourceVersion: json['sourceVersion'] as int?,
     );
   }
 
@@ -41,6 +51,7 @@ class RemoteSongListDto {
       entries: entries.map((e) => e.toDomain()).toList(),
       title: title,
       version: version,
+      upstream: UpstreamLink.fromNullable(sourceListId, sourceVersion),
     );
   }
 
@@ -50,11 +61,18 @@ class RemoteSongListDto {
   /// sur laquelle l'edition se base, que le serveur compare a la sienne. La
   /// creation ne l'envoie pas — il n'y a encore rien a comparer.
   static Map<String, dynamic> writePayload(SongList songList, {int? baseVersion}) {
+    final upstream = songList.upstream;
+
     return {
       'id': songList.id.value,
       'title': songList.title,
       'scheduledAt': _wallClock(songList.scheduledAt),
       if (baseVersion != null) 'baseVersion': baseVersion,
+      // Redonne a chaque ecriture, jamais sous-entendu : c'est ainsi qu'un
+      // tirage fait avancer `sourceVersion`. Les deux champs partent ensemble,
+      // le serveur refuse un demi-lien.
+      'sourceListId': upstream?.sourceListId.value,
+      'sourceVersion': upstream?.sourceVersion,
       'entries': songList.entries
           .map(
             (e) => {

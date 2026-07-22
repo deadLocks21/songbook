@@ -14,8 +14,12 @@ class BackendEndpoints {
   static const String recueils = '/api/recueils';
 
   /// Listes de chants de l'utilisateur connecté (lecture et écriture).
-  /// Une liste précise s'adresse en suffixant `/{id}`.
+  /// Une liste précise s'adresse en suffixant `/{id}`, et son partage
+  /// `/{id}/share`.
   static const String songLists = '/api/song-lists';
+
+  /// Échange d'un lien ou d'un code de partage contre un accès en lecture.
+  static const String songListSubscribe = '/api/song-lists/subscribe';
 
   /// Demande d'un code OTP par SMS (public).
   static const String requestOtp = '/api/auth/request-otp';

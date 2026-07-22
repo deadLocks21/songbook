@@ -76,5 +76,55 @@ void main() {
           .expectTextVisible('Dim 16 mar 2025, 10:00')
           .execute();
     });
+
+    group('partage et abonnement', () {
+      testWidgets('should mark lists copied from someone else', (tester) async {
+        // La copie appartient bien à l'utilisateur, mais savoir qu'elle a une
+        // source change ce qu'il en attend : elle peut évoluer en amont.
+        final app = anApp().withSongLists([
+          aSongList().withId('list-1').following().build(),
+          aSongList().withId('list-2').build(),
+        ]).build();
+
+        await (await startInSongListsPage(tester, app: app))
+            .expectSongListCount(2)
+            .expectFollowedBadgeCount(1)
+            .execute();
+      });
+
+      testWidgets('should offer sharing from the context menu', (tester) async {
+        final app = anApp().withSongLists([
+          aSongList().withId('list-1').build(),
+        ]).build();
+
+        await (await startInSongListsPage(tester, app: app))
+            .longPressSongListCard('list-1')
+            .expectShareActionVisible()
+            .execute();
+      });
+
+      testWidgets('should open the follow dialog from the FAB', (tester) async {
+        final app = anApp().withSongLists([]).build();
+
+        await (await startInSongListsPage(tester, app: app))
+            .tapFollowFab()
+            .expectFollowDialogVisible()
+            .expectTextVisible('Suivre une liste')
+            .execute();
+      });
+
+      testWidgets('should reject a code that matches nothing', (tester) async {
+        // Le mode démo n'émet aucun partage : n'importe quel code y est
+        // inconnu, ce qui est exactement le cas à afficher proprement.
+        final app = anApp().withSongLists([]).build();
+
+        await (await startInSongListsPage(tester, app: app))
+            .tapFollowFab()
+            .enterFollowCode('K7Q2M9XZ')
+            .submitFollowCode()
+            .expectTextVisible('Ce code ne correspond à aucune liste partagée.')
+            .execute();
+      });
+    });
   });
 }

@@ -27,3 +27,15 @@ class SongListGoneException implements Exception {
   @override
   String toString() => 'SongListGoneException: liste absente du serveur';
 }
+
+/// Levee quand un lien ou un code de partage ne mene a rien : jamais emis, mal
+/// recopie, ou pointant une liste supprimee depuis.
+///
+/// Les trois cas sont indistinguables volontairement cote serveur — les
+/// separer confirmerait qu'un code donne a deja ete valide.
+class ShareLinkNotFoundException implements Exception {
+  const ShareLinkNotFoundException();
+
+  @override
+  String toString() => 'ShareLinkNotFoundException: lien de partage inconnu';
+}

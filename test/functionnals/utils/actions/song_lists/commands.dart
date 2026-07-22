@@ -139,6 +139,63 @@ class TapCancelDeleteCommand extends FluentCommand {
 }
 
 /// Commande pour vérifier qu'un texte est visible.
+/// Commande pour ouvrir la boîte « Suivre une liste ».
+class TapFollowFabCommand extends FluentCommand {
+  final WidgetTester tester;
+  final SongListsPageFinders finders;
+
+  TapFollowFabCommand(this.tester, this.finders);
+
+  @override
+  Future<void> execute() async {
+    await tester.tap(finders.followFab);
+    await tester.pumpAndSettle();
+  }
+}
+
+/// Commande pour saisir un code de partage.
+class EnterFollowCodeCommand extends FluentCommand {
+  final WidgetTester tester;
+  final SongListsPageFinders finders;
+  final String code;
+
+  EnterFollowCodeCommand(this.tester, this.finders, this.code);
+
+  @override
+  Future<void> execute() async {
+    await tester.enterText(finders.followCodeField, code);
+    await tester.pumpAndSettle();
+  }
+}
+
+/// Commande pour valider la saisie du code.
+class SubmitFollowCodeCommand extends FluentCommand {
+  final WidgetTester tester;
+  final SongListsPageFinders finders;
+
+  SubmitFollowCodeCommand(this.tester, this.finders);
+
+  @override
+  Future<void> execute() async {
+    await tester.tap(finders.confirmFollowButton);
+    await tester.pumpAndSettle();
+  }
+}
+
+/// Commande vérifiant la présence d'un localisateur.
+class ExpectFinderCommand extends FluentCommand {
+  final Finder finder;
+  final Matcher matcher;
+  final String reason;
+
+  ExpectFinderCommand(this.finder, this.matcher, this.reason);
+
+  @override
+  Future<void> execute() async {
+    expect(finder, matcher, reason: reason);
+  }
+}
+
 class ExpectTextVisibleCommand extends FluentCommand {
   final String text;
 

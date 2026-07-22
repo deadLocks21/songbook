@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:songbook/core/application/dtos/song_list.dto.dart';
+import 'package:songbook/core/application/services/song_list_sharing.service.dart';
 import 'package:songbook/core/domain/model/song_list.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
+import 'package:songbook/infrastructure/song_list/providers/song_list_sharing.provider.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list_sync.provider.dart';
 import 'package:songbook/ui/pages/song_list_detail/song_list_detail.page.dart';
 import 'package:songbook/ui/pages/song_list_edit/song_list_edit.page.dart';
 import 'package:songbook/ui/pages/song_list_viewer/song_list_viewer.page.dart';
+import 'package:songbook/ui/pages/song_lists/widgets/follow_song_list.dialog.dart';
 import 'package:songbook/ui/pages/song_lists/widgets/song_list_card.widget.dart';
 import 'package:songbook/ui/utils/date_format.dart';
 
@@ -32,10 +36,24 @@ class SongListsPage extends ConsumerWidget {
         error: (error, stack) =>
             Center(child: Text('Erreur lors du chargement des listes: $error')),
       ),
-      floatingActionButton: FloatingActionButton(
-        key: const Key('createSongListFab'),
-        onPressed: () => _createNewList(context, ref),
-        child: const Icon(Icons.add),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.small(
+            key: const Key('followSongListFab'),
+            heroTag: 'followSongList',
+            tooltip: 'Suivre une liste',
+            onPressed: () => _followList(context, ref),
+            child: const Icon(Icons.link),
+          ),
+          const SizedBox(height: 12.0),
+          FloatingActionButton(
+            key: const Key('createSongListFab'),
+            heroTag: 'createSongList',
+            onPressed: () => _createNewList(context, ref),
+            child: const Icon(Icons.add),
+          ),
+        ],
       ),
     );
   }
@@ -76,6 +94,7 @@ class SongListsPage extends ConsumerWidget {
           onTap: () => _showDetail(context, ref, songList),
           onView: () => _viewList(context, songList),
           onEdit: () => _editList(context, ref, songList),
+          onShare: () => _shareList(context, ref, songList),
           onDelete: () => _confirmDelete(context, ref, songList),
         );
       },
@@ -143,6 +162,92 @@ class SongListsPage extends ConsumerWidget {
       context,
       MaterialPageRoute(
         builder: (context) => SongListEditPage(songList: songList),
+      ),
+    ).then((_) => ref.invalidate(songListsProvider));
+  }
+
+  /// Ouvre la liste au partage puis passe la main à la feuille système.
+  ///
+  /// Le lien part avec le code : la plupart des messageries rendent le lien
+  /// cliquable, mais pas toutes, et un destinataire qui ne peut pas cliquer
+  /// doit pouvoir s'en sortir en tapant huit caractères.
+  Future<void> _shareList(
+    BuildContext context,
+    WidgetRef ref,
+    SongListDto songList,
+  ) async {
+    final link = await ref
+        .read(songListSharingProvider.notifier)
+        .share(songList.id);
+
+    if (!context.mounted) return;
+
+    if (link == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          key: Key('songListShareFailed'),
+          content: Text(
+            'Partage impossible : le serveur n\'a pas répondu. Réessayez une fois connecté.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    await SharePlus.instance.share(
+      ShareParams(
+        subject: 'Liste du ${formatDate(songList.scheduledAt)}',
+        text:
+            'Voici ma liste de chants du ${formatDate(songList.scheduledAt)} :\n'
+            '${link.link}\n\n'
+            'Ou dans l\'app, « Suivre une liste » avec le code ${link.code}.',
+      ),
+    );
+  }
+
+  /// Demande un code, puis ouvre ce qu'il a donné.
+  Future<void> _followList(BuildContext context, WidgetRef ref) async {
+    final outcome = await showDialog<FollowOutcome>(
+      context: context,
+      builder: (context) => const FollowSongListDialog(),
+    );
+
+    if (outcome == null || !context.mounted) return;
+
+    ref.invalidate(songListsProvider);
+
+    final listId = outcome.listId;
+    if (listId == null) {
+      // Copie faite depuis un autre appareil : elle n'est pas encore ici, et
+      // l'ouvrir mènerait à un écran vide.
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          key: Key('songListAlreadyFollowedElsewhere'),
+          content: Text(
+            'Vous suivez déjà cette liste depuis un autre appareil. '
+            'Synchronisez pour la récupérer ici.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final message = switch (outcome.status) {
+      FollowStatus.copied => 'Liste copiée. Elle est à vous, modifiez-la comme vous voulez.',
+      FollowStatus.alreadyOwner => 'Cette liste est déjà la vôtre.',
+      FollowStatus.alreadyFollowing => 'Vous suivez déjà cette liste.',
+    };
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(key: const Key('songListFollowed'), content: Text(message)),
+    );
+
+    if (!context.mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SongListDetailPage(songListId: listId.value),
       ),
     ).then((_) => ref.invalidate(songListsProvider));
   }

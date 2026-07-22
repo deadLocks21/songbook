@@ -61,8 +61,16 @@ class SetlistService {
       // La version serveur connue n'appartient pas au DTO (l'UI n'en fait
       // rien) : on la reprend de la copie locale, sinon chaque enregistrement
       // repartirait comme une création.
+      //
+      // Le lien amont suit la même règle, et pour un motif plus sévère :
+      // l'oublier ferait partir la prochaine écriture sans `sourceListId`,
+      // c'est-à-dire désabonnerait la liste au premier enregistrement.
       await _songListRepository.updateSongList(
-        songList.copyWith(version: existing.version, title: existing.title),
+        songList.copyWith(
+          version: existing.version,
+          title: existing.title,
+          upstream: existing.upstream,
+        ),
       );
     } else {
       await _songListRepository.addSongList(songList);

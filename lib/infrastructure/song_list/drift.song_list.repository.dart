@@ -1,5 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:songbook/core/domain/model/song_list.dart';
+import 'package:songbook/core/domain/model/upstream_link.dart';
+import 'package:songbook/core/domain/model/upstream_snapshot.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
 import 'package:songbook/core/domain/services/song_list.repository.dart';
 import 'package:songbook/infrastructure/song/drift/drift_database.dart';
@@ -102,6 +104,7 @@ class DriftSongListRepository implements SongListRepository {
         '''
         UPDATE song_lists
         SET scheduledAt = ?, title = ?, serverVersion = ?, createdAt = ?,
+            sourceListId = ?, sourceVersion = ?,
             dirty = dirty + 1
         WHERE id = ?
         ''',
@@ -110,6 +113,8 @@ class DriftSongListRepository implements SongListRepository {
           songList.title,
           songList.version,
           songList.createdAt.toIso8601String(),
+          songList.upstream?.sourceListId.value,
+          songList.upstream?.sourceVersion,
           songList.id.value,
         ],
       );
@@ -254,14 +259,107 @@ class DriftSongListRepository implements SongListRepository {
   Future<void> purge(UuidValue id) async {
     final db = await _database;
 
+    // Les lignes filles sont effacees a la main plutot que par cascade :
+    // sqflite n'active pas `PRAGMA foreign_keys` par defaut, donc les clauses
+    // ON DELETE CASCADE du schema ne se declenchent pas a l'execution.
     await db.transaction((txn) async {
       await txn.delete(
         'song_list_entries',
         where: 'songListId = ?',
         whereArgs: [id.value],
       );
+      await _deleteUpstreamSnapshot(txn, id);
       await txn.delete('song_lists', where: 'id = ?', whereArgs: [id.value]);
     });
+  }
+
+  @override
+  Future<SongList?> findCopyOf(UuidValue sourceListId) async {
+    final db = await _database;
+    final rows = await db.query(
+      'song_lists',
+      columns: ['id'],
+      where: 'sourceListId = ? AND pendingDeletion = 0',
+      whereArgs: [sourceListId.value],
+      limit: 1,
+    );
+
+    if (rows.isEmpty) return null;
+
+    return getSongListById(UuidValue.parse(rows.first['id'] as String));
+  }
+
+  @override
+  Future<void> saveUpstreamSnapshot(UpstreamSnapshot snapshot) async {
+    final db = await _database;
+    final listId = snapshot.songListId;
+
+    await db.transaction((txn) async {
+      await _deleteUpstreamSnapshot(txn, listId);
+
+      await txn.insert('song_list_upstream_snapshots', {
+        'songListId': listId.value,
+        'sourceVersion': snapshot.sourceVersion,
+        'title': snapshot.title,
+        'scheduledAt': snapshot.scheduledAt.toIso8601String(),
+        'capturedAt': snapshot.capturedAt.toIso8601String(),
+      });
+
+      for (final entry in snapshot.entries) {
+        await txn.insert('song_list_upstream_snapshot_entries', {
+          'id': entry.id.value,
+          'songListId': listId.value,
+          'songId': entry.songId.value,
+          'position': entry.position,
+          'savedSemitones': entry.savedSemitones,
+        });
+      }
+    });
+  }
+
+  @override
+  Future<UpstreamSnapshot?> getUpstreamSnapshot(UuidValue songListId) async {
+    final db = await _database;
+    final rows = await db.query(
+      'song_list_upstream_snapshots',
+      where: 'songListId = ?',
+      whereArgs: [songListId.value],
+    );
+
+    if (rows.isEmpty) return null;
+
+    final entryRows = await db.query(
+      'song_list_upstream_snapshot_entries',
+      where: 'songListId = ?',
+      whereArgs: [songListId.value],
+      orderBy: 'position ASC',
+    );
+
+    final row = rows.first;
+    return UpstreamSnapshot(
+      songListId: songListId,
+      sourceVersion: row['sourceVersion'] as int,
+      title: row['title'] as String?,
+      scheduledAt: DateTime.parse(row['scheduledAt'] as String),
+      entries: entryRows.map(_entryRowToDomain).toList(),
+      capturedAt: DateTime.parse(row['capturedAt'] as String),
+    );
+  }
+
+  Future<void> _deleteUpstreamSnapshot(
+    DatabaseExecutor txn,
+    UuidValue songListId,
+  ) async {
+    await txn.delete(
+      'song_list_upstream_snapshot_entries',
+      where: 'songListId = ?',
+      whereArgs: [songListId.value],
+    );
+    await txn.delete(
+      'song_list_upstream_snapshots',
+      where: 'songListId = ?',
+      whereArgs: [songListId.value],
+    );
   }
 
   @override
@@ -289,6 +387,8 @@ class DriftSongListRepository implements SongListRepository {
     'scheduledAt': songList.scheduledAt.toIso8601String(),
     'title': songList.title,
     'serverVersion': songList.version,
+    'sourceListId': songList.upstream?.sourceListId.value,
+    'sourceVersion': songList.upstream?.sourceVersion,
   };
 
   Future<void> _replaceEntries(DatabaseExecutor txn, SongList songList) async {
@@ -323,6 +423,10 @@ class DriftSongListRepository implements SongListRepository {
       entries: entries,
       title: row['title'] as String?,
       version: row['serverVersion'] as int?,
+      upstream: UpstreamLink.fromNullable(
+        row['sourceListId'] as String?,
+        row['sourceVersion'] as int?,
+      ),
     );
   }
 

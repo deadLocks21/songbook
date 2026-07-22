@@ -1,4 +1,5 @@
 import 'package:songbook/core/domain/model/song_list.dart';
+import 'package:songbook/core/domain/model/upstream_snapshot.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
 import 'package:songbook/core/domain/services/song_list.repository.dart';
 
@@ -15,10 +16,14 @@ class InMemorySongListRepository implements SongListRepository {
   final Map<String, int> _pendingWrites;
   final Set<String> _pendingDeletion;
 
+  /// État de la source au dernier tirage, par identifiant de copie.
+  final Map<String, UpstreamSnapshot> _upstreamSnapshots;
+
   InMemorySongListRepository()
     : _songLists = [],
       _pendingWrites = {},
-      _pendingDeletion = {};
+      _pendingDeletion = {},
+      _upstreamSnapshots = {};
 
   @override
   Future<List<SongList>> getAllSongLists() async {
@@ -111,12 +116,34 @@ class InMemorySongListRepository implements SongListRepository {
     _songLists.removeWhere((s) => s.id == id);
     _pendingWrites.remove(id.value);
     _pendingDeletion.remove(id.value);
+    _upstreamSnapshots.remove(id.value);
   }
 
   @override
   Future<void> applyRemoteDeletion(UuidValue id) async {
     if (_hasLocalChanges(id)) return;
     await purge(id);
+  }
+
+  @override
+  Future<SongList?> findCopyOf(UuidValue sourceListId) async {
+    return _songLists
+        .where(
+          (s) =>
+              s.upstream?.sourceListId == sourceListId &&
+              !_pendingDeletion.contains(s.id.value),
+        )
+        .firstOrNull;
+  }
+
+  @override
+  Future<void> saveUpstreamSnapshot(UpstreamSnapshot snapshot) async {
+    _upstreamSnapshots[snapshot.songListId.value] = snapshot;
+  }
+
+  @override
+  Future<UpstreamSnapshot?> getUpstreamSnapshot(UuidValue songListId) async {
+    return _upstreamSnapshots[songListId.value];
   }
 
   bool _hasLocalChanges(UuidValue id) =>

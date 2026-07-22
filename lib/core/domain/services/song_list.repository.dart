@@ -1,4 +1,5 @@
 import 'package:songbook/core/domain/model/song_list.dart';
+import 'package:songbook/core/domain/model/upstream_snapshot.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
 
 /// Interface pour acceder et gerer les listes de chants.
@@ -66,4 +67,22 @@ abstract interface class SongListRepository {
   /// appareil). Comme [upsertFromRemote], respecte les modifications locales non
   /// poussees et laisse la liste en place dans ce cas.
   Future<void> applyRemoteDeletion(UuidValue id);
+
+  /// La copie locale faite depuis [sourceListId], s'il y en a une.
+  ///
+  /// Permet de rouvrir la copie existante quand le meme lien est utilise deux
+  /// fois, au lieu d'en empiler une seconde. Le serveur repond deja la meme
+  /// chose ; on le redemande en local pour que le cas marche hors-ligne et pour
+  /// les listes pas encore poussees.
+  Future<SongList?> findCopyOf(UuidValue sourceListId);
+
+  /// Retient l'etat de la source au dernier tirage, base du futur tirage
+  /// assiste. Remplace l'instantane precedent de la meme liste.
+  Future<void> saveUpstreamSnapshot(UpstreamSnapshot snapshot);
+
+  /// L'instantane retenu pour [songListId], s'il existe.
+  ///
+  /// Absent sur un appareil qui a recupere la copie par synchro plutot que par
+  /// abonnement : l'instantane est local, il ne transite pas par le serveur.
+  Future<UpstreamSnapshot?> getUpstreamSnapshot(UuidValue songListId);
 }

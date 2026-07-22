@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:songbook/core/application/dtos/remote_song_list.dto.dart';
 import 'package:songbook/core/domain/exceptions/song_list_sync.exception.dart';
+import 'package:songbook/core/domain/model/share_link.dart';
 import 'package:songbook/core/domain/model/song_list.dart';
 import 'package:songbook/core/domain/model/song_list_snapshot.dart';
+import 'package:songbook/core/domain/model/subscription_result.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
 import 'package:songbook/core/domain/services/remote_song_list.repository.dart';
 import 'package:songbook/core/utils/backend_endpoints.dart';
@@ -114,6 +116,83 @@ class DioRemoteSongListRepository implements RemoteSongListRepository {
       // Déjà absente côté serveur : le but est atteint, pas de quoi bloquer la
       // synchro. La ligne locale sera purgée comme après une vraie suppression.
       if (e.response?.statusCode == 404) return;
+      rethrow;
+    }
+  }
+
+  @override
+  Future<ShareLink> share(String baseUrl, UuidValue id) async {
+    final url = BackendUrl.join(
+      baseUrl,
+      '${BackendEndpoints.songLists}/${id.value}/share',
+    );
+
+    final response = await _send(
+      () => _dio.post<Map<String, dynamic>>(url),
+      url,
+    );
+
+    final data = response.data;
+    final token = data?['token'];
+    final code = data?['code'];
+    final link = data?['link'];
+
+    if (token is! String || code is! String || link is! String) {
+      throw DioException(
+        requestOptions: RequestOptions(path: url),
+        type: DioExceptionType.badResponse,
+        error: 'Réponse de partage inexploitable',
+      );
+    }
+
+    return ShareLink(token: token, code: code, link: link);
+  }
+
+  @override
+  Future<SubscriptionResult> subscribe(
+    String baseUrl, {
+    String? token,
+    String? code,
+  }) async {
+    if ((token == null) == (code == null)) {
+      throw ArgumentError('Fournissez soit un token, soit un code.');
+    }
+
+    final url = BackendUrl.join(baseUrl, BackendEndpoints.songListSubscribe);
+
+    try {
+      final response = await _send(
+        () => _dio.post<Map<String, dynamic>>(
+          url,
+          data: token != null ? {'token': token} : {'code': code},
+        ),
+        url,
+      );
+
+      final data = response.data;
+      final list = data?['list'];
+      if (list is! Map<String, dynamic>) {
+        throw DioException(
+          requestOptions: RequestOptions(path: url),
+          type: DioExceptionType.badResponse,
+          error: 'Réponse d\'abonnement sans liste',
+        );
+      }
+
+      final existingCopyId = data?['existingCopyId'];
+
+      return SubscriptionResult(
+        source: RemoteSongListDto.fromJson(list).toDomain(),
+        alreadyOwner: data?['alreadyOwner'] == true,
+        existingCopyId: existingCopyId is String
+            ? UuidValue.parse(existingCopyId)
+            : null,
+      );
+    } on DioException catch (e) {
+      // Jamais émis, mal recopié, ou pointant une liste supprimée depuis : le
+      // serveur ne les distingue pas, et l'utilisateur n'a qu'une chose à
+      // faire dans les trois cas — redemander un lien.
+      if (e.response?.statusCode == 404) throw const ShareLinkNotFoundException();
       rethrow;
     }
   }
