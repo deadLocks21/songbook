@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:songbook/core/application/dtos/song_list.dto.dart';
+import 'package:songbook/core/application/services/song_list_pull.service.dart';
 import 'package:songbook/core/application/services/song_list_sharing.service.dart';
 import 'package:songbook/core/domain/model/song_list.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list_sharing.provider.dart';
+import 'package:songbook/infrastructure/song_list/providers/song_list_pull.provider.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list_sync.provider.dart';
+import 'package:songbook/infrastructure/song_list/providers/upstream_states.provider.dart';
 import 'package:songbook/ui/pages/song_list_detail/song_list_detail.page.dart';
+import 'package:songbook/ui/pages/song_list_pull/pull_review.page.dart';
 import 'package:songbook/ui/pages/song_list_edit/song_list_edit.page.dart';
 import 'package:songbook/ui/pages/song_list_viewer/song_list_viewer.page.dart';
 import 'package:songbook/ui/pages/song_lists/widgets/follow_song_list.dialog.dart';
@@ -91,10 +95,15 @@ class SongListsPage extends ConsumerWidget {
         return SongListCard(
           key: Key('songListCard_${songList.id}'),
           songList: songList,
+          hasUpstreamUpdate: ref
+              .read(upstreamStatesProvider.notifier)
+              .hasUpdateFor(songList),
           onTap: () => _showDetail(context, ref, songList),
           onView: () => _viewList(context, songList),
           onEdit: () => _editList(context, ref, songList),
           onShare: () => _shareList(context, ref, songList),
+          onPull: () => _pullList(context, ref, songList),
+          onUnfollow: () => _unfollowList(context, ref, songList),
           onDelete: () => _confirmDelete(context, ref, songList),
         );
       },
@@ -202,6 +211,96 @@ class SongListsPage extends ConsumerWidget {
             '${link.link}\n\n'
             'Ou dans l\'app, « Suivre une liste » avec le code ${link.code}.',
       ),
+    );
+  }
+
+  /// Va chercher ce qui a changé chez l'auteur.
+  ///
+  /// N'ouvre l'écran de revue que si la copie a été modifiée ici : sinon il n'y
+  /// a rien à arbitrer, et demander confirmation reviendrait à faire trancher
+  /// un conflit qui n'existe pas.
+  Future<void> _pullList(
+    BuildContext context,
+    WidgetRef ref,
+    SongListDto songList,
+  ) async {
+    final result = await ref
+        .read(songListPullProvider.notifier)
+        .pull(songList.id);
+
+    if (!context.mounted) return;
+
+    switch (result) {
+      case NothingToPull():
+        _notify(context, 'Cette liste est déjà à jour.');
+      case PulledAutomatically(:final changeCount):
+        _notify(
+          context,
+          '$changeCount changement${changeCount > 1 ? 's' : ''} repris.',
+        );
+      case UpstreamGone():
+        // La source a disparu : on coupe le lien plutôt que de reproposer un
+        // tirage impossible à chaque fois. La copie, elle, reste.
+        await ref.read(songListPullProvider.notifier).unfollow(songList.id);
+        if (!context.mounted) return;
+        _notify(
+          context,
+          'La liste partagée n\'existe plus. Votre copie est conservée.',
+        );
+      case NeedsReview(:final preview):
+        await Navigator.push<PullResult>(
+          context,
+          MaterialPageRoute(builder: (_) => PullReviewPage(preview: preview)),
+        );
+        if (!context.mounted) return;
+        _notify(context, 'Liste mise à jour.');
+      case PullFailed():
+        _notify(context, 'Serveur injoignable. Réessayez dans un instant.');
+    }
+
+    ref.invalidate(songListsProvider);
+  }
+
+  Future<void> _unfollowList(
+    BuildContext context,
+    WidgetRef ref,
+    SongListDto songList,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Ne plus suivre'),
+        content: const Text(
+          'Vous gardez la liste, elle devient une liste comme les autres. '
+          'Vous ne recevrez plus les changements de la personne qui l\'a partagée.',
+        ),
+        actions: [
+          TextButton(
+            key: const Key('cancelUnfollowButton'),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            key: const Key('confirmUnfollowButton'),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Ne plus suivre'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    await ref.read(songListPullProvider.notifier).unfollow(songList.id);
+    if (!context.mounted) return;
+
+    _notify(context, 'Vous ne suivez plus cette liste.');
+    ref.invalidate(songListsProvider);
+  }
+
+  void _notify(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(key: const Key('songListPullMessage'), content: Text(message)),
     );
   }
 

@@ -5,6 +5,7 @@ import 'package:songbook/core/domain/model/share_link.dart';
 import 'package:songbook/core/domain/model/song_list.dart';
 import 'package:songbook/core/domain/model/song_list_snapshot.dart';
 import 'package:songbook/core/domain/model/subscription_result.dart';
+import 'package:songbook/core/domain/model/upstream_state.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
 import 'package:songbook/core/domain/services/remote_song_list.repository.dart';
 import 'package:songbook/core/utils/backend_endpoints.dart';
@@ -49,7 +50,54 @@ class DioRemoteSongListRepository implements RemoteSongListRepository {
         .map((id) => UuidValue.parse(id as String))
         .toList();
 
-    return SongListSnapshot(lists: lists, deletedIds: deletedIds);
+    final upstream = (data['upstream'] as List<dynamic>? ?? const [])
+        .map((json) => _upstreamState(json as Map<String, dynamic>))
+        .toList();
+
+    return SongListSnapshot(
+      lists: lists,
+      deletedIds: deletedIds,
+      upstream: upstream,
+    );
+  }
+
+  UpstreamState _upstreamState(Map<String, dynamic> json) {
+    return UpstreamState(
+      sourceListId: UuidValue.parse(json['sourceListId'] as String),
+      version: json['version'] as int?,
+      deleted: json['deleted'] == true,
+    );
+  }
+
+  @override
+  Future<SongList> fetchOne(String baseUrl, UuidValue id) async {
+    final url = BackendUrl.join(
+      baseUrl,
+      '${BackendEndpoints.songLists}/${id.value}',
+    );
+
+    try {
+      final response = await _send(
+        () => _dio.get<Map<String, dynamic>>(url),
+        url,
+      );
+
+      final data = response.data;
+      if (data == null) {
+        throw DioException(
+          requestOptions: RequestOptions(path: url),
+          type: DioExceptionType.badResponse,
+          error: 'Liste vide dans la réponse',
+        );
+      }
+
+      return RemoteSongListDto.fromJson(data).toDomain();
+    } on DioException catch (e) {
+      // Supprimée, ou abonnement révoqué : dans les deux cas il n'y a plus rien
+      // à tirer, et l'appelant coupe le lien amont plutôt que d'insister.
+      if (e.response?.statusCode == 404) throw const SongListGoneException();
+      rethrow;
+    }
   }
 
   @override

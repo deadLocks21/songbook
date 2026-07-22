@@ -10,6 +10,7 @@ import 'package:songbook/infrastructure/song_list/dio.remote_song_list.repositor
 import 'package:songbook/infrastructure/song_list/in_memory.remote_song_list.repository.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.repository_provider.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
+import 'package:songbook/infrastructure/song_list/providers/upstream_states.provider.dart';
 
 part 'song_list_sync.provider.g.dart';
 
@@ -35,6 +36,10 @@ SongListSyncService songListSyncService(Ref ref) {
   return SongListSyncService(
     ref.watch(songListRepositoryProvider),
     ref.watch(remoteSongListRepositoryProvider),
+    // Seule occasion de savoir où en sont les sources suivies : c'est le pull
+    // qui les rapporte, et l'UI en a besoin pour signaler un tirage disponible.
+    onUpstreamStates: (states) =>
+        ref.read(upstreamStatesProvider.notifier).record(states),
   );
 }
 

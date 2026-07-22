@@ -175,6 +175,10 @@ class _StubRemote implements RemoteSongListRepository {
       const SongListSnapshot(lists: [], deletedIds: []);
 
   @override
+  Future<SongList> fetchOne(String baseUrl, UuidValue id) =>
+      throw UnimplementedError();
+
+  @override
   Future<int> create(String baseUrl, SongList songList) async => 1;
 
   @override

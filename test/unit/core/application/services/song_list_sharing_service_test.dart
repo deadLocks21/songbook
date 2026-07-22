@@ -177,6 +177,10 @@ class _StubRemote implements RemoteSongListRepository {
       throw UnimplementedError();
 
   @override
+  Future<SongList> fetchOne(String baseUrl, UuidValue id) =>
+      throw UnimplementedError();
+
+  @override
   Future<int> create(String baseUrl, SongList songList) =>
       throw UnimplementedError();
 

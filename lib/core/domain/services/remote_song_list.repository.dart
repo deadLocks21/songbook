@@ -14,6 +14,12 @@ abstract interface class RemoteSongListRepository {
   /// a supprimees depuis n'importe lequel de ses appareils.
   Future<SongListSnapshot> fetchAll(String baseUrl);
 
+  /// Une liste precise : la sienne, ou une source a laquelle on est abonne.
+  /// C'est par la qu'une copie va chercher ce qui a change en amont.
+  ///
+  /// Leve [SongListGoneException] si elle n'existe plus ou n'est plus lisible.
+  Future<SongList> fetchOne(String baseUrl, UuidValue id);
+
   /// Premier envoi d'une liste : l'identifiant est celui genere localement.
   /// Rejouable — reenvoyer la meme liste reapplique son contenu.
   Future<int> create(String baseUrl, SongList songList);

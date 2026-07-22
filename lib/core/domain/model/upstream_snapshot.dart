@@ -34,6 +34,27 @@ class UpstreamSnapshot {
     required this.capturedAt,
   });
 
+  /// [mine] est-elle encore exactement ce que j'avais pris ?
+  ///
+  /// Si oui, il n'y a rien à arbitrer et le tirage peut s'appliquer en
+  /// silence : c'est le cas courant, et il doit rester invisible.
+  ///
+  /// La comparaison porte sur les chants, leur ordre et leur tonalité — pas sur
+  /// les identifiants d'entrée, qui diffèrent des deux côtés par construction.
+  bool describes(SongList mine) {
+    if (scheduledAt.toUtc() != mine.scheduledAt.toUtc()) return false;
+    if (entries.length != mine.entries.length) return false;
+
+    for (var i = 0; i < entries.length; i++) {
+      if (entries[i].songId != mine.entries[i].songId) return false;
+      if (entries[i].savedSemitones != mine.entries[i].savedSemitones) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   /// L'instantané pris quand [source] vient d'être dupliquée en [songListId].
   factory UpstreamSnapshot.of(
     UuidValue songListId,

@@ -30,6 +30,16 @@ class InMemoryRemoteSongListRepository implements RemoteSongListRepository {
   }
 
   @override
+  Future<SongList> fetchOne(String baseUrl, UuidValue id) async {
+    final list = _lists[id.value];
+    if (list == null || _deletedIds.contains(id.value)) {
+      throw const SongListGoneException();
+    }
+
+    return list;
+  }
+
+  @override
   Future<int> create(String baseUrl, SongList songList) async {
     // Renvoyer une liste déjà connue réapplique son contenu : c'est ce qui rend
     // l'envoi rejouable, et ce qui ressuscite une liste supprimée.
