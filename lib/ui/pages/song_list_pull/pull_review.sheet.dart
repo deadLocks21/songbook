@@ -7,6 +7,26 @@ import 'package:songbook/infrastructure/song/providers/song.repository_provider.
 import 'package:songbook/infrastructure/song_list/providers/song_list_pull.provider.dart';
 import 'package:songbook/ui/utils/date_format.dart';
 
+/// Présente l'arbitrage en feuille modale, par-dessus la liste qu'on vient
+/// d'ouvrir.
+///
+/// Rend le [PullResult] quand l'utilisateur a tranché, `null` s'il a refermé
+/// sans rien décider — et cette distinction compte : refermer n'est pas
+/// décider, le repère ne bouge pas et la question se reposera. « Ne rien
+/// reprendre », en revanche, est une décision et fait avancer le repère.
+Future<PullResult?> showPullReview(
+  BuildContext context,
+  PullPreview preview,
+) {
+  return showModalBottomSheet<PullResult>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    showDragHandle: true,
+    builder: (context) => PullReviewSheet(preview: preview),
+  );
+}
+
 /// Revue de ce que l'auteur a changé, quand la copie a été modifiée de son
 /// côté et qu'il faut arbitrer.
 ///
@@ -18,16 +38,16 @@ import 'package:songbook/ui/utils/date_format.dart';
 /// - **Un diff approximatif est annoncé comme tel.** Sans instantané de base,
 ///   les modifications de l'utilisateur se présentent comme des changements de
 ///   l'auteur ; le taire ferait appliquer n'importe quoi en confiance.
-class PullReviewPage extends ConsumerStatefulWidget {
+class PullReviewSheet extends ConsumerStatefulWidget {
   final PullPreview preview;
 
-  const PullReviewPage({super.key, required this.preview});
+  const PullReviewSheet({super.key, required this.preview});
 
   @override
-  ConsumerState<PullReviewPage> createState() => _PullReviewPageState();
+  ConsumerState<PullReviewSheet> createState() => _PullReviewSheetState();
 }
 
-class _PullReviewPageState extends ConsumerState<PullReviewPage> {
+class _PullReviewSheetState extends ConsumerState<PullReviewSheet> {
   late final Set<String> _selected = {
     for (final change in widget.preview.diff.changes)
       if (!change.undoesMyWork) change.id,
@@ -36,38 +56,58 @@ class _PullReviewPageState extends ConsumerState<PullReviewPage> {
   @override
   Widget build(BuildContext context) {
     final busy = ref.watch(songListPullProvider);
-    final changes = widget.preview.diff.changes;
+    final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Mise à jour de la liste')),
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: 96.0),
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.6,
+      maxChildSize: 0.9,
+      builder: (context, scrollController) => Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          if (widget.preview.diff.isApproximate) _approximateWarning(context),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
+            padding: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 4.0),
             child: Text(
-              'Voici ce qui a changé chez la personne qui partage cette liste. '
-              'Vous choisissez ce que vous reprenez.',
-              style: Theme.of(context).textTheme.bodyMedium,
+              'Cette liste a été mise à jour',
+              key: const Key('pullReviewTitle'),
+              style: theme.textTheme.titleLarge,
             ),
           ),
-          for (final change in changes) _changeTile(context, change),
+          Expanded(
+            child: ListView(
+              controller: scrollController,
+              children: [
+                if (widget.preview.diff.isApproximate)
+                  _approximateWarning(context),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24.0, 8.0, 24.0, 8.0),
+                  child: Text(
+                    'Voici ce qui a changé chez la personne qui partage cette '
+                    'liste. Vous choisissez ce que vous reprenez.',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+                for (final change in widget.preview.diff.changes)
+                  _changeTile(context, change),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24.0, 8.0, 24.0, 24.0),
+            child: SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                key: const Key('applyPullButton'),
+                onPressed: busy ? null : _apply,
+                child: Text(
+                  _selected.isEmpty
+                      ? 'Ne rien reprendre'
+                      : 'Reprendre ${_selected.length} changement${_selected.length > 1 ? 's' : ''}',
+                ),
+              ),
+            ),
+          ),
         ],
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: FilledButton(
-            key: const Key('applyPullButton'),
-            onPressed: busy ? null : _apply,
-            child: Text(
-              _selected.isEmpty
-                  ? 'Ne rien reprendre'
-                  : 'Reprendre ${_selected.length} changement${_selected.length > 1 ? 's' : ''}',
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -77,7 +117,7 @@ class _PullReviewPageState extends ConsumerState<PullReviewPage> {
 
     return Container(
       key: const Key('approximateDiffWarning'),
-      margin: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0.0),
+      margin: const EdgeInsets.fromLTRB(24.0, 8.0, 24.0, 0.0),
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
         color: colors.tertiaryContainer,

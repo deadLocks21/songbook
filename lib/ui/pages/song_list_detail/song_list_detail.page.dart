@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/dtos/resource.dto.dart';
@@ -6,6 +8,7 @@ import 'package:songbook/core/application/dtos/song_list.dto.dart';
 import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
 import 'package:songbook/ui/pages/song_list_edit/song_list_edit.page.dart';
+import 'package:songbook/ui/pages/song_lists/pull_song_list.action.dart';
 import 'package:songbook/ui/pages/song_lists/share_song_list.action.dart';
 import 'package:songbook/ui/pages/song_list_viewer/song_list_viewer.page.dart';
 import 'package:songbook/ui/utils/date_format.dart';
@@ -13,13 +16,26 @@ import 'package:songbook/ui/widgets/song_key_badge.widget.dart';
 
 /// Page de detail en lecture seule d'une liste de chants.
 /// Permet de naviguer vers l'edition ou le visionnage.
-class SongListDetailPage extends ConsumerWidget {
+class SongListDetailPage extends ConsumerStatefulWidget {
   final String songListId;
 
   const SongListDetailPage({super.key, required this.songListId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SongListDetailPage> createState() => _SongListDetailPageState();
+}
+
+class _SongListDetailPageState extends ConsumerState<SongListDetailPage> {
+  /// La vérification amont n'a lieu qu'une fois par ouverture. La page se
+  /// reconstruit à chaque invalidation des listes — dont celle que la
+  /// vérification déclenche elle-même : sans ce garde-fou, elle se rappellerait
+  /// en boucle.
+  bool _upstreamChecked = false;
+
+  String get songListId => widget.songListId;
+
+  @override
+  Widget build(BuildContext context) {
     final songListsAsync = ref.watch(songListsProvider);
 
     return songListsAsync.when(
@@ -31,6 +47,7 @@ class SongListDetailPage extends ConsumerWidget {
             body: const Center(child: Text('Cette liste n\'existe plus.')),
           );
         }
+        _checkUpstreamOnce(songList);
         return _buildContent(context, ref, songList);
       },
       loading: () => Scaffold(
@@ -42,6 +59,28 @@ class SongListDetailPage extends ConsumerWidget {
         body: Center(child: Text('Erreur: $error')),
       ),
     );
+  }
+
+  /// Va voir où en est la source dès qu'on ouvre une liste suivie.
+  ///
+  /// C'est ici que la vérification a du sens : l'utilisateur regarde cette
+  /// liste, c'est le moment où savoir qu'elle a bougé lui sert à quelque
+  /// chose. Le faire à la synchro générale n'apprendrait rien de plus et
+  /// interrogerait chaque source à chaque passage.
+  ///
+  /// Silencieux quand il n'y a rien : personne n'a rien demandé.
+  void _checkUpstreamOnce(SongListDto songList) {
+    if (_upstreamChecked || !songList.isFollowing) return;
+    _upstreamChecked = true;
+
+    // Après la frame : on est en plein build, et le tirage ouvre une feuille
+    // modale et invalide des providers.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(
+        pullSongList(context, ref, songList, announceWhenIdle: false),
+      );
+    });
   }
 
   Widget _buildContent(

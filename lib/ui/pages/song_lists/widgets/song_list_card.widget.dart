@@ -135,7 +135,7 @@ class SongListCard extends StatelessWidget {
           Icon(Icons.arrow_downward, size: 12.0, color: colors.onPrimary),
           const SizedBox(width: 4.0),
           Text(
-            'Mise à jour',
+            'Mettre à jour',
             key: const Key('songListUpdateBadge'),
             style: Theme.of(
               context,

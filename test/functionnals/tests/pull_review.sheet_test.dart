@@ -9,9 +9,9 @@ import 'package:songbook/core/domain/model/upstream_snapshot.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
 import 'package:songbook/infrastructure/song/in_memory.song.repository.dart';
 import 'package:songbook/infrastructure/song/providers/song.repository_provider.dart';
-import 'package:songbook/ui/pages/song_list_pull/pull_review.page.dart';
+import 'package:songbook/ui/pages/song_list_pull/pull_review.sheet.dart';
 
-/// L'écran d'arbitrage.
+/// La feuille modale d'arbitrage.
 ///
 /// Sa règle centrale : ce qui **défait un travail personnel** arrive décoché.
 /// Tout cocher par défaut ferait perdre une transposition ou un rangement d'un
@@ -23,13 +23,15 @@ void main() {
         overrides: [
           songRepositoryProvider.overrideWithValue(InMemorySongRepository()),
         ],
-        child: MaterialApp(home: PullReviewPage(preview: preview)),
+        child: MaterialApp(
+          home: Scaffold(body: PullReviewSheet(preview: preview)),
+        ),
       ),
     );
     await tester.pumpAndSettle();
   }
 
-  group('PullReviewPage', () {
+  group('PullReviewSheet', () {
     testWidgets('coche par défaut les changements sans conséquence', (
       tester,
     ) async {

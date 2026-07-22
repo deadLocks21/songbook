@@ -137,6 +137,12 @@ Future<SongListDetailPageActions> startInSongListDetailPage(
       overrides: [
         songsProvider.overrideWith((ref) async => mockSongs),
         songListsProvider.overrideWith((ref) async => mockSongLists),
+        // Ouvrir une liste suivie déclenche une vérification amont, qui a
+        // besoin de l'URL du backend. Sans cette bascule, elle irait la
+        // chercher dans les vraies préférences et resterait suspendue.
+        settingsRepositoryProvider.overrideWithValue(
+          InMemorySettingsRepository(),
+        ),
       ],
       child: MaterialApp(home: SongListDetailPage(songListId: songListId)),
     ),

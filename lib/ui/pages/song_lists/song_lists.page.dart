@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/dtos/song_list.dto.dart';
-import 'package:songbook/core/application/services/song_list_pull.service.dart';
 import 'package:songbook/core/application/services/song_list_sharing.service.dart';
 import 'package:songbook/core/domain/model/song_list.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
@@ -11,8 +10,8 @@ import 'package:songbook/infrastructure/song_list/providers/song_list_sync.provi
 import 'package:songbook/infrastructure/song_list/providers/upstream_states.provider.dart';
 import 'package:songbook/ui/pages/song_list_detail/song_list_detail.page.dart';
 import 'package:songbook/ui/pages/song_list_edit/song_list_edit.page.dart';
-import 'package:songbook/ui/pages/song_list_pull/pull_review.page.dart';
 import 'package:songbook/ui/pages/song_list_viewer/song_list_viewer.page.dart';
+import 'package:songbook/ui/pages/song_lists/pull_song_list.action.dart';
 import 'package:songbook/ui/pages/song_lists/share_song_list.action.dart';
 import 'package:songbook/ui/pages/song_lists/widgets/follow_song_list.dialog.dart';
 import 'package:songbook/ui/pages/song_lists/widgets/song_list_card.widget.dart';
@@ -101,7 +100,8 @@ class SongListsPage extends ConsumerWidget {
           onView: () => _viewList(context, songList),
           onEdit: () => _editList(context, ref, songList),
           onShare: () => shareSongList(context, ref, songList),
-          onPull: () => _pullList(context, ref, songList),
+          onPull: () =>
+              pullSongList(context, ref, songList, announceWhenIdle: true),
           onUnfollow: () => _unfollowList(context, ref, songList),
           onDelete: () => _confirmDelete(context, ref, songList),
         );
@@ -172,53 +172,6 @@ class SongListsPage extends ConsumerWidget {
         builder: (context) => SongListEditPage(songList: songList),
       ),
     ).then((_) => ref.invalidate(songListsProvider));
-  }
-
-  /// Va chercher ce qui a changé chez l'auteur.
-  ///
-  /// N'ouvre l'écran de revue que si la copie a été modifiée ici : sinon il n'y
-  /// a rien à arbitrer, et demander confirmation reviendrait à faire trancher
-  /// un conflit qui n'existe pas.
-  Future<void> _pullList(
-    BuildContext context,
-    WidgetRef ref,
-    SongListDto songList,
-  ) async {
-    final result = await ref
-        .read(songListPullProvider.notifier)
-        .pull(songList.id);
-
-    if (!context.mounted) return;
-
-    switch (result) {
-      case NothingToPull():
-        _notify(context, 'Cette liste est déjà à jour.');
-      case PulledAutomatically(:final changeCount):
-        _notify(
-          context,
-          '$changeCount changement${changeCount > 1 ? 's' : ''} repris.',
-        );
-      case UpstreamGone():
-        // La source a disparu : on coupe le lien plutôt que de reproposer un
-        // tirage impossible à chaque fois. La copie, elle, reste.
-        await ref.read(songListPullProvider.notifier).unfollow(songList.id);
-        if (!context.mounted) return;
-        _notify(
-          context,
-          'La liste partagée n\'existe plus. Votre copie est conservée.',
-        );
-      case NeedsReview(:final preview):
-        await Navigator.push<PullResult>(
-          context,
-          MaterialPageRoute(builder: (_) => PullReviewPage(preview: preview)),
-        );
-        if (!context.mounted) return;
-        _notify(context, 'Liste mise à jour.');
-      case PullFailed():
-        _notify(context, 'Serveur injoignable. Réessayez dans un instant.');
-    }
-
-    ref.invalidate(songListsProvider);
   }
 
   Future<void> _unfollowList(
