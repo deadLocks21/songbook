@@ -28,6 +28,9 @@ class SongListDetailPageFinders {
   /// Bouton supprimer dans l'AppBar.
   Finder get deleteButton => find.byKey(const Key('deleteSongListButton'));
 
+  /// Bouton de partage de la liste.
+  Finder get shareButton => find.byKey(const Key('shareSongListButton'));
+
   /// FAB Présenter.
   Finder get presentFab => find.byKey(const Key('presentSongListFab'));
 

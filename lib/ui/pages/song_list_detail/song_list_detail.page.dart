@@ -6,6 +6,7 @@ import 'package:songbook/core/application/dtos/song_list.dto.dart';
 import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
 import 'package:songbook/ui/pages/song_list_edit/song_list_edit.page.dart';
+import 'package:songbook/ui/pages/song_lists/share_song_list.action.dart';
 import 'package:songbook/ui/pages/song_list_viewer/song_list_viewer.page.dart';
 import 'package:songbook/ui/utils/date_format.dart';
 import 'package:songbook/ui/widgets/song_key_badge.widget.dart';
@@ -61,6 +62,12 @@ class SongListDetailPage extends ConsumerWidget {
             icon: const Icon(Icons.edit_outlined),
             onPressed: () => _editList(context, ref, songList),
             tooltip: 'Modifier',
+          ),
+          IconButton(
+            key: const Key('shareSongListButton'),
+            icon: const Icon(Icons.ios_share),
+            onPressed: () => shareSongList(context, ref, songList),
+            tooltip: 'Partager',
           ),
           IconButton(
             key: const Key('deleteSongListButton'),

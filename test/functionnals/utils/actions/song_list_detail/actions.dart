@@ -62,6 +62,12 @@ class SongListDetailPageActions extends FluentActionsBase {
     return this;
   }
 
+  /// Vérifie que le partage est offert depuis le détail.
+  SongListDetailPageActions expectShareButtonVisible() {
+    addCommand(ExpectShareButtonVisibleCommand(_finders));
+    return this;
+  }
+
   /// Vérifie que le FAB Présenter est visible.
   SongListDetailPageActions expectPresentFabVisible() {
     addCommand(ExpectPresentFabVisibleCommand(_finders));

@@ -66,6 +66,22 @@ class ExpectPresentFabVisibleCommand extends FluentCommand {
   }
 }
 
+/// Vérifie que le bouton de partage est offert depuis le détail.
+class ExpectShareButtonVisibleCommand extends FluentCommand {
+  final SongListDetailPageFinders finders;
+
+  ExpectShareButtonVisibleCommand(this.finders);
+
+  @override
+  Future<void> execute() async {
+    expect(
+      finders.shareButton,
+      findsOneWidget,
+      reason: 'Le détail devrait proposer de partager la liste',
+    );
+  }
+}
+
 /// Vérifie que le FAB Présenter n'est pas visible.
 class ExpectPresentFabNotVisibleCommand extends FluentCommand {
   final SongListDetailPageFinders finders;

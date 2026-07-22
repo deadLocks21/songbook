@@ -169,5 +169,19 @@ void main() {
         songListId: 'list-1',
       )).expectTextVisible('Amazing Grace').execute();
     });
+
+    testWidgets('should offer sharing from the detail view', (tester) async {
+      // Le partage n'existait que dans le menu contextuel de la vue
+      // d'ensemble, atteignable au seul appui long : personne ne le trouvait.
+      final app = anApp().withSongLists([
+        aSongList().withId('list-1').withSongEntry(songId: 'song-1').build(),
+      ]).build();
+
+      await (await startInSongListDetailPage(
+        tester,
+        app: app,
+        songListId: 'list-1',
+      )).expectShareButtonVisible().execute();
+    });
   });
 }

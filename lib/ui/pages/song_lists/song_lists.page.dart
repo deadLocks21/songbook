@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:songbook/core/application/dtos/song_list.dto.dart';
 import 'package:songbook/core/application/services/song_list_pull.service.dart';
 import 'package:songbook/core/application/services/song_list_sharing.service.dart';
 import 'package:songbook/core/domain/model/song_list.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
-import 'package:songbook/infrastructure/song_list/providers/song_list_sharing.provider.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list_pull.provider.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list_sync.provider.dart';
 import 'package:songbook/infrastructure/song_list/providers/upstream_states.provider.dart';
 import 'package:songbook/ui/pages/song_list_detail/song_list_detail.page.dart';
-import 'package:songbook/ui/pages/song_list_pull/pull_review.page.dart';
 import 'package:songbook/ui/pages/song_list_edit/song_list_edit.page.dart';
+import 'package:songbook/ui/pages/song_list_pull/pull_review.page.dart';
 import 'package:songbook/ui/pages/song_list_viewer/song_list_viewer.page.dart';
+import 'package:songbook/ui/pages/song_lists/share_song_list.action.dart';
 import 'package:songbook/ui/pages/song_lists/widgets/follow_song_list.dialog.dart';
 import 'package:songbook/ui/pages/song_lists/widgets/song_list_card.widget.dart';
 import 'package:songbook/ui/utils/date_format.dart';
@@ -101,7 +100,7 @@ class SongListsPage extends ConsumerWidget {
           onTap: () => _showDetail(context, ref, songList),
           onView: () => _viewList(context, songList),
           onEdit: () => _editList(context, ref, songList),
-          onShare: () => _shareList(context, ref, songList),
+          onShare: () => shareSongList(context, ref, songList),
           onPull: () => _pullList(context, ref, songList),
           onUnfollow: () => _unfollowList(context, ref, songList),
           onDelete: () => _confirmDelete(context, ref, songList),
@@ -173,45 +172,6 @@ class SongListsPage extends ConsumerWidget {
         builder: (context) => SongListEditPage(songList: songList),
       ),
     ).then((_) => ref.invalidate(songListsProvider));
-  }
-
-  /// Ouvre la liste au partage puis passe la main à la feuille système.
-  ///
-  /// Le lien part avec le code : la plupart des messageries rendent le lien
-  /// cliquable, mais pas toutes, et un destinataire qui ne peut pas cliquer
-  /// doit pouvoir s'en sortir en tapant huit caractères.
-  Future<void> _shareList(
-    BuildContext context,
-    WidgetRef ref,
-    SongListDto songList,
-  ) async {
-    final link = await ref
-        .read(songListSharingProvider.notifier)
-        .share(songList.id);
-
-    if (!context.mounted) return;
-
-    if (link == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          key: Key('songListShareFailed'),
-          content: Text(
-            'Partage impossible : le serveur n\'a pas répondu. Réessayez une fois connecté.',
-          ),
-        ),
-      );
-      return;
-    }
-
-    await SharePlus.instance.share(
-      ShareParams(
-        subject: 'Liste du ${formatDate(songList.scheduledAt)}',
-        text:
-            'Voici ma liste de chants du ${formatDate(songList.scheduledAt)} :\n'
-            '${link.link}\n\n'
-            'Ou dans l\'app, « Suivre une liste » avec le code ${link.code}.',
-      ),
-    );
   }
 
   /// Va chercher ce qui a changé chez l'auteur.
