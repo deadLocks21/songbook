@@ -11,7 +11,6 @@ import 'package:songbook/infrastructure/song_list/providers/upstream_states.prov
 import 'package:songbook/ui/pages/song_list_detail/song_list_detail.page.dart';
 import 'package:songbook/ui/pages/song_list_edit/song_list_edit.page.dart';
 import 'package:songbook/ui/pages/song_list_viewer/song_list_viewer.page.dart';
-import 'package:songbook/ui/pages/song_lists/pull_song_list.action.dart';
 import 'package:songbook/ui/pages/song_lists/share_song_list.action.dart';
 import 'package:songbook/ui/pages/song_lists/widgets/follow_song_list.dialog.dart';
 import 'package:songbook/ui/pages/song_lists/widgets/song_list_card.widget.dart';
@@ -100,8 +99,6 @@ class SongListsPage extends ConsumerWidget {
           onView: () => _viewList(context, songList),
           onEdit: () => _editList(context, ref, songList),
           onShare: () => shareSongList(context, ref, songList),
-          onPull: () =>
-              pullSongList(context, ref, songList, announceWhenIdle: true),
           onUnfollow: () => _unfollowList(context, ref, songList),
           onDelete: () => _confirmDelete(context, ref, songList),
         );

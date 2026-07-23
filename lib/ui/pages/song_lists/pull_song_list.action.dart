@@ -8,16 +8,16 @@ import 'package:songbook/ui/pages/song_list_pull/pull_review.sheet.dart';
 
 /// Va voir où en est la source, et présente ce qu'elle a changé.
 ///
-/// [announceWhenIdle] distingue les deux façons d'arriver ici. À l'ouverture
-/// d'une liste, l'utilisateur n'a rien demandé : « déjà à jour » ou « serveur
-/// injoignable » seraient du bruit, et on se tait. Depuis le menu, il a posé
-/// une question et mérite une réponse même quand elle est « rien à faire ».
+/// Déclenché à l'ouverture d'une liste suivie, jamais sur demande explicite :
+/// l'utilisateur n'a rien réclamé, donc **on ne parle que quand il y a quelque
+/// chose à dire**. « Déjà à jour » ou « serveur injoignable » à chaque
+/// ouverture seraient du bruit — et dans le second cas, la liste s'affiche de
+/// toute façon, hors ligne, comme n'importe quelle autre.
 Future<void> pullSongList(
   BuildContext context,
   WidgetRef ref,
-  SongListDto songList, {
-  required bool announceWhenIdle,
-}) async {
+  SongListDto songList,
+) async {
   final result = await ref
       .read(songListPullProvider.notifier)
       .pull(songList.id);
@@ -25,12 +25,14 @@ Future<void> pullSongList(
   if (!context.mounted) return;
 
   switch (result) {
+    // Rien à reprendre, ou serveur muet : silence dans les deux cas.
     case NothingToPull():
-      if (announceWhenIdle) _notify(context, 'Cette liste est déjà à jour.');
+    case PullFailed():
+      break;
 
     case PulledAutomatically(:final changeCount):
-      // Toujours annoncé, même non sollicité : le contenu vient de changer
-      // sous les yeux de l'utilisateur, il doit savoir pourquoi.
+      // Annoncé, lui : le contenu vient de changer sous les yeux de
+      // l'utilisateur, il doit savoir pourquoi.
       _notify(
         context,
         '$changeCount changement${changeCount > 1 ? 's' : ''} repris de la liste partagée.',
@@ -52,11 +54,6 @@ Future<void> pullSongList(
       // `null` = refermée sans trancher. Rien n'a été appliqué, le repère n'a
       // pas bougé, la question se reposera : il n'y a rien à annoncer.
       if (decision != null) _notify(context, 'Liste mise à jour.');
-
-    case PullFailed():
-      if (announceWhenIdle) {
-        _notify(context, 'Serveur injoignable. Réessayez dans un instant.');
-      }
   }
 
   if (context.mounted) ref.invalidate(songListsProvider);

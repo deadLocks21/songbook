@@ -77,9 +77,7 @@ class _SongListDetailPageState extends ConsumerState<SongListDetailPage> {
     // modale et invalide des providers.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      unawaited(
-        pullSongList(context, ref, songList, announceWhenIdle: false),
-      );
+      unawaited(pullSongList(context, ref, songList));
     });
   }
 

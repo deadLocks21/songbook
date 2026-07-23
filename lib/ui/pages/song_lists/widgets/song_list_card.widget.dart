@@ -11,7 +11,6 @@ class SongListCard extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final VoidCallback? onShare;
-  final VoidCallback? onPull;
   final VoidCallback? onUnfollow;
 
   /// La source a évolué depuis le dernier tirage.
@@ -25,7 +24,6 @@ class SongListCard extends StatelessWidget {
     this.onEdit,
     this.onDelete,
     this.onShare,
-    this.onPull,
     this.onUnfollow,
     this.hasUpstreamUpdate = false,
   });
@@ -174,15 +172,9 @@ class SongListCard extends StatelessWidget {
               contentPadding: EdgeInsets.zero,
             ),
           ),
-        if (onPull != null && songList.isFollowing)
-          const PopupMenuItem(
-            value: 'pull',
-            child: ListTile(
-              leading: Icon(Icons.arrow_downward),
-              title: Text('Récupérer les changements'),
-              contentPadding: EdgeInsets.zero,
-            ),
-          ),
+        // Pas d'entrée « récupérer les changements » : ouvrir la liste suffit,
+        // c'est ce qui déclenche la vérification. Un doublon manuel laisserait
+        // croire qu'il faut y penser.
         if (onUnfollow != null && songList.isFollowing)
           const PopupMenuItem(
             value: 'unfollow',
@@ -218,8 +210,6 @@ class SongListCard extends StatelessWidget {
         onView?.call();
       case 'edit':
         onEdit?.call();
-      case 'pull':
-        onPull?.call();
       case 'unfollow':
         onUnfollow?.call();
       case 'share':
