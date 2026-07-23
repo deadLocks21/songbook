@@ -181,10 +181,38 @@ class _SongListDetailPageState extends ConsumerState<SongListDetailPage> {
               onPressed: () => setState(() => _check = _UpstreamCheck.done),
               child: const Text('Voir ma version locale'),
             ),
+            const SizedBox(height: 8.0),
+            TextButton(
+              key: const Key('retryUpstreamCheckButton'),
+              onPressed: _retryUpstreamCheck,
+              child: const Text('Réessayer'),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  /// Relance la vérification après un échec, sans quitter l'écran.
+  ///
+  /// Repasse par l'état d'attente : le bouton disparaît avec lui, donc rien à
+  /// verrouiller pour empêcher deux appels simultanés.
+  void _retryUpstreamCheck() {
+    final songList = _currentSongList();
+    if (songList == null) return;
+
+    setState(() => _check = _UpstreamCheck.checking);
+    unawaited(_runUpstreamCheck(songList));
+  }
+
+  /// La liste telle qu'elle est connue à cet instant, ou `null` si elle a
+  /// disparu entre-temps.
+  SongListDto? _currentSongList() {
+    return ref
+        .read(songListsProvider)
+        .value
+        ?.where((s) => s.id == songListId)
+        .firstOrNull;
   }
 
   Widget _buildContent(

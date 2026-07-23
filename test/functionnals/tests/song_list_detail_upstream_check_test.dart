@@ -167,6 +167,23 @@ void main() {
     expect(find.byKey(const Key('editSongListButton')), findsOneWidget);
   });
 
+  testWidgets('relance la vérification sans quitter l\'écran', (tester) async {
+    // Le réseau revient : on doit pouvoir réessayer sur place plutôt que de
+    // ressortir et rouvrir la liste.
+    final flaky = _FlakyRemote();
+    await local.addSongList(followedCopy());
+
+    await pumpDetail(tester, followedDto(), remote: flaky);
+    expect(find.byKey(const Key('upstreamCheckFailed')), findsOneWidget);
+
+    flaky.recover();
+    await tester.tap(find.byKey(const Key('retryUpstreamCheckButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('upstreamCheckFailed')), findsNothing);
+    expect(find.byKey(const Key('songListDetailEmpty')), findsOneWidget);
+  });
+
   testWidgets('garde le lien amont après un échec réseau', (tester) async {
     // Ne pas confondre « injoignable » et « supprimée » : couper l'abonnement
     // sur une panne réseau ferait perdre le lien pour de bon.
@@ -279,5 +296,27 @@ class _BrokenRemote extends _SlowRemote {
   @override
   Future<SongList> fetchOne(String baseUrl, UuidValue id) async {
     throw const SocketException('réseau indisponible');
+  }
+}
+
+/// Injoignable, puis joignable : la connexion qui revient entre deux essais.
+class _FlakyRemote extends _SlowRemote {
+  bool _reachable = false;
+
+  void recover() => _reachable = true;
+
+  @override
+  Future<SongList> fetchOne(String baseUrl, UuidValue id) async {
+    if (!_reachable) throw const SocketException('réseau indisponible');
+
+    // Identique à la copie : rien à reprendre, l'écran se dévoile sans plus
+    // de cérémonie.
+    return SongList(
+      id: sourceId,
+      scheduledAt: DateTime(2026, 8, 2, 10),
+      createdAt: DateTime(2026, 7, 21),
+      entries: const [],
+      version: 3,
+    );
   }
 }
