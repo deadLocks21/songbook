@@ -7,6 +7,7 @@ import 'package:songbook/core/application/dtos/song.dto.dart';
 import 'package:songbook/core/application/dtos/song_list.dto.dart';
 import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
+import 'package:songbook/infrastructure/song_list/providers/song_list_pull.provider.dart';
 import 'package:songbook/ui/pages/song_list_edit/song_list_edit.page.dart';
 import 'package:songbook/ui/pages/song_lists/pull_song_list.action.dart';
 import 'package:songbook/ui/pages/song_lists/share_song_list.action.dart';
@@ -81,6 +82,30 @@ class _SongListDetailPageState extends ConsumerState<SongListDetailPage> {
     });
   }
 
+  /// Fine barre sous le titre pendant qu'on va voir où en est la source.
+  ///
+  /// Volontairement **non bloquante** : ce qui est affiché est la copie locale,
+  /// déjà à jour de ce que l'utilisateur en a fait, et parfaitement utilisable.
+  /// Masquer le contenu ou geler l'écran ferait attendre pour une réponse qui,
+  /// la plupart du temps, ne changera rien — et rendrait l'app inutilisable
+  /// hors ligne, là où elle doit justement continuer à servir.
+  ///
+  /// Absente sur une liste ordinaire, qui ne déclenche aucune vérification.
+  PreferredSizeWidget? _upstreamCheckIndicator(SongListDto songList) {
+    if (!songList.isFollowing || !ref.watch(songListPullProvider)) return null;
+
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(4.0),
+      child: Semantics(
+        label: 'Vérification de la liste partagée',
+        child: const LinearProgressIndicator(
+          key: Key('upstreamCheckIndicator'),
+          minHeight: 4.0,
+        ),
+      ),
+    );
+  }
+
   Widget _buildContent(
     BuildContext context,
     WidgetRef ref,
@@ -93,6 +118,7 @@ class _SongListDetailPageState extends ConsumerState<SongListDetailPage> {
 
     return Scaffold(
       appBar: AppBar(
+        bottom: _upstreamCheckIndicator(songList),
         actions: [
           IconButton(
             key: const Key('editSongListButton'),

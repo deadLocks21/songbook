@@ -1,11 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:songbook/core/application/dtos/song_list.dto.dart';
+import 'package:songbook/core/domain/exceptions/song_list_sync.exception.dart';
+import 'package:songbook/core/domain/model/share_link.dart';
 import 'package:songbook/core/domain/model/song_list.dart';
+import 'package:songbook/core/domain/model/song_list_snapshot.dart';
+import 'package:songbook/core/domain/model/subscription_result.dart';
 import 'package:songbook/core/domain/model/upstream_link.dart';
 import 'package:songbook/core/domain/model/uuid_value.dart';
+import 'package:songbook/core/domain/services/remote_song_list.repository.dart';
 import 'package:songbook/infrastructure/settings/in_memory.settings_repository.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.repository_provider.dart';
 import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
@@ -36,14 +43,19 @@ void main() {
     server = InMemoryRemoteSongListRepository();
   });
 
-  Future<void> pumpDetail(WidgetTester tester, SongListDto dto) async {
+  Future<void> pumpDetail(
+    WidgetTester tester,
+    SongListDto dto, {
+    RemoteSongListRepository? remote,
+    bool settle = true,
+  }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           songsProvider.overrideWith((ref) async => []),
           songListsProvider.overrideWith((ref) async => [dto]),
           songListRepositoryProvider.overrideWithValue(local),
-          remoteSongListRepositoryProvider.overrideWithValue(server),
+          remoteSongListRepositoryProvider.overrideWithValue(remote ?? server),
           settingsRepositoryProvider.overrideWithValue(
             InMemorySettingsRepository(),
           ),
@@ -51,7 +63,15 @@ void main() {
         child: MaterialApp(home: SongListDetailPage(songListId: listId.value)),
       ),
     );
-    await tester.pumpAndSettle();
+
+    if (settle) {
+      await tester.pumpAndSettle();
+    } else {
+      // Deux passes : la première construit l'écran, la seconde laisse partir
+      // le post-frame callback qui lance la vérification.
+      await tester.pump();
+      await tester.pump();
+    }
   }
 
   testWidgets('vérifie la source à l\'ouverture d\'une liste suivie', (
@@ -80,6 +100,49 @@ void main() {
     // La copie, elle, reste : elle appartient à son propriétaire.
     expect(copy.entries, isEmpty);
     expect(copy.scheduledAt, DateTime(2026, 8, 2, 10));
+  });
+
+  testWidgets('signale la vérification en cours, sans bloquer la liste', (
+    tester,
+  ) async {
+    // Non bloquant : ce qui est affiché est la copie locale, utilisable telle
+    // quelle. Geler l'écran ferait attendre pour une réponse qui, le plus
+    // souvent, ne change rien — et rendrait l'app inutilisable hors ligne.
+    final slow = _SlowRemote();
+    await local.addSongList(followedCopy());
+
+    await pumpDetail(tester, followedDto(), remote: slow, settle: false);
+
+    expect(find.byKey(const Key('upstreamCheckIndicator')), findsOneWidget);
+    // La page reste rendue et manipulable pendant ce temps — ici son état
+    // vide, la liste de test n'ayant pas de chants.
+    expect(find.byKey(const Key('songListDetailEmpty')), findsOneWidget);
+    expect(find.byKey(const Key('editSongListButton')), findsOneWidget);
+
+    slow.release();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('upstreamCheckIndicator')), findsNothing);
+  });
+
+  testWidgets('ne signale rien sur une liste ordinaire', (tester) async {
+    final slow = _SlowRemote();
+    await local.addSongList(
+      SongList(
+        id: listId,
+        scheduledAt: DateTime(2026, 8, 2, 10),
+        createdAt: DateTime(2026, 7, 21),
+        entries: const [],
+        version: 1,
+      ),
+    );
+
+    await pumpDetail(tester, ordinaryDto(), remote: slow, settle: false);
+
+    expect(find.byKey(const Key('upstreamCheckIndicator')), findsNothing);
+
+    slow.release();
+    await tester.pumpAndSettle();
   });
 
   testWidgets('ne propose pas de repartager une liste suivie', (tester) async {
@@ -135,3 +198,43 @@ SongListDto ordinaryDto() => SongListDto(
   createdAt: DateTime(2026, 7, 21),
   entries: const [],
 );
+
+/// Une source qui ne répond pas avant qu'on le lui dise.
+///
+/// Sans elle, la vérification se résout en un tour de boucle et l'indicateur
+/// n'existe le temps d'aucune frame : on ne testerait rien.
+class _SlowRemote implements RemoteSongListRepository {
+  final _held = Completer<void>();
+
+  void release() => _held.complete();
+
+  @override
+  Future<SongList> fetchOne(String baseUrl, UuidValue id) async {
+    await _held.future;
+    throw const SongListGoneException();
+  }
+
+  @override
+  Future<SongListSnapshot> fetchAll(String baseUrl) async =>
+      const SongListSnapshot(lists: [], deletedIds: []);
+
+  @override
+  Future<ShareLink> share(String baseUrl, UuidValue id) =>
+      throw UnimplementedError();
+
+  @override
+  Future<SubscriptionResult> subscribe(
+    String baseUrl, {
+    String? token,
+    String? code,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<int> create(String baseUrl, SongList songList) async => 1;
+
+  @override
+  Future<int> update(String baseUrl, SongList songList) async => 1;
+
+  @override
+  Future<void> delete(String baseUrl, UuidValue id) async {}
+}
