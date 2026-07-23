@@ -49,11 +49,13 @@ Future<void> pullSongList(
       );
 
     case NeedsReview(:final preview):
-      final decision = await showPullReview(context, preview);
-      if (!context.mounted) return;
-      // `null` = refermée sans trancher. Rien n'a été appliqué, le repère n'a
-      // pas bougé, la question se reposera : il n'y a rien à annoncer.
-      if (decision != null) _notify(context, 'Liste mise à jour.');
+      // Rien à annoncer : la feuille applique ce qui a été retenu, et
+      // l'utilisateur vient précisément de trancher. Le lui répéter par-dessus
+      // la liste qu'il a sous les yeux n'apprendrait rien.
+      //
+      // Vaut aussi quand il referme sans décider : rien n'a été appliqué, le
+      // repère n'a pas bougé, la question se reposera à la prochaine ouverture.
+      await showPullReview(context, preview);
   }
 
   if (context.mounted) ref.invalidate(songListsProvider);
