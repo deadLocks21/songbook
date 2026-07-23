@@ -130,7 +130,7 @@ final class SongListSyncServiceProvider
 }
 
 String _$songListSyncServiceHash() =>
-    r'cc10b86220f597bda32801e3efcc3d8355692d77';
+    r'960ae21440bd5bf34510bd8bb45d64f9234bbf45';
 
 /// Pilote la synchronisation des listes depuis l'UI : résout l'URL du backend,
 /// lance la synchro et rafraîchit les écrans concernés.

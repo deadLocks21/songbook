@@ -13,9 +13,6 @@ class SongListCard extends StatelessWidget {
   final VoidCallback? onShare;
   final VoidCallback? onUnfollow;
 
-  /// La source a évolué depuis le dernier tirage.
-  final bool hasUpstreamUpdate;
-
   const SongListCard({
     super.key,
     required this.songList,
@@ -25,7 +22,6 @@ class SongListCard extends StatelessWidget {
     this.onDelete,
     this.onShare,
     this.onUnfollow,
-    this.hasUpstreamUpdate = false,
   });
 
   @override
@@ -62,12 +58,7 @@ class SongListCard extends StatelessWidget {
                           ),
                           if (songList.isFollowing) ...[
                             const SizedBox(width: 8.0),
-                            // Une seule pastille à la fois : « mise à jour »
-                            // dit déjà que la liste est suivie, et l'empiler
-                            // avec « suivie » noierait l'information utile.
-                            hasUpstreamUpdate
-                                ? _updateBadge(context)
-                                : _followedBadge(context),
+                            _followedBadge(context),
                           ],
                         ],
                       ),
@@ -89,6 +80,10 @@ class SongListCard extends StatelessWidget {
   /// Signale une liste reprise de quelqu'un d'autre. La copie est bien à
   /// l'utilisateur — il l'édite comme les siennes — mais savoir qu'elle a une
   /// source change ce qu'il en attend : elle peut évoluer en amont.
+  ///
+  /// Aucune pastille « à mettre à jour » à côté : l'ouvrir suffit à récupérer
+  /// ce qui a changé, donc annoncer un retard demanderait d'agir sur ce qui se
+  /// règle tout seul en entrant.
   Widget _followedBadge(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
@@ -109,35 +104,6 @@ class SongListCard extends StatelessWidget {
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: colors.onSecondaryContainer,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Signale qu'il y a quelque chose à reprendre de la source. Plus visible que
-  /// la pastille « suivie » : celle-ci décrit un état, celle-là appelle une
-  /// action.
-  Widget _updateBadge(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
-      decoration: BoxDecoration(
-        color: colors.primary,
-        borderRadius: BorderRadius.circular(8.0),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.arrow_downward, size: 12.0, color: colors.onPrimary),
-          const SizedBox(width: 4.0),
-          Text(
-            'Mettre à jour',
-            key: const Key('songListUpdateBadge'),
-            style: Theme.of(
-              context,
-            ).textTheme.labelSmall?.copyWith(color: colors.onPrimary),
           ),
         ],
       ),

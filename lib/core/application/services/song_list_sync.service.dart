@@ -2,7 +2,6 @@ import 'package:songbook/core/domain/exceptions/song_list_sync.exception.dart';
 import 'package:songbook/core/domain/model/song_list.dart';
 import 'package:songbook/core/domain/model/song_list_snapshot.dart';
 import 'package:songbook/core/domain/model/upstream_snapshot.dart';
-import 'package:songbook/core/domain/model/upstream_state.dart';
 import 'package:songbook/core/domain/services/remote_song_list.repository.dart';
 import 'package:songbook/core/domain/services/song_list.repository.dart';
 
@@ -22,19 +21,7 @@ class SongListSyncService {
   final SongListRepository _local;
   final RemoteSongListRepository _remote;
 
-  /// Appelé à chaque pull avec l'état des sources suivies.
-  ///
-  /// C'est la seule occasion de le savoir : cet état n'est pas stocké en local,
-  /// et il n'a pas à l'être — l'app se synchronise au démarrage, donc le
-  /// conserver d'une session à l'autre ne ferait que ressortir une information
-  /// périmée.
-  final void Function(List<UpstreamState> states)? _onUpstreamStates;
-
-  const SongListSyncService(
-    this._local,
-    this._remote, {
-    void Function(List<UpstreamState> states)? onUpstreamStates,
-  }) : _onUpstreamStates = onUpstreamStates;
+  const SongListSyncService(this._local, this._remote);
 
   /// Pousse les changements locaux puis récupère l'état du serveur.
   Future<void> sync(String baseUrl) async {
@@ -102,8 +89,6 @@ class SongListSyncService {
     }
 
     await _captureMissingBaselines(baseUrl, snapshot);
-
-    _onUpstreamStates?.call(snapshot.upstream);
   }
 
   /// Saisit l'instantané de base là où il manque, tant que la source n'a pas

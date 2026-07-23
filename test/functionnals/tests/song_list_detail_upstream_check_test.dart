@@ -127,8 +127,6 @@ SongListDto followedDto() => SongListDto(
   createdAt: DateTime(2026, 7, 21),
   entries: const [],
   isFollowing: true,
-  sourceListId: sourceId.value,
-  sourceVersion: 3,
 );
 
 SongListDto ordinaryDto() => SongListDto(

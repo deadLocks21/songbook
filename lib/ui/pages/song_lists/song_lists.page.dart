@@ -7,7 +7,6 @@ import 'package:songbook/core/domain/model/uuid_value.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list_pull.provider.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list_sync.provider.dart';
-import 'package:songbook/infrastructure/song_list/providers/upstream_states.provider.dart';
 import 'package:songbook/ui/pages/song_list_detail/song_list_detail.page.dart';
 import 'package:songbook/ui/pages/song_list_edit/song_list_edit.page.dart';
 import 'package:songbook/ui/pages/song_list_viewer/song_list_viewer.page.dart';
@@ -92,9 +91,6 @@ class SongListsPage extends ConsumerWidget {
         return SongListCard(
           key: Key('songListCard_${songList.id}'),
           songList: songList,
-          hasUpstreamUpdate: ref
-              .read(upstreamStatesProvider.notifier)
-              .hasUpdateFor(songList),
           onTap: () => _showDetail(context, ref, songList),
           onView: () => _viewList(context, songList),
           onEdit: () => _editList(context, ref, songList),

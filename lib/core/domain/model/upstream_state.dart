@@ -3,8 +3,12 @@ import 'package:songbook/core/domain/model/uuid_value.dart';
 /// Où en est une source suivie, telle que le serveur la rapporte à chaque
 /// synchro.
 ///
-/// Évite un appel par source pour savoir s'il y a quelque chose à tirer : il
-/// suffit de comparer [version] au `sourceVersion` de sa copie.
+/// Sert à savoir, en une seule requête plutôt qu'une par source, si l'amont est
+/// resté là où une copie l'a laissé — auquel cas la source *est* la base, et
+/// un appareil qui n'a pas d'instantané peut le saisir au passage.
+///
+/// L'app ne s'en sert plus pour signaler un tirage en attente : ouvrir une
+/// liste suivie va voir d'elle-même.
 class UpstreamState {
   final UuidValue sourceListId;
 
@@ -20,8 +24,4 @@ class UpstreamState {
     required this.version,
     required this.deleted,
   });
-
-  /// Y a-t-il quelque chose à prendre pour une copie restée à [sourceVersion] ?
-  bool hasNewsFor(int sourceVersion) =>
-      !deleted && version != null && version! > sourceVersion;
 }

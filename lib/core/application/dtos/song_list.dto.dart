@@ -9,17 +9,13 @@ class SongListDto {
   final List<SongListEntryDto> entries;
 
   /// Cette liste est la copie de celle de quelqu'un d'autre, et suit encore sa
-  /// source. L'UI s'en sert pour la distinguer.
-  final bool isFollowing;
-
-  /// La source suivie et la version qu'on en a déjà prise. L'UI les compare à
-  /// l'état rapporté par la dernière synchro pour savoir s'il y a quelque chose
-  /// à tirer. `null` sur une liste originale.
+  /// source.
   ///
-  /// Le DTO n'a pas à les renvoyer en écriture : l'enregistrement reprend le
-  /// lien depuis la copie locale.
-  final String? sourceListId;
-  final int? sourceVersion;
+  /// Tout ce que l'UI a besoin de savoir du lien amont : de quoi marquer la
+  /// liste et lui refuser le repartage. La source et la version qu'on en a
+  /// prise ne remontent pas jusqu'ici — le tirage travaille sur la copie
+  /// locale, qui les porte.
+  final bool isFollowing;
 
   const SongListDto({
     required this.id,
@@ -27,8 +23,6 @@ class SongListDto {
     required this.createdAt,
     required this.entries,
     this.isFollowing = false,
-    this.sourceListId,
-    this.sourceVersion,
   });
 
   /// Cree un SongListDto depuis une entite SongList domain
@@ -55,8 +49,6 @@ class SongListDto {
       createdAt: songList.createdAt,
       entries: entries,
       isFollowing: songList.isFollowing,
-      sourceListId: songList.upstream?.sourceListId.value,
-      sourceVersion: songList.upstream?.sourceVersion,
     );
   }
 
