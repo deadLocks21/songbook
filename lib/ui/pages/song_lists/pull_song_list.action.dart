@@ -6,26 +6,23 @@ import 'package:songbook/infrastructure/song_list/providers/song_list.service_pr
 import 'package:songbook/infrastructure/song_list/providers/song_list_pull.provider.dart';
 import 'package:songbook/ui/pages/song_list_pull/pull_review.sheet.dart';
 
-/// Va voir où en est la source, et présente ce qu'elle a changé.
+/// Réagit à ce qu'a donné la vérification de la source.
 ///
-/// Déclenché à l'ouverture d'une liste suivie, jamais sur demande explicite :
-/// l'utilisateur n'a rien réclamé, donc **on ne parle que quand il y a quelque
-/// chose à dire**. « Déjà à jour » ou « serveur injoignable » à chaque
-/// ouverture seraient du bruit — et dans le second cas, la liste s'affiche de
-/// toute façon, hors ligne, comme n'importe quelle autre.
-Future<void> pullSongList(
+/// Volontairement séparé de l'appel réseau : l'écran qui l'a lancé doit pouvoir
+/// se dévoiler **avant** que la feuille d'arbitrage ne s'ouvre, sinon celle-ci
+/// se poserait par-dessus un chargement.
+///
+/// Ne parle que quand il y a quelque chose à dire. Personne n'a rien demandé —
+/// c'est l'ouverture de la liste qui a déclenché la vérification — donc « déjà
+/// à jour » n'a pas à s'afficher. L'échec, lui, est présenté par l'écran
+/// lui-même, qui propose de continuer sur la copie locale.
+Future<void> presentPullResult(
   BuildContext context,
   WidgetRef ref,
   SongListDto songList,
+  PullResult result,
 ) async {
-  final result = await ref
-      .read(songListPullProvider.notifier)
-      .pull(songList.id);
-
-  if (!context.mounted) return;
-
   switch (result) {
-    // Rien à reprendre, ou serveur muet : silence dans les deux cas.
     case NothingToPull():
     case PullFailed():
       break;
@@ -39,8 +36,8 @@ Future<void> pullSongList(
       );
 
     case UpstreamGone():
-      // La source a disparu : on coupe le lien plutôt que de reproposer un
-      // tirage impossible à chaque ouverture. La copie, elle, reste.
+      // La source a disparu : on coupe le lien plutôt que de reproposer une
+      // vérification impossible à chaque ouverture. La copie, elle, reste.
       await ref.read(songListPullProvider.notifier).unfollow(songList.id);
       if (!context.mounted) return;
       _notify(
@@ -49,12 +46,9 @@ Future<void> pullSongList(
       );
 
     case NeedsReview(:final preview):
-      // Rien à annoncer : la feuille applique ce qui a été retenu, et
-      // l'utilisateur vient précisément de trancher. Le lui répéter par-dessus
-      // la liste qu'il a sous les yeux n'apprendrait rien.
-      //
-      // Vaut aussi quand il referme sans décider : rien n'a été appliqué, le
-      // repère n'a pas bougé, la question se reposera à la prochaine ouverture.
+      // Rien à annoncer ensuite : la feuille applique ce qui a été retenu, et
+      // l'utilisateur vient précisément de trancher. Vaut aussi s'il referme
+      // sans décider — le repère n'a pas bougé, la question se reposera.
       await showPullReview(context, preview);
   }
 

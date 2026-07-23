@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/dtos/resource.dto.dart';
 import 'package:songbook/core/application/dtos/song.dto.dart';
 import 'package:songbook/core/application/dtos/song_list.dto.dart';
+import 'package:songbook/core/application/services/song_list_pull.service.dart';
 import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
 import 'package:songbook/infrastructure/song_list/providers/song_list_pull.provider.dart';
@@ -26,12 +27,28 @@ class SongListDetailPage extends ConsumerStatefulWidget {
   ConsumerState<SongListDetailPage> createState() => _SongListDetailPageState();
 }
 
+/// Où en est la vérification de la source, pour une liste suivie.
+enum _UpstreamCheck {
+  /// On attend la réponse. Le contenu est masqué : le montrer puis le voir
+  /// changer serait plus déroutant que d'attendre.
+  checking,
+
+  /// Serveur injoignable. La copie locale est là, mais peut-être en retard —
+  /// l'utilisateur décide de continuer avec.
+  failed,
+
+  /// Plus rien à attendre : le contenu s'affiche.
+  done,
+}
+
 class _SongListDetailPageState extends ConsumerState<SongListDetailPage> {
-  /// La vérification amont n'a lieu qu'une fois par ouverture. La page se
-  /// reconstruit à chaque invalidation des listes — dont celle que la
-  /// vérification déclenche elle-même : sans ce garde-fou, elle se rappellerait
-  /// en boucle.
-  bool _upstreamChecked = false;
+  /// `null` tant que la liste n'est pas chargée, donc tant qu'on ignore si elle
+  /// suit une source.
+  ///
+  /// Sert aussi de garde-fou : la page se reconstruit à chaque invalidation des
+  /// listes — dont celle que la vérification déclenche elle-même — et sans lui
+  /// elle se rappellerait en boucle.
+  _UpstreamCheck? _check;
 
   String get songListId => widget.songListId;
 
@@ -48,7 +65,7 @@ class _SongListDetailPageState extends ConsumerState<SongListDetailPage> {
             body: const Center(child: Text('Cette liste n\'existe plus.')),
           );
         }
-        _checkUpstreamOnce(songList);
+        _startUpstreamCheck(songList);
         return _buildContent(context, ref, songList);
       },
       loading: () => Scaffold(
@@ -70,37 +87,101 @@ class _SongListDetailPageState extends ConsumerState<SongListDetailPage> {
   /// interrogerait chaque source à chaque passage.
   ///
   /// Silencieux quand il n'y a rien : personne n'a rien demandé.
-  void _checkUpstreamOnce(SongListDto songList) {
-    if (_upstreamChecked || !songList.isFollowing) return;
-    _upstreamChecked = true;
+  void _startUpstreamCheck(SongListDto songList) {
+    if (_check != null) return;
 
-    // Après la frame : on est en plein build, et le tirage ouvre une feuille
-    // modale et invalide des providers.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      unawaited(pullSongList(context, ref, songList));
-    });
+    if (!songList.isFollowing) {
+      _check = _UpstreamCheck.done;
+      return;
+    }
+
+    _check = _UpstreamCheck.checking;
+
+    // Après la frame : on est en plein build, et la suite met à jour l'état de
+    // l'écran puis ouvre éventuellement une feuille modale.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _runUpstreamCheck(songList));
   }
 
-  /// Fine barre sous le titre pendant qu'on va voir où en est la source.
-  ///
-  /// Volontairement **non bloquante** : ce qui est affiché est la copie locale,
-  /// déjà à jour de ce que l'utilisateur en a fait, et parfaitement utilisable.
-  /// Masquer le contenu ou geler l'écran ferait attendre pour une réponse qui,
-  /// la plupart du temps, ne changera rien — et rendrait l'app inutilisable
-  /// hors ligne, là où elle doit justement continuer à servir.
-  ///
-  /// Absente sur une liste ordinaire, qui ne déclenche aucune vérification.
-  PreferredSizeWidget? _upstreamCheckIndicator(SongListDto songList) {
-    if (!songList.isFollowing || !ref.watch(songListPullProvider)) return null;
+  Future<void> _runUpstreamCheck(SongListDto songList) async {
+    if (!mounted) return;
 
-    return PreferredSize(
-      preferredSize: const Size.fromHeight(4.0),
-      child: Semantics(
-        label: 'Vérification de la liste partagée',
-        child: const LinearProgressIndicator(
-          key: Key('upstreamCheckIndicator'),
-          minHeight: 4.0,
+    final result = await ref
+        .read(songListPullProvider.notifier)
+        .pull(songList.id);
+
+    if (!mounted) return;
+    setState(() {
+      _check = result is PullFailed ? _UpstreamCheck.failed : _UpstreamCheck.done;
+    });
+
+    // Après le dévoilement, pour que l'arbitrage se pose sur la liste plutôt
+    // que sur un écran de chargement.
+    if (mounted) await presentPullResult(context, ref, songList, result);
+  }
+
+  /// Ce qu'on montre pendant la vérification de la source.
+  ///
+  /// Bloquant : afficher la liste puis la voir changer sous les yeux serait
+  /// plus déroutant que d'attendre une seconde. La barre de titre reste, avec
+  /// son bouton retour — on attend, on n'est pas enfermé.
+  Widget _checkingState(BuildContext context) {
+    return Center(
+      key: const Key('upstreamCheckLoader'),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 16.0),
+          Text(
+            'Vérification de la liste partagée…',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Ce qu'on montre quand le serveur n'a pas répondu.
+  ///
+  /// La copie locale est là et reste parfaitement utilisable : elle peut juste
+  /// être en retard sur la source. On le dit, et on laisse l'utilisateur
+  /// décider de continuer avec — sans quoi une coupure réseau rendrait sa
+  /// propre liste inaccessible.
+  Widget _checkFailedState(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    return Center(
+      key: const Key('upstreamCheckFailed'),
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.cloud_off, size: 56.0, color: colors.onSurfaceVariant),
+            const SizedBox(height: 16.0),
+            Text(
+              'Impossible de vérifier la liste partagée',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8.0),
+            Text(
+              'Votre copie est disponible, mais elle n\'est peut-être pas à jour.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 24.0),
+            FilledButton(
+              key: const Key('showLocalVersionButton'),
+              onPressed: () => setState(() => _check = _UpstreamCheck.done),
+              child: const Text('Voir ma version locale'),
+            ),
+          ],
         ),
       ),
     );
@@ -116,35 +197,41 @@ class _SongListDetailPageState extends ConsumerState<SongListDetailPage> {
     final List<SongDto> songs = ref.watch(songsProvider).value ?? const [];
     final songsById = {for (final song in songs) song.id: song};
 
+    // Tant que la vérification n'a pas rendu la main, l'écran ne propose rien
+    // d'autre que d'attendre ou de revenir : offrir d'éditer une liste qui va
+    // peut-être changer dans la seconde n'aurait pas de sens.
+    final settled = _check == _UpstreamCheck.done;
+
     return Scaffold(
       appBar: AppBar(
-        bottom: _upstreamCheckIndicator(songList),
         actions: [
-          IconButton(
-            key: const Key('editSongListButton'),
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () => _editList(context, ref, songList),
-            tooltip: 'Modifier',
-          ),
-          // Une liste suivie ne se repartage pas : elle appartient à quelqu'un
-          // d'autre, et la transmettre depuis ici sèmerait la confusion sur
-          // qui en est l'auteur.
-          if (!songList.isFollowing)
+          if (settled) ...[
             IconButton(
-              key: const Key('shareSongListButton'),
-              icon: const Icon(Icons.ios_share),
-              onPressed: () => shareSongList(context, ref, songList),
-              tooltip: 'Partager',
+              key: const Key('editSongListButton'),
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () => _editList(context, ref, songList),
+              tooltip: 'Modifier',
             ),
-          IconButton(
-            key: const Key('deleteSongListButton'),
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () => _confirmDelete(context, ref, songList),
-            tooltip: 'Supprimer',
-          ),
+            // Une liste suivie ne se repartage pas : elle appartient à
+            // quelqu'un d'autre, et la transmettre depuis ici sèmerait la
+            // confusion sur qui en est l'auteur.
+            if (!songList.isFollowing)
+              IconButton(
+                key: const Key('shareSongListButton'),
+                icon: const Icon(Icons.ios_share),
+                onPressed: () => shareSongList(context, ref, songList),
+                tooltip: 'Partager',
+              ),
+            IconButton(
+              key: const Key('deleteSongListButton'),
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () => _confirmDelete(context, ref, songList),
+              tooltip: 'Supprimer',
+            ),
+          ],
         ],
       ),
-      floatingActionButton: songList.entries.isNotEmpty
+      floatingActionButton: settled && songList.entries.isNotEmpty
           ? FloatingActionButton.extended(
               key: const Key('presentSongListFab'),
               onPressed: () => _viewList(context, songList),
@@ -152,9 +239,23 @@ class _SongListDetailPageState extends ConsumerState<SongListDetailPage> {
               label: const Text('Présenter'),
             )
           : null,
-      body: songList.entries.isEmpty
-          ? _buildEmptyState(context, colorScheme)
-          : ListView.builder(
+      body: switch (_check) {
+        _UpstreamCheck.checking => _checkingState(context),
+        _UpstreamCheck.failed => _checkFailedState(context),
+        _ => _listBody(context, colorScheme, songList, songsById),
+      },
+    );
+  }
+
+  Widget _listBody(
+    BuildContext context,
+    ColorScheme colorScheme,
+    SongListDto songList,
+    Map<String, SongDto> songsById,
+  ) {
+    return songList.entries.isEmpty
+        ? _buildEmptyState(context, colorScheme)
+        : ListView.builder(
               key: const Key('songListDetailListView'),
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
               itemCount: songList.entries.length + 1,
@@ -175,8 +276,7 @@ class _SongListDetailPageState extends ConsumerState<SongListDetailPage> {
                   chordProUrl,
                 );
               },
-            ),
-    );
+            );
   }
 
   Widget _buildHeader(BuildContext context, SongListDto songList) {

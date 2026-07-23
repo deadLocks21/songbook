@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -102,30 +103,29 @@ void main() {
     expect(copy.scheduledAt, DateTime(2026, 8, 2, 10));
   });
 
-  testWidgets('signale la vérification en cours, sans bloquer la liste', (
+  testWidgets('masque la liste tant que la source n\'a pas répondu', (
     tester,
   ) async {
-    // Non bloquant : ce qui est affiché est la copie locale, utilisable telle
-    // quelle. Geler l'écran ferait attendre pour une réponse qui, le plus
-    // souvent, ne change rien — et rendrait l'app inutilisable hors ligne.
+    // Bloquant : afficher la liste puis la voir changer sous les yeux serait
+    // plus déroutant que d'attendre une seconde.
     final slow = _SlowRemote();
     await local.addSongList(followedCopy());
 
     await pumpDetail(tester, followedDto(), remote: slow, settle: false);
 
-    expect(find.byKey(const Key('upstreamCheckIndicator')), findsOneWidget);
-    // La page reste rendue et manipulable pendant ce temps — ici son état
-    // vide, la liste de test n'ayant pas de chants.
-    expect(find.byKey(const Key('songListDetailEmpty')), findsOneWidget);
-    expect(find.byKey(const Key('editSongListButton')), findsOneWidget);
+    expect(find.byKey(const Key('upstreamCheckLoader')), findsOneWidget);
+    expect(find.byKey(const Key('songListDetailEmpty')), findsNothing);
+    // Rien à faire d'autre qu'attendre — ou revenir, le bouton retour reste.
+    expect(find.byKey(const Key('editSongListButton')), findsNothing);
 
     slow.release();
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('upstreamCheckIndicator')), findsNothing);
+    expect(find.byKey(const Key('upstreamCheckLoader')), findsNothing);
+    expect(find.byKey(const Key('songListDetailEmpty')), findsOneWidget);
   });
 
-  testWidgets('ne signale rien sur une liste ordinaire', (tester) async {
+  testWidgets('n\'attend rien sur une liste ordinaire', (tester) async {
     final slow = _SlowRemote();
     await local.addSongList(
       SongList(
@@ -139,10 +139,44 @@ void main() {
 
     await pumpDetail(tester, ordinaryDto(), remote: slow, settle: false);
 
-    expect(find.byKey(const Key('upstreamCheckIndicator')), findsNothing);
+    expect(find.byKey(const Key('upstreamCheckLoader')), findsNothing);
+    expect(find.byKey(const Key('songListDetailEmpty')), findsOneWidget);
 
     slow.release();
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('propose la version locale quand le serveur ne répond pas', (
+    tester,
+  ) async {
+    // Sans cette porte de sortie, une coupure réseau rendrait sa propre liste
+    // inaccessible — l'inverse de ce qu'on attend d'une app hors-ligne.
+    await local.addSongList(followedCopy());
+
+    await pumpDetail(tester, followedDto(), remote: _BrokenRemote());
+
+    expect(find.byKey(const Key('upstreamCheckFailed')), findsOneWidget);
+    expect(find.byKey(const Key('songListDetailEmpty')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('showLocalVersionButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('upstreamCheckFailed')), findsNothing);
+    expect(find.byKey(const Key('songListDetailEmpty')), findsOneWidget);
+    // Et la liste redevient pleinement manipulable.
+    expect(find.byKey(const Key('editSongListButton')), findsOneWidget);
+  });
+
+  testWidgets('garde le lien amont après un échec réseau', (tester) async {
+    // Ne pas confondre « injoignable » et « supprimée » : couper l'abonnement
+    // sur une panne réseau ferait perdre le lien pour de bon.
+    await local.addSongList(followedCopy());
+
+    await pumpDetail(tester, followedDto(), remote: _BrokenRemote());
+    await tester.tap(find.byKey(const Key('showLocalVersionButton')));
+    await tester.pumpAndSettle();
+
+    expect((await local.getSongListById(listId))!.isFollowing, isTrue);
   });
 
   testWidgets('ne propose pas de repartager une liste suivie', (tester) async {
@@ -201,8 +235,8 @@ SongListDto ordinaryDto() => SongListDto(
 
 /// Une source qui ne répond pas avant qu'on le lui dise.
 ///
-/// Sans elle, la vérification se résout en un tour de boucle et l'indicateur
-/// n'existe le temps d'aucune frame : on ne testerait rien.
+/// Sans elle, la vérification se résout en un tour de boucle et l'écran de
+/// chargement n'existe le temps d'aucune frame : on ne testerait rien.
 class _SlowRemote implements RemoteSongListRepository {
   final _held = Completer<void>();
 
@@ -237,4 +271,13 @@ class _SlowRemote implements RemoteSongListRepository {
 
   @override
   Future<void> delete(String baseUrl, UuidValue id) async {}
+}
+
+/// Une source injoignable — le réseau, pas une suppression. Les deux ne doivent
+/// surtout pas se confondre : la seconde coupe l'abonnement.
+class _BrokenRemote extends _SlowRemote {
+  @override
+  Future<SongList> fetchOne(String baseUrl, UuidValue id) async {
+    throw const SocketException('réseau indisponible');
+  }
 }
