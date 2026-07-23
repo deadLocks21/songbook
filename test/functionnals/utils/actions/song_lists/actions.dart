@@ -143,6 +143,18 @@ class SongListsPageActions extends FluentActionsBase {
     return this;
   }
 
+  /// Vérifie que le menu contextuel ne propose pas le partage.
+  SongListsPageActions expectShareActionAbsent() {
+    addCommand(
+      ExpectFinderCommand(
+        _finders.contextMenuShare,
+        findsNothing,
+        'Une liste suivie ne devrait pas pouvoir être repartagée',
+      ),
+    );
+    return this;
+  }
+
   // ==================== Navigation ====================
 
   /// Navigue vers la page de détail.

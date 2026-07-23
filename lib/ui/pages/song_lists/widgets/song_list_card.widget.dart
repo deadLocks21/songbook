@@ -184,7 +184,10 @@ class SongListCard extends StatelessWidget {
               contentPadding: EdgeInsets.zero,
             ),
           ),
-        if (onShare != null)
+        // Une liste suivie ne se repartage pas : elle appartient à quelqu'un
+        // d'autre, et la transmettre depuis ici sèmerait la confusion sur qui
+        // en est l'auteur.
+        if (onShare != null && !songList.isFollowing)
           const PopupMenuItem(
             value: 'share',
             child: ListTile(

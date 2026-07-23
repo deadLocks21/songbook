@@ -82,6 +82,16 @@ void main() {
     expect(copy.scheduledAt, DateTime(2026, 8, 2, 10));
   });
 
+  testWidgets('ne propose pas de repartager une liste suivie', (tester) async {
+    // Elle appartient à quelqu'un d'autre : la transmettre depuis ici sèmerait
+    // la confusion sur qui en est l'auteur.
+    await local.addSongList(followedCopy());
+
+    await pumpDetail(tester, followedDto());
+
+    expect(find.byKey(const Key('shareSongListButton')), findsNothing);
+  });
+
   testWidgets('ne vérifie rien sur une liste ordinaire', (tester) async {
     await local.addSongList(
       SongList(

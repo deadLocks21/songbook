@@ -100,12 +100,16 @@ class _SongListDetailPageState extends ConsumerState<SongListDetailPage> {
             onPressed: () => _editList(context, ref, songList),
             tooltip: 'Modifier',
           ),
-          IconButton(
-            key: const Key('shareSongListButton'),
-            icon: const Icon(Icons.ios_share),
-            onPressed: () => shareSongList(context, ref, songList),
-            tooltip: 'Partager',
-          ),
+          // Une liste suivie ne se repartage pas : elle appartient à quelqu'un
+          // d'autre, et la transmettre depuis ici sèmerait la confusion sur
+          // qui en est l'auteur.
+          if (!songList.isFollowing)
+            IconButton(
+              key: const Key('shareSongListButton'),
+              icon: const Icon(Icons.ios_share),
+              onPressed: () => shareSongList(context, ref, songList),
+              tooltip: 'Partager',
+            ),
           IconButton(
             key: const Key('deleteSongListButton'),
             icon: const Icon(Icons.delete_outline),

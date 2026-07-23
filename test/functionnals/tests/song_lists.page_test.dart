@@ -103,6 +103,21 @@ void main() {
             .execute();
       });
 
+      testWidgets('should not offer re-sharing a followed list', (
+        tester,
+      ) async {
+        // Elle appartient à quelqu'un d'autre : la transmettre depuis ici
+        // sèmerait la confusion sur qui en est l'auteur.
+        final app = anApp().withSongLists([
+          aSongList().withId('list-1').following().build(),
+        ]).build();
+
+        await (await startInSongListsPage(tester, app: app))
+            .longPressSongListCard('list-1')
+            .expectShareActionAbsent()
+            .execute();
+      });
+
       testWidgets('should open the follow dialog from the FAB', (tester) async {
         final app = anApp().withSongLists([]).build();
 
