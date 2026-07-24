@@ -240,6 +240,12 @@ class _SongListDetailPageState extends ConsumerState<SongListDetailPage> {
               onPressed: () => _editList(context, ref, songList),
               tooltip: 'Modifier',
             ),
+            IconButton(
+              key: const Key('deleteSongListButton'),
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () => _confirmDelete(context, ref, songList),
+              tooltip: 'Supprimer',
+            ),
             // Une liste suivie ne se repartage pas : elle appartient à
             // quelqu'un d'autre, et la transmettre depuis ici sèmerait la
             // confusion sur qui en est l'auteur.
@@ -250,12 +256,6 @@ class _SongListDetailPageState extends ConsumerState<SongListDetailPage> {
                 onPressed: () => shareSongList(context, ref, songList),
                 tooltip: 'Partager',
               ),
-            IconButton(
-              key: const Key('deleteSongListButton'),
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () => _confirmDelete(context, ref, songList),
-              tooltip: 'Supprimer',
-            ),
           ],
         ],
       ),
