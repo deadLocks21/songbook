@@ -1,8 +1,14 @@
-# Système d'installation & de mise à jour desktop (Windows / Linux)
+# Système d'installation & de mise à jour desktop (Windows / Linux / macOS)
 
 Guide d'architecture **réutilisable** pour donner à une app Flutter desktop un
-canal de distribution auto-update, là où il n'existe pas d'équivalent TestFlight
-/ store (Windows, Linux).
+canal de distribution auto-update.
+
+- **Windows / Linux** : comble l'absence de store.
+- **macOS** : Songbook n'étant **pas** distribué sur le Mac App Store, le canal
+  **direct** est l'**unique** canal macOS. L'app y est signée **Developer ID** +
+  notarisée et distribuée en `.app` zippé — donc **non sandboxée** (le sandbox
+  App Store interdirait l'IPC par fichiers de la fenêtre de MAJ, cf. §4) et sans
+  friction Gatekeeper.
 
 Conçu pour Songbook mais pensé pour être **répliqué** : la fin du document liste
 précisément ce qu'il faut adapter par projet.
@@ -26,11 +32,11 @@ stable `current` pointe vers la version active. On met à jour en **ajoutant** u
 version puis en **basculant le lien** — jamais en écrasant des fichiers.
 
 ```
-<root>/                         %LOCALAPPDATA%\Songbook  (Win) | ~/.local/share/Songbook (Linux)
+<root>/       %LOCALAPPDATA%\Songbook (Win) | ~/.local/share/Songbook (Linux) | ~/Library/Application Support/Songbook (macOS)
   versions/
-    1.5.0/                     contenu d'une version (exe + dll + data/, ou AppImage)
+    1.5.0/                     contenu d'une version (exe + dll + data/, ou AppImage, ou songbook.app)
     1.5.1/
-  current        ->  versions/1.5.1     jonction (Windows) / symlink (Linux)
+  current        ->  versions/1.5.1     jonction (Windows) / symlink (Linux & macOS)
   updater/
     songbook-updater(.exe)       le binaire updater, relocalisé ici (cible des raccourcis)
   config.json                   { root, installedVersion, lastCheck, ignoredVersion }
@@ -39,10 +45,10 @@ version puis en **basculant le lien** — jamais en écrasant des fichiers.
   .update-status / .update-choice   fichiers d'IPC éphémères (fenêtre de MAJ)
 ```
 
-Le **raccourci** (menu Démarrer / Bureau / `.desktop`) pointe **toujours** sur
-`updater/songbook-updater`, **jamais** sur un exe versionné → il survit à toutes
-les MAJ. La bascule de `current` est atomique sous Linux (rename de symlink),
-quasi-atomique sous Windows (jonction).
+Le **raccourci** (menu Démarrer / Bureau / `.desktop` / bundle `.app` lanceur sur
+macOS) pointe **toujours** sur `updater/songbook-updater`, **jamais** sur un exe
+versionné → il survit à toutes les MAJ. La bascule de `current` est atomique sous
+Linux/macOS (rename de symlink), quasi-atomique sous Windows (jonction).
 
 **Pourquoi aucun fichier n'est jamais verrouillé** : l'updater est un binaire
 distinct de l'app et met à jour **avant** de lancer l'app (l'app ne tourne donc
@@ -110,10 +116,22 @@ Comportement des boutons :
 - **Ignorer cette version** → `config.ignoredVersion = X` ; reproposé seulement
   pour une version strictement plus récente.
 
-La taille/position de la fenêtre est fixée **dans le runner natif**
-(`windows/runner/main.cpp` : petite fenêtre centrée, DPI-correct, quand
-`--updating`) → aucune dépendance type `window_manager`, donc zéro impact sur les
-builds mobiles.
+La taille/position de la fenêtre est fixée **dans le runner natif** →️ aucune
+dépendance type `window_manager`, donc zéro impact sur les builds mobiles :
+- **Windows** : `windows/runner/main.cpp` (petite fenêtre centrée, DPI-correct,
+  quand `--updating`).
+- **macOS** : `macos/Runner/MainFlutterWindow.swift` (`setContentSize` 480×250 +
+  `center()` quand `--updating`). Les args de ligne de commande atteignent déjà
+  `main(args)` côté Dart par défaut sur macOS (`FlutterDartProject.
+  dartEntrypointArguments` = `NSProcessInfo.arguments`), donc rien à câbler.
+- **Linux** : runner GTK non redimensionné (fenêtre par défaut) — à compléter si
+  besoin.
+
+⚠️ **macOS & sandbox** : cette IPC par fichiers écrit dans la racine
+d'installation, **hors container**. Un build sandboxé (comme l'exige le Mac App
+Store) ne pourrait pas la piloter → le canal direct utilise un build **non
+sandboxé** (`macos/Runner/DirectRelease.entitlements`, cf. §5). C'est l'une des
+raisons pour lesquelles Songbook n'est pas distribué sur le Mac App Store.
 
 ---
 
@@ -124,9 +142,22 @@ builds mobiles.
 - Assets attendus par l'updater (à matcher par regex / nom) :
   - App Windows : `songbook-windows-<v>-<run>.zip` (contenu du dossier `Release/`).
   - App Linux : `Songbook-<v>-<run>-x86_64.AppImage`.
-  - Updater : `songbook-updater-windows.exe`, `songbook-updater-linux`.
-- Job CI `build-updater` (matrice Windows + Linux) : `dart compile exe`, upload.
-  Le job `release` attache les binaires updater à la release.
+  - App macOS : `songbook-macos-<v>-<run>.zip` (`songbook.app` zippé via `ditto`).
+  - Updater : `songbook-updater-windows.exe`, `songbook-updater-linux`,
+    `songbook-updater-macos`.
+- Jobs CI :
+  - `build-updater` (matrice **Windows + Linux + macOS**) : `dart compile exe`,
+    upload. Sur macOS, étapes supplémentaires (gardées par
+    `if: runner.os == 'macOS'`) : **signature Developer ID** + **notarisation**
+    du binaire (téléchargé une fois via le navigateur → sinon quarantaine
+    Gatekeeper).
+  - `build-macos` : build **non sandboxé**, re-signé **Developer ID** +
+    hardened runtime (`DirectRelease.entitlements`), **notarisé + staplé**, zippé
+    via `ditto` (qui préserve symlinks/signature, contrairement à un zip naïf).
+  - Le job `release` attache tous ces assets.
+- **Secrets macOS** (en plus de l'App Store Connect déjà présent) :
+  `DEVELOPER_ID_APPLICATION_P12_BASE64`, `DEVELOPER_ID_APPLICATION_PASSWORD`.
+  La notarisation réutilise la clé `APP_STORE_CONNECT_*` via `notarytool`.
 - **Amorçage** : l'utilisateur télécharge l'updater **une fois**. Ensuite il se
   met à jour tout seul (app **et** updater).
 
@@ -183,9 +214,11 @@ Côté outil — `tool/updater/` (package Dart autonome) :
 - `lib/installer.dart` — flux install / update / launch, garde-fous, auto-MAJ, purge.
 - `lib/github.dart` — API releases, sélection d'asset, comparaison de versions.
 - `lib/net.dart` — HTTP via curl/PowerShell/wget (cf. §6).
-- `lib/download.dart` — download + dézip (Windows) / AppImage (Linux).
-- `lib/links.dart` — bascule de `current` (jonction / symlink).
-- `lib/shortcuts.dart` — `.lnk` + `launch.vbs` (Windows) / `.desktop` (Linux).
+- `lib/download.dart` — download + dézip (Windows) / AppImage (Linux) / `.app` via
+  `ditto` (macOS).
+- `lib/links.dart` — bascule de `current` (jonction Windows / symlink Linux & macOS).
+- `lib/shortcuts.dart` — `.lnk` + `launch.vbs` (Windows) / `.desktop` (Linux) /
+  bundle `.app` lanceur dans `~/Applications` (macOS).
 - `lib/progress.dart` — pilotage de la fenêtre (prompt + progression, IPC fichiers).
 - `lib/config.dart`, `lib/layout.dart`, `lib/log.dart`, `lib/prompt.dart`.
 
@@ -193,9 +226,13 @@ Côté app (Flutter) :
 - `lib/main.dart` — `main(args)` bascule sur le splash si `--updating`.
 - `lib/updating_splash.dart` — écrans prompt + progression.
 - `windows/runner/main.cpp` — petite fenêtre centrée en mode `--updating`.
+- `macos/Runner/MainFlutterWindow.swift` — idem côté macOS.
+- `macos/Runner/DirectRelease.entitlements` — entitlements du build direct (non
+  sandbox + hardened runtime).
 
 CI :
-- `.github/workflows/release.yml` — job `build-updater` + attache des assets.
+- `.github/workflows/release.yml` — jobs `build-updater` (matrice Win/Linux/macOS)
+  et `build-macos` (l'app macOS directe) + attache des assets.
 
 ---
 
@@ -204,16 +241,24 @@ CI :
 1. **Copier** `tool/updater/` dans le nouveau projet.
 2. **Adapter `lib/layout.dart`** :
    - `repoOwner` / `repoName` (le dépôt GitHub des releases).
-   - `defaultRoot()` / `pointerFile()` : remplacer « Songbook » par le nom de l'app.
-   - `appExecutable` : nom de l'exe Windows (`<app>.exe`) et de l'AppImage Linux.
+   - `defaultRoot()` / `pointerFile()` : remplacer « Songbook » par le nom de l'app
+     (une branche par OS ; sur macOS, `~/Library/Application Support/<App>`).
+   - `appExecutable` : exe Windows (`<app>.exe`), AppImage Linux, et binaire
+     interne du bundle macOS (`<app>.app/Contents/MacOS/<app>`).
 3. **Adapter `lib/github.dart`** : les regex de sélection d'asset (`appAsset`,
-   `updaterAsset`) selon les noms produits par ton CI.
+   `updaterAsset`) selon les noms produits par ton CI (dont `*-macos-*.zip` et
+   `*-updater-macos`).
 4. **Côté app Flutter** :
    - Copier `lib/updating_splash.dart` (adapter couleurs/textes).
    - Dans `main()`, brancher `if (args.contains('--updating')) { runUpdatingSplash(args); return; }`.
-   - Copier le bloc `--updating` de `windows/runner/main.cpp`.
-5. **CI** : ajouter le job `build-updater` (matrice Win/Linux, `dart compile
-   exe`) et attacher `*-updater-windows.exe` / `*-updater-linux` à la release.
+   - Copier le bloc `--updating` de `windows/runner/main.cpp` **et** de
+     `macos/Runner/MainFlutterWindow.swift`.
+   - Copier `macos/Runner/DirectRelease.entitlements` (non-sandbox + hardened
+     runtime) pour le canal direct.
+5. **CI** : `build-updater` en matrice **Win/Linux/macOS** (l'entrée macOS ajoute
+   signature Developer ID + notarisation via `if: runner.os == 'macOS'`), et
+   `build-macos` pour l'app directe. Attacher `*-updater-{windows.exe,linux,macos}`
+   et `*-macos-*.zip`. Configurer les secrets `DEVELOPER_ID_APPLICATION_*`.
 6. **Garde-fous de version** dans `installer.dart`
    (`_minAppVersionForSplash`, `_minAppVersionForPrompt`) : mettre la **première
    version qui embarquera** chaque capacité.
@@ -224,4 +269,14 @@ CI :
   dans `net.dart`).
 - Linux : la fenêtre de MAJ s'affiche aussi, mais le runner GTK n'est pas
   redimensionné ici (fenêtre par défaut) — à compléter si besoin.
+- **macOS** :
+  - Le canal direct exige un build **non sandboxé** (le sandbox interdirait l'IPC
+    par fichiers de la fenêtre de MAJ) → signature **Developer ID** +
+    **notarisation**. Songbook n'est donc pas sur le Mac App Store.
+  - Un binaire nu (l'updater) **ne peut pas être « staplé »** : Gatekeeper vérifie
+    son ticket de notarisation **en ligne** au 1er lancement (OK, l'updater a
+    besoin du réseau). Le `.app`, lui, est staplé → lancement hors-ligne possible.
+  - `DirectRelease.entitlements` **omet** `associated-domains` : les universal
+    links https ne s'ouvrent pas dans le build direct (partage in-app OK). À
+    compléter (App ID + profil Developer ID) si le besoin se confirme.
 - Versions = SemVer dans le tag (`vX.Y.Z`).

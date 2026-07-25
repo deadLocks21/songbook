@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+	Entitlements du canal de DISTRIBUTION DIRECTE (hors App Store), utilisé par
+	l'updater `tool/updater`. À la signature Developer ID + notarisation dans le
+	job CI `build-macos-direct`.
+
+	Différences volontaires avec Release.entitlements (App Store / TestFlight) :
+
+	- PAS de `com.apple.security.app-sandbox`. La fenêtre de mise à jour est
+	  pilotée par des fichiers d'IPC (`.update-status` / `.update-choice`) écrits
+	  dans la racine d'installation, HORS d'un éventuel container sandbox. Un
+	  build sandboxé ne pourrait ni lire/écrire ces fichiers, ni gérer le layout
+	  `versions/ + current`. (Le sandbox reste obligatoire côté App Store.)
+
+	- Allègements « hardened runtime » requis par le runtime Flutter/Skia sous
+	  signature Developer ID (sinon crash au lancement / échec de notarisation).
+
+	- PAS d'`com.apple.developer.associated-domains` (universal links) : cette
+	  capability suppose un profil/enregistrement d'App ID côté Developer ID, ce
+	  qui compliquerait la signature. Limitation connue du canal direct : les
+	  liens universels https ne s'ouvrent pas automatiquement dans ce build ; le
+	  partage in-app reste fonctionnel. À compléter si le besoin se confirme.
+-->
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.cs.allow-jit</key>
+	<true/>
+	<key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+	<true/>
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+	<key>com.apple.security.network.client</key>
+	<true/>
+</dict>
+</plist>

@@ -1,11 +1,17 @@
 # songbook-updater
 
 Installateur / launcher / **auto-updater silencieux** pour Songbook desktop
-(**Windows** & **Linux**). Comble l'absence de canal de distribution type
-TestFlight / Mac App Store sur ces plateformes.
+(**Windows**, **Linux** & **macOS**).
+
+Sur Windows/Linux, il comble l'absence de store. Sur **macOS**, c'est
+l'**unique** canal de distribution (Songbook n'est **pas** sur le Mac App
+Store) : l'app y est signée **Developer ID** + **notarisée**, et distribuée en
+`.app` zippé — donc aucun sandbox (indispensable pour piloter la fenêtre de MAJ)
+ni alerte Gatekeeper.
 
 Un seul binaire Dart compilé natif (`dart compile exe`), attaché à chaque
-release GitHub (`songbook-updater-windows.exe`, `songbook-updater-linux`).
+release GitHub (`songbook-updater-windows.exe`, `songbook-updater-linux`,
+`songbook-updater-macos`).
 
 ## Ce qu'il fait
 
@@ -38,8 +44,8 @@ Garde-fous de version (basés sur la version RÉELLE pointée par `current`, pas
 
 ```
 <root>/                      racine choisie à l'install
-  versions/<v>/              contenu d'une version (songbook.exe + dll + data/, ou AppImage)
-  current      ->  versions/<v>   jonction (Windows) / symlink (Linux)
+  versions/<v>/              contenu d'une version (songbook.exe + dll + data/, ou AppImage, ou songbook.app)
+  current      ->  versions/<v>   jonction (Windows) / symlink (Linux & macOS)
   updater/songbook-updater[.exe]   le binaire relocalisé (cible stable des raccourcis)
   config.json                { root, installedVersion, lastCheck }
   updater.log                trace (les lancements sont sans console)
@@ -47,12 +53,13 @@ Garde-fous de version (basés sur la version RÉELLE pointée par `current`, pas
 ```
 
 Racine par défaut : `%LOCALAPPDATA%\Songbook` (Windows),
-`~/.local/share/Songbook` (Linux).
+`~/.local/share/Songbook` (Linux), `~/Library/Application Support/Songbook`
+(macOS).
 
 Le raccourci pointe **toujours** sur `updater/` (jamais sur un exe versionné),
 donc il ne casse jamais d'une version à l'autre. La bascule de `current` est
-atomique sous Linux (rename d'un symlink), quasi-atomique sous Windows (jonction
-`mklink /J`, sans droits admin ni Mode Développeur).
+atomique sous Linux/macOS (rename d'un symlink), quasi-atomique sous Windows
+(jonction `mklink /J`, sans droits admin ni Mode Développeur).
 
 ## Pourquoi aucun verrouillage de fichier
 
@@ -66,6 +73,11 @@ on bascule le lien), donc rien n'est verrouillé.
 - **Windows** : le raccourci lance `wscript.exe launch.vbs`, qui exécute
   l'updater en fenêtre cachée (`WshShell.Run …, 0`).
 - **Linux** : l'entrée `.desktop` a `Terminal=false`.
+- **macOS** : un petit bundle `~/Applications/Songbook.app` (créé à l'install)
+  dont l'exécutable est un script `exec updater --launch`. Lancé par
+  LaunchServices, il ne fait apparaître **aucun terminal** (un binaire CLI
+  double-cliqué, lui, en ouvrirait un). Ce lanceur a un bundle id distinct
+  (`fr.dtfh.songbook.launcher`) pour ne pas entrer en conflit avec l'app.
 
 ## Commandes
 
@@ -85,5 +97,13 @@ dart pub get
 dart compile exe bin/songbook_updater.dart -o songbook-updater
 ```
 
-Le CI (`.github/workflows/release.yml`, job `build-updater`) compile et attache
-les deux binaires à chaque release taggée `v*`.
+Le CI (`.github/workflows/release.yml`) compile et attache les binaires à chaque
+release taggée `v*` :
+- `build-updater` (matrice **Windows + Linux + macOS** ; sur macOS, étapes
+  supplémentaires : signature Developer ID + notarisation du binaire) ;
+- `build-macos` (l'app macOS elle-même : `.app` Developer ID non-sandboxé,
+  notarisé + staplé, zippé via `ditto`).
+
+Ces builds macOS requièrent deux secrets **en plus** de l'App Store Connect :
+`DEVELOPER_ID_APPLICATION_P12_BASE64` et `DEVELOPER_ID_APPLICATION_PASSWORD`
+(cf. commentaires du workflow).

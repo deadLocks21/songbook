@@ -1,27 +1,33 @@
 # Workflow de release consolidé, déclenché sur push d'un tag `v*`.
-# Couvre les 5 plateformes en parallèle + uploads stores + création GitHub
-# Release.
+# Couvre iOS, Android, Windows, Linux et macOS en parallèle + uploads stores +
+# création GitHub Release.
+#
+# Note macOS : PAS de distribution App Store. macOS n'est distribué qu'en canal
+# DIRECT (build-macos : .app Developer ID notarisé, consommé par
+# tool/updater), au même titre que Windows/Linux.
 #
 # Pipeline en 3 étages "fail-fast au build, atomic à la publish/release" :
 #
 #   1) prepare        Calcule la version (depuis le tag ou pubspec.yaml).
 #
 #   2) Builds parallèle (gate strict) :
-#        build-ios      → IPA signé (artifact) puis TestFlight
-#        build-macos    → .pkg signé (artifact) puis TestFlight
-#        build-android  → AAB signé (artifact, pas encore publié) + APK
-#                         universel (sideload, attaché à la GitHub Release)
-#        build-windows  → .zip non signé
-#        build-linux    → .AppImage
+#        build-ios          → IPA signé (artifact) puis TestFlight
+#        build-android      → AAB signé (artifact, pas encore publié) + APK
+#                             universel (sideload, attaché à la GitHub Release)
+#        build-windows      → .zip non signé
+#        build-linux        → .AppImage
+#        build-macos        → .app Developer ID notarisé (hors App Store)
+#        build-updater      → binaires updater Win/Linux/macOS (matrice, tool/updater)
 #      Si UN SEUL plante, aucun upload store n'est tenté.
 #
-#   3) build-gate     Job sentinelle qui vérifie que les builds sont verts.
+#   3) build-gate     Job sentinelle qui vérifie que TOUS les builds sont verts —
+#                     dont l'app macOS (build-macos) et l'updater (build-updater,
+#                     matrice qui inclut macOS).
 #
 #   4) Publishes parallèle (déclenchés après build-gate) :
 #        publish-ios     → TestFlight (groupe externe « Songbook Beta »)
-#        publish-macos   → TestFlight (même groupe, Universal Purchase)
 #        publish-android → Play Store piste "internal"
-#      Windows et Linux n'ont pas de store dans ce pipeline (artifacts only).
+#      Windows, Linux et macOS n'ont pas de store ici (artifacts only).
 #
 #   5) release        Crée la GitHub Release avec les assets attachés.
 #                     Skippée si workflow_dispatch (pas de tag) — pour tester
@@ -30,7 +36,7 @@
 # Secrets requis (Settings → Secrets and variables → Actions) :
 #   APP_STORE_CONNECT_KEY_IDENTIFIER, APP_STORE_CONNECT_ISSUER_ID,
 #   APP_STORE_CONNECT_PRIVATE_KEY, CERTIFICATE_PRIVATE_KEY,
-#   MAC_INSTALLER_CERTIFICATE_P12_BASE64, MAC_INSTALLER_CERTIFICATE_PASSWORD,
+#   DEVELOPER_ID_APPLICATION_P12_BASE64, DEVELOPER_ID_APPLICATION_PASSWORD,
 #   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
 #   ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD,
 #   GCLOUD_SERVICE_ACCOUNT_CREDENTIALS,
@@ -298,8 +304,19 @@ jobs:
           if-no-files-found: error
 
   # ────────────────────────────────────────────────────────────────────────
-  # BUILD macOS — .pkg signé (artifact), uploadé sur TestFlight par
-  # publish-macos. Universal Purchase : même app App Store que l'iOS.
+  # BUILD macOS — .app signé Developer ID + notarisé, zippé (ditto), attaché à
+  # la GitHub Release. C'est l'UNIQUE canal de distribution macOS (pas d'App
+  # Store), consommé par l'updater (tool/updater) : l'équivalent macOS du .zip
+  # Windows / de l'AppImage. Deux propriétés clés :
+  #   - PAS de sandbox (entitlements DirectRelease.entitlements) : l'app doit
+  #     piloter la fenêtre de MAJ via des fichiers hors container ;
+  #   - signature « Developer ID Application », puis notarisation Apple → aucune
+  #     alerte Gatekeeper au téléchargement.
+  #
+  # ⚠️ Secrets à ajouter EN PLUS de l'App Store Connect (Settings → Secrets) :
+  #   DEVELOPER_ID_APPLICATION_P12_BASE64  — cert « Developer ID Application » (.p12 en base64)
+  #   DEVELOPER_ID_APPLICATION_PASSWORD    — mot de passe du .p12
+  # La notarisation réutilise la clé APP_STORE_CONNECT_* déjà présente (notarytool).
   # ────────────────────────────────────────────────────────────────────────
   build-macos:
     name: Build macOS (${{ needs.prepare.outputs.version }})
@@ -311,14 +328,8 @@ jobs:
       APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
       APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
-      CERTIFICATE_PRIVATE_KEY: ${{ secrets.CERTIFICATE_PRIVATE_KEY }}
-      MAC_INSTALLER_CERTIFICATE_P12_BASE64: ${{ secrets.MAC_INSTALLER_CERTIFICATE_P12_BASE64 }}
-      MAC_INSTALLER_CERTIFICATE_PASSWORD: ${{ secrets.MAC_INSTALLER_CERTIFICATE_PASSWORD }}
-      BUNDLE_ID: "fr.dtfh.songbook"
-      # Même identifiant App Store que l'iOS (Universal Purchase : une seule
-      # fiche app, deux plateformes) — c'est `--platform MAC_OS` plus bas qui
-      # distingue les build numbers.
-      APP_STORE_APPLE_ID: "6773623207"
+      DEVELOPER_ID_APPLICATION_P12_BASE64: ${{ secrets.DEVELOPER_ID_APPLICATION_P12_BASE64 }}
+      DEVELOPER_ID_APPLICATION_PASSWORD: ${{ secrets.DEVELOPER_ID_APPLICATION_PASSWORD }}
       VERSION: ${{ needs.prepare.outputs.version }}
 
     steps:
@@ -349,39 +360,16 @@ jobs:
       - name: Initialize keychain
         run: keychain initialize
 
-      - name: Fetch Mac App Store signing files (create if missing)
+      - name: Add Developer ID Application certificate to keychain
+        # Cert account-wide (pas lié à un bundle ID) → importé depuis un secret
+        # base64.
         run: |
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type MAC_APP_STORE \
-            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
-            --create
-
-      - name: Add Mac App Distribution certificate to keychain
-        run: keychain add-certificates
-
-      - name: Add Mac Installer Distribution certificate to keychain
-        # Cert installer account-wide, injecté depuis secret base64 (pas généré
-        # par fetch-signing-files qui ne couvre que les certs liés à un bundle ID).
-        run: |
-          INSTALLER_P12="$RUNNER_TEMP/mac_installer.p12"
-          echo "$MAC_INSTALLER_CERTIFICATE_P12_BASE64" | base64 --decode > "$INSTALLER_P12"
+          P12="$RUNNER_TEMP/developer_id.p12"
+          echo "$DEVELOPER_ID_APPLICATION_P12_BASE64" | base64 --decode > "$P12"
           keychain add-certificates \
-            -c "$INSTALLER_P12" \
-            --certificate-password=@env:MAC_INSTALLER_CERTIFICATE_PASSWORD
-
-      - name: Verify keychain contents (debug)
-        # 2 identités obligatoires : "Apple Distribution" (signe le .app) +
-        # "3rd Party Mac Developer Installer" (signe le .pkg).
-        run: |
-          security find-identity -v -p basic
-          N=$(security find-identity -v -p basic | tail -1 | grep -oE '[0-9]+' | head -1)
-          if [ "${N:-0}" -lt 2 ]; then
-            echo "ERROR: expected at least 2 identities, got ${N:-0}"
-            exit 1
-          fi
-
-      - name: Set up code signing on macOS Xcode project
-        run: xcode-project use-profiles --project macos/Runner.xcodeproj
+            -c "$P12" \
+            --certificate-password=@env:DEVELOPER_ID_APPLICATION_PASSWORD
+          security find-identity -v -p codesigning
 
       - run: flutter pub get
 
@@ -399,70 +387,87 @@ jobs:
           cd macos
           pod install
 
-      - name: Compute build number from App Store Connect (macOS)
-        # `--platform MAC_OS` CRUCIAL : build number macOS séparé d'iOS
-        # malgré Universal Purchase.
-        id: build-number
-        run: |
-          LATEST_BUILD=$(app-store-connect get-latest-build-number \
-            "$APP_STORE_APPLE_ID" \
-            --platform MAC_OS)
-          BUILD_NUMBER=$((LATEST_BUILD + 1))
-          echo "Next macOS build number: $BUILD_NUMBER"
-          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
-
-      - name: Build macOS release
+      - name: Build macOS release (non signé — on re-signe Developer ID ensuite)
+        # On désactive la signature au build (sinon xcodebuild échoue faute de
+        # profil : ce job n'utilise PAS `xcode-project use-profiles`). On signe
+        # nous-mêmes juste après, avec le cert Developer ID + les entitlements
+        # non-sandbox. L'ajout au .xcconfig est éphémère (checkout jetable).
         env:
           SIGNOZ_INGESTION_KEY: ${{ secrets.SIGNOZ_INGESTION_KEY }}
         run: |
+          cat >> macos/Runner/Configs/Release.xcconfig <<'EOF'
+          CODE_SIGNING_ALLOWED = NO
+          CODE_SIGNING_REQUIRED = NO
+          CODE_SIGN_IDENTITY =
+          CODE_SIGN_STYLE = Manual
+          DEVELOPMENT_TEAM =
+          PROVISIONING_PROFILE_SPECIFIER =
+          EOF
+
           flutter build macos --release \
             --build-name="$VERSION" \
-            --build-number="${{ steps.build-number.outputs.build_number }}" \
-            --dart-define=APP_VERSION="$VERSION+${{ steps.build-number.outputs.build_number }}" \
+            --build-number="${{ github.run_number }}" \
+            --dart-define=APP_VERSION="$VERSION+${{ github.run_number }}" \
             --dart-define=SIGNOZ_INGEST_URL="$SIGNOZ_INGEST_URL" \
             --dart-define=SIGNOZ_INGESTION_KEY="$SIGNOZ_INGESTION_KEY" \
             --dart-define=SIGNOZ_ENV="$SIGNOZ_ENV"
 
-      - name: Package .app into signed .pkg
-        # productbuild (création) + productsign (signature) séparés pour avoir
-        # un message d'erreur précis. `--timestamp=none` évite l'appel
-        # timestamp.apple.com qui peut hang. `< /dev/null` ferme stdin.
+      - name: Sign (Developer ID + hardened runtime, non-sandbox), notarize, staple, zip
         run: |
           set -euo pipefail
 
-          APP_PATH=$(find build/macos/Build/Products/Release -maxdepth 1 -name "*.app" -type d | head -1)
-          if [ -z "$APP_PATH" ]; then
-            echo "No .app bundle found"
-            ls -la build/macos/Build/Products/Release/ || true
-            exit 1
+          APP=$(find build/macos/Build/Products/Release -maxdepth 1 -name '*.app' -type d | head -1)
+          if [ -z "$APP" ]; then
+            echo "No .app bundle found"; ls -la build/macos/Build/Products/Release/ || true; exit 1
           fi
 
-          INSTALLER_IDENTITY=$(security find-identity -v -p basic \
-            | grep "3rd Party Mac Developer Installer" \
-            | head -1 \
+          IDENTITY=$(security find-identity -v -p codesigning \
+            | grep "Developer ID Application" | head -1 \
             | sed -E 's/^[[:space:]]*[0-9]+\)[[:space:]]+[A-F0-9]+[[:space:]]+"(.*)"$/\1/')
-          if [ -z "$INSTALLER_IDENTITY" ]; then
-            echo "ERROR: no installer identity found"
-            security find-identity -v
-            exit 1
+          if [ -z "$IDENTITY" ]; then
+            echo "ERROR: no Developer ID Application identity"; security find-identity -v; exit 1
           fi
+          ENT="macos/Runner/DirectRelease.entitlements"
 
-          PKG_NAME="songbook-${VERSION}-${{ steps.build-number.outputs.build_number }}.pkg"
-          UNSIGNED_PKG="$RUNNER_TEMP/unsigned.pkg"
+          # Signer les binaires imbriqués (frameworks, dylibs) AVANT le bundle,
+          # tous en hardened runtime (`--options runtime`, requis par notarytool).
+          find "$APP/Contents/Frameworks" -name '*.dylib' -type f -print0 2>/dev/null \
+            | while IFS= read -r -d '' f; do
+                codesign --force --options runtime --timestamp --sign "$IDENTITY" "$f"
+              done
+          find "$APP/Contents/Frameworks" -maxdepth 1 -name '*.framework' -type d -print0 2>/dev/null \
+            | while IFS= read -r -d '' fw; do
+                codesign --force --options runtime --timestamp --sign "$IDENTITY" "$fw"
+              done
 
-          productbuild --component "$APP_PATH" /Applications "$UNSIGNED_PKG"
-          productsign \
-            --sign "$INSTALLER_IDENTITY" \
-            --timestamp=none \
-            "$UNSIGNED_PKG" "$PKG_NAME" < /dev/null
-          pkgutil --check-signature "$PKG_NAME"
-          echo "PKG_PATH=$PWD/$PKG_NAME" >> "$GITHUB_ENV"
+          codesign --force --options runtime --timestamp \
+            --entitlements "$ENT" --sign "$IDENTITY" "$APP"
+          codesign --verify --strict --verbose=2 "$APP"
 
-      - name: Upload .pkg artifact
+          ZIP="songbook-macos-${VERSION}-${{ github.run_number }}.zip"
+          ditto -c -k --keepParent "$APP" "$ZIP"
+
+          # Notarisation via la clé App Store Connect (écrite dans un .p8 temporaire).
+          KEY="$RUNNER_TEMP/asc_key.p8"
+          printf '%s' "$APP_STORE_CONNECT_PRIVATE_KEY" > "$KEY"
+          xcrun notarytool submit "$ZIP" \
+            --key "$KEY" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --issuer "$APP_STORE_CONNECT_ISSUER_ID" \
+            --wait
+
+          # Staple le ticket SUR le .app (impossible sur un .zip), puis re-zippe :
+          # l'app se lance ainsi même hors-ligne, sans vérification en ligne.
+          xcrun stapler staple "$APP"
+          rm -f "$ZIP"
+          ditto -c -k --keepParent "$APP" "$ZIP"
+          echo "MACOS_ZIP=$PWD/$ZIP" >> "$GITHUB_ENV"
+
+      - name: Upload macOS direct artifact
         uses: actions/upload-artifact@v4
         with:
           name: songbook-macos
-          path: ${{ env.PKG_PATH }}
+          path: ${{ env.MACOS_ZIP }}
           retention-days: 14
           if-no-files-found: error
 
@@ -624,17 +629,20 @@ jobs:
           if-no-files-found: error
 
   # ───────────────────────────────────────────────────────────────────────
-  # UPDATER — Binaire installateur/launcher/auto-updater (Windows + Linux).
+  # UPDATER — Binaire installateur/launcher/auto-updater (Windows, Linux, macOS).
   # Indépendant des builds d'app : c'est un petit CLI Dart (tool/updater)
   # attaché à la release pour que l'utilisateur le télécharge une seule fois.
   # Bootstrap : téléchargé UNE fois, ensuite il met à jour l'app ET lui-même.
+  # macOS : étapes supplémentaires (gardées par `if: runner.os == 'macOS'`) pour
+  # signer Developer ID + notariser le binaire (secrets DEVELOPER_ID_APPLICATION_*
+  # + APP_STORE_CONNECT_*), sinon Gatekeeper le bloque au 1er téléchargement.
   # ───────────────────────────────────────────────────────────────────────
 
   build-updater:
     name: Build Updater (${{ matrix.label }})
     needs: prepare
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -647,6 +655,18 @@ jobs:
             label: Linux
             out: songbook-updater-linux
             artifact: songbook-updater-linux
+          - os: macos-15
+            label: macOS
+            out: songbook-updater-macos
+            artifact: songbook-updater-macos
+
+    env:
+      # Utilisés uniquement par les étapes macOS (ignorés sur Win/Linux).
+      APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+      DEVELOPER_ID_APPLICATION_P12_BASE64: ${{ secrets.DEVELOPER_ID_APPLICATION_P12_BASE64 }}
+      DEVELOPER_ID_APPLICATION_PASSWORD: ${{ secrets.DEVELOPER_ID_APPLICATION_PASSWORD }}
 
     steps:
       - uses: actions/checkout@v4
@@ -655,16 +675,77 @@ jobs:
         with:
           sdk: stable
 
+      # ── macOS uniquement : Xcode + import du cert Developer ID ──────────────
+      - name: Select Xcode 26.3
+        if: runner.os == 'macOS'
+        run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
+
+      - name: Setup Python (requis par codemagic-cli-tools)
+        if: runner.os == 'macOS'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install codemagic-cli-tools
+        if: runner.os == 'macOS'
+        run: pip install codemagic-cli-tools
+
+      - name: Initialize keychain
+        if: runner.os == 'macOS'
+        run: keychain initialize
+
+      - name: Add Developer ID Application certificate to keychain
+        if: runner.os == 'macOS'
+        run: |
+          P12="$RUNNER_TEMP/developer_id.p12"
+          echo "$DEVELOPER_ID_APPLICATION_P12_BASE64" | base64 --decode > "$P12"
+          keychain add-certificates \
+            -c "$P12" \
+            --certificate-password=@env:DEVELOPER_ID_APPLICATION_PASSWORD
+
       - name: Resolve updater deps
         working-directory: tool/updater
         run: dart pub get
 
       # CLI console autonome (pas de Flutter) : `dart compile exe` produit un
       # binaire natif. Les lancements quotidiens passent par un wrapper caché
-      # (VBS Windows / .desktop Linux) généré à l'installation.
+      # (VBS Windows / .desktop Linux / .app lanceur macOS) généré à l'installation.
       - name: Compile updater
         working-directory: tool/updater
         run: dart compile exe bin/songbook_updater.dart -o "${{ matrix.out }}"
+
+      # macOS uniquement : le binaire est téléchargé une fois via le navigateur
+      # → quarantaine Gatekeeper. Non signé, il serait durement bloqué ; on le
+      # signe Developer ID + on le notarise. (On ne peut PAS « stapler » un
+      # exécutable nu → Gatekeeper vérifie le ticket en ligne au 1er lancement,
+      # ce qui convient : l'updater a de toute façon besoin du réseau.)
+      - name: Sign & notarize (macOS)
+        if: runner.os == 'macOS'
+        working-directory: tool/updater
+        run: |
+          set -euo pipefail
+          OUT="${{ matrix.out }}"
+
+          IDENTITY=$(security find-identity -v -p codesigning \
+            | grep "Developer ID Application" | head -1 \
+            | sed -E 's/^[[:space:]]*[0-9]+\)[[:space:]]+[A-F0-9]+[[:space:]]+"(.*)"$/\1/')
+          if [ -z "$IDENTITY" ]; then
+            echo "ERROR: no Developer ID Application identity"; security find-identity -v; exit 1
+          fi
+
+          # `--options runtime` (hardened runtime) requis par notarytool. Un
+          # binaire Dart AOT n'a pas besoin d'entitlements JIT particuliers.
+          codesign --force --options runtime --timestamp --sign "$IDENTITY" "$OUT"
+          codesign --verify --strict --verbose=2 "$OUT"
+
+          KEY="$RUNNER_TEMP/asc_key.p8"
+          printf '%s' "$APP_STORE_CONNECT_PRIVATE_KEY" > "$KEY"
+          ditto -c -k "$OUT" "$OUT.zip"
+          xcrun notarytool submit "$OUT.zip" \
+            --key "$KEY" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --issuer "$APP_STORE_CONNECT_ISSUER_ID" \
+            --wait
 
       - name: Upload updater artifact
         uses: actions/upload-artifact@v4
@@ -680,11 +761,23 @@ jobs:
 
   build-gate:
     name: All builds passed
-    needs: [build-ios, build-android, build-macos, build-windows, build-linux]
+    # TOUS les builds doivent être verts avant publication — dont l'app macOS
+    # (build-macos) et l'updater (build-updater, matrice qui inclut macOS). Un
+    # échec de signature/notarisation macOS bloque donc tout le pipeline, y
+    # compris les publications iOS/Android.
+    needs:
+      [
+        build-ios,
+        build-android,
+        build-windows,
+        build-linux,
+        build-macos,
+        build-updater,
+      ]
     runs-on: ubuntu-latest
     timeout-minutes: 1
     steps:
-      - run: echo "✓ All 5 platform builds succeeded — proceeding to store uploads"
+      - run: echo "✓ Tous les builds sont verts (apps + updater, dont macOS) — publication autorisée"
 
   # ═══════════════════════════════════════════════════════════════════════
   # PUBLISHES — Uploads stores (déclenchés après build-gate uniquement)
@@ -776,64 +869,25 @@ jobs:
             --track internal \
             --release-notes "@file:release_notes_android.json"
 
-  # ────────────────────────────────────────────────────────────────────────
-  # PUBLISH macOS — Upload du .pkg sur TestFlight (même groupe qu'iOS).
-  # ────────────────────────────────────────────────────────────────────────
-  publish-macos:
-    name: Publish macOS to TestFlight
-    needs: [prepare, build-gate]
-    # 120 min de timeout : le processing Apple pour les .pkg macOS est souvent
-    # plus lent que pour les .ipa.
-    runs-on: macos-15
-    timeout-minutes: 120
-
-    env:
-      APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
-      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-      APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
-      APP_STORE_CONNECT_MAX_FIND_BUILD_WAIT: "90"
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Python (requis par codemagic-cli-tools)
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install codemagic-cli-tools
-        run: pip install codemagic-cli-tools
-
-      - name: Download macOS artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: songbook-macos
-          path: artifacts/
-
-      - name: Publish to TestFlight (external beta group, macOS)
-        # Même groupe « Songbook Beta » que l'iOS — Universal Purchase, les
-        # testeurs qui ont un Mac voient le build macOS dans leur TestFlight.
-        run: |
-          WHATS_NEW=$(jq -r '.[] | select(.language=="fr-FR") | .text' release_notes.json)
-          PKG_PATH=$(find artifacts -type f -name '*.pkg' | head -1)
-          echo "Uploading: $PKG_PATH"
-          app-store-connect publish \
-            --path "$PKG_PATH" \
-            --testflight \
-            --beta-group "Songbook Beta" \
-            --expire-build-submitted-for-review \
-            --locale fr-FR \
-            --whats-new "$WHATS_NEW" \
-            --max-find-build-wait 90
-
   # ═══════════════════════════════════════════════════════════════════════
   # GITHUB RELEASE — Tous les artifacts attachés, après publishes verts
   # ═══════════════════════════════════════════════════════════════════════
 
   release:
     name: Create GitHub Release
-    # build-updater : attend les binaires updater pour les attacher à la release.
-    needs: [prepare, publish-ios, publish-android, publish-macos, build-updater]
+    # build-updater : attend les binaires updater (Win/Linux/macOS) pour les
+    # attacher. build-macos : attend l'app macOS (.app notarisé zippé). Ces
+    # builds macOS exigent les secrets DEVELOPER_ID_APPLICATION_* ; sans eux ils
+    # échouent — et comme ils sont dans build-gate, un échec macOS bloque AUSSI
+    # les publications iOS/Android.
+    needs:
+      [
+        prepare,
+        publish-ios,
+        publish-android,
+        build-updater,
+        build-macos,
+      ]
     # TEMPORAIRE : condition `if: startsWith(github.ref, 'refs/tags/v')`
     # désactivée pour pouvoir tester le job release via workflow_dispatch
     # sans avoir à tagger. À RESTAURER une fois la validation faite.
@@ -870,10 +924,11 @@ jobs:
             ASSETS+=("$f")
           done < <(find artifacts -type f \
             \( -name '*.ipa' -o -name '*.aab' -o -name '*.apk' \
-               -o -name 'mapping.txt' -o -name '*.pkg' \
+               -o -name 'mapping.txt' \
                -o -name '*.zip' -o -name '*.AppImage' \
                -o -name 'songbook-updater-windows.exe' \
-               -o -name 'songbook-updater-linux' \) | sort)
+               -o -name 'songbook-updater-linux' \
+               -o -name 'songbook-updater-macos' \) | sort)
 
           if [ ${#ASSETS[@]} -eq 0 ]; then
             echo "ERROR: no release assets found"

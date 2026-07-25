@@ -14,7 +14,8 @@ import 'package:songbook/infrastructure/theme/app_theme_data.dart';
 ///    jour » la fenêtre bascule sur la progression, sinon l'app se ferme.
 ///
 /// Rendu par Flutter (fiable), contrairement à une fenêtre PowerShell/WinForms.
-/// Taille/position gérées par le runner natif (cf. `windows/runner/main.cpp`).
+/// Taille/position gérées par le runner natif (cf. `windows/runner/main.cpp` et
+/// `macos/Runner/MainFlutterWindow.swift`).
 void runUpdatingSplash(List<String> args) {
   WidgetsFlutterBinding.ensureInitialized();
   // ProviderScope non nécessaire fonctionnellement (aucun provider utilisé),

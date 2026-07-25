@@ -21,21 +21,33 @@ class Release {
 
   /// Asset correspondant à l'app pour la plateforme courante.
   ///  - Windows : `songbook-windows-<v>-<run>.zip`
+  ///  - macOS   : `songbook-macos-<v>-<run>.zip` (.app signé Developer ID zippé)
   ///  - Linux   : `Songbook-<v>-<run>-x86_64.AppImage`
   ReleaseAsset? get appAsset {
-    final re = Platform.isWindows
-        ? RegExp(r'^songbook-windows-.*\.zip$', caseSensitive: false)
-        : RegExp(r'x86_64\.AppImage$', caseSensitive: false);
+    final RegExp re;
+    if (Platform.isWindows) {
+      re = RegExp(r'^songbook-windows-.*\.zip$', caseSensitive: false);
+    } else if (Platform.isMacOS) {
+      re = RegExp(r'^songbook-macos-.*\.zip$', caseSensitive: false);
+    } else {
+      re = RegExp(r'x86_64\.AppImage$', caseSensitive: false);
+    }
     return _firstWhereOrNull(assets, (a) => re.hasMatch(a.name));
   }
 
   /// Asset du binaire updater lui-même (pour l'auto-mise à jour de l'updater).
   ///  - Windows : `songbook-updater-windows.exe`
+  ///  - macOS   : `songbook-updater-macos`
   ///  - Linux   : `songbook-updater-linux`
   ReleaseAsset? get updaterAsset {
-    final wanted = Platform.isWindows
-        ? 'songbook-updater-windows.exe'
-        : 'songbook-updater-linux';
+    final String wanted;
+    if (Platform.isWindows) {
+      wanted = 'songbook-updater-windows.exe';
+    } else if (Platform.isMacOS) {
+      wanted = 'songbook-updater-macos';
+    } else {
+      wanted = 'songbook-updater-linux';
+    }
     return _firstWhereOrNull(assets, (a) => a.name == wanted);
   }
 }
