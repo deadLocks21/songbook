@@ -6,7 +6,7 @@
 # DIRECT (build-macos : .app Developer ID notarisé, consommé par
 # tool/updater), au même titre que Windows/Linux.
 #
-# Pipeline en 3 étages "fail-fast au build, atomic à la publish/release" :
+# Pipeline "fail-fast au build (gate strict) → GitHub Release → stores" :
 #
 #   1) prepare        Calcule la version (depuis le tag ou pubspec.yaml).
 #
@@ -24,14 +24,14 @@
 #                     dont l'app macOS (build-macos) et l'updater (build-updater,
 #                     matrice qui inclut macOS).
 #
-#   4) Publishes parallèle (déclenchés après build-gate) :
+#   4) release        Crée la GitHub Release (assets desktop + updater attachés)
+#                     dès le gate franchi — sans attendre les stores. Skippée si
+#                     workflow_dispatch (pas de tag) pour tester sans polluer.
+#
+#   5) Publishes parallèle (déclenchés APRÈS la GitHub Release) :
 #        publish-ios     → TestFlight (groupe externe « Songbook Beta »)
 #        publish-android → Play Store piste "internal"
 #      Windows, Linux et macOS n'ont pas de store ici (artifacts only).
-#
-#   5) release        Crée la GitHub Release avec les assets attachés.
-#                     Skippée si workflow_dispatch (pas de tag) — pour tester
-#                     l'ensemble du pipeline sans polluer les Releases GitHub.
 #
 # Secrets requis (Settings → Secrets and variables → Actions) :
 #   APP_STORE_CONNECT_KEY_IDENTIFIER, APP_STORE_CONNECT_ISSUER_ID,
@@ -780,7 +780,7 @@ jobs:
       - run: echo "✓ Tous les builds sont verts (apps + updater, dont macOS) — publication autorisée"
 
   # ═══════════════════════════════════════════════════════════════════════
-  # PUBLISHES — Uploads stores (déclenchés après build-gate uniquement)
+  # PUBLISHES — Uploads stores (déclenchés APRÈS la GitHub Release)
   # ═══════════════════════════════════════════════════════════════════════
 
   # ────────────────────────────────────────────────────────────────────────
@@ -788,7 +788,7 @@ jobs:
   # ────────────────────────────────────────────────────────────────────────
   publish-ios:
     name: Publish iOS to TestFlight
-    needs: [prepare, build-gate]
+    needs: [release]
     # macos-15 obligatoire : `app-store-connect publish` utilise `altool`
     # qui ne tourne que sur macOS (composant de Xcode).
     runs-on: macos-15
@@ -833,7 +833,7 @@ jobs:
 
   publish-android:
     name: Publish Android to Play Store
-    needs: [prepare, build-gate]
+    needs: [release]
     # ubuntu-latest : `google-play bundles publish` utilise l'API Google
     # directement (pas de dépendance macOS).
     runs-on: ubuntu-latest
@@ -870,23 +870,22 @@ jobs:
             --release-notes "@file:release_notes_android.json"
 
   # ═══════════════════════════════════════════════════════════════════════
-  # GITHUB RELEASE — Tous les artifacts attachés, après publishes verts
+  # GITHUB RELEASE — Tous les artifacts attachés, dès le gate franchi
+  # (AVANT les publications stores, qui en dépendent).
   # ═══════════════════════════════════════════════════════════════════════
 
   release:
     name: Create GitHub Release
-    # build-updater : attend les binaires updater (Win/Linux/macOS) pour les
-    # attacher. build-macos : attend l'app macOS (.app notarisé zippé). Ces
-    # builds macOS exigent les secrets DEVELOPER_ID_APPLICATION_* ; sans eux ils
-    # échouent — et comme ils sont dans build-gate, un échec macOS bloque AUSSI
-    # les publications iOS/Android.
+    # Déclenchée dès que le gate est franchi (build-gate = tous les builds verts,
+    # dont build-macos) ; build-updater est aussi listé pour attacher ses
+    # binaires. La GitHub Release sort AVANT les publications stores, qui en
+    # dépendent (publish-* → needs: release). Les builds macOS exigent les
+    # secrets DEVELOPER_ID_APPLICATION_* ; un échec macOS bloque le gate, donc
+    # release ET les stores.
     needs:
       [
-        prepare,
-        publish-ios,
-        publish-android,
+        build-gate,
         build-updater,
-        build-macos,
       ]
     # TEMPORAIRE : condition `if: startsWith(github.ref, 'refs/tags/v')`
     # désactivée pour pouvoir tester le job release via workflow_dispatch
