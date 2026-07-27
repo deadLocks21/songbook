@@ -723,8 +723,11 @@ jobs:
       # Developer ID + hardened runtime, notarisé ET STAPLÉ (possible sur un .app,
       # pas sur un binaire nu). C'est l'artefact que l'utilisateur télécharge :
       # un .app staplé passe Gatekeeper au double-clic, hors-ligne, sans `xattr`.
-      # `--options runtime` requis par notarytool ; un binaire Dart AOT n'a pas
-      # besoin d'entitlements JIT.
+      # `--options runtime` requis par notarytool — et, avec lui, l'entitlement
+      # `allow-unsigned-executable-memory` (macos/Installer.entitlements) SANS
+      # LEQUEL le binaire Dart AOT est tué au démarrage par le noyau
+      # (SIGKILL / CODESIGNING « Invalid Page ») : `dart compile exe` remappe son
+      # snapshot en mémoire anonyme exécutable. Cf. le commentaire du fichier.
       - name: Package installer .app (Developer ID + notarize + staple) (macOS)
         if: runner.os == 'macOS'
         working-directory: tool/updater
@@ -773,10 +776,22 @@ jobs:
             echo "ERROR: no Developer ID Application identity"; security find-identity -v; exit 1
           fi
 
-          # Signer le binaire interne PUIS le bundle (hardened runtime).
-          codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP/Contents/MacOS/songbook-installer"
-          codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP"
+          # Signer le binaire interne PUIS le bundle (hardened runtime +
+          # entitlements). Le binaire interne DOIT porter les entitlements : à
+          # l'auto-MAJ, l'updater l'extrait du .app et l'exécute nu.
+          ENT="macos/Installer.entitlements"
+          codesign --force --options runtime --timestamp \
+            --entitlements "$ENT" --sign "$IDENTITY" "$APP/Contents/MacOS/songbook-installer"
+          codesign --force --options runtime --timestamp \
+            --entitlements "$ENT" --sign "$IDENTITY" "$APP"
           codesign --verify --strict --verbose=2 "$APP"
+
+          # Garde-fou : sans cet entitlement, le .app se fait tuer au lancement
+          # (icône qui rebondit puis rien) — et rien dans le CI ne le verrait.
+          codesign -d --entitlements - --xml "$APP" 2>/dev/null \
+            | grep -q 'allow-unsigned-executable-memory' \
+            || { echo "ERROR: entitlement allow-unsigned-executable-memory absent"; exit 1; }
+          "$APP/Contents/MacOS/songbook-installer" --check
 
           # Notariser le .app puis STAPLER le ticket → lancement hors-ligne OK.
           KEY="$RUNNER_TEMP/asc_key.p8"

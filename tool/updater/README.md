@@ -14,6 +14,12 @@ release GitHub : `songbook-updater-windows.exe`, `songbook-updater-linux`, et �
 sur macOS — emballé dans un **`.app` notarisé + staplé** (`Songbook Installer.app`,
 zippé dans `songbook-installer-macos-*.zip`) pour passer Gatekeeper au double-clic.
 
+> macOS : le `.app` **et** son binaire interne doivent être signés avec
+> `macos/Installer.entitlements`
+> (`com.apple.security.cs.allow-unsigned-executable-memory`). Sans ça, le
+> hardened runtime tue le binaire Dart AOT au démarrage — cf.
+> [MACOS_SETUP.md §5](MACOS_SETUP.md#5-points-de-vigilance-si-un-job-macos-échoue).
+
 ## Ce qu'il fait
 
 - **Première installation** (seul moment interactif) : on lance le binaire
