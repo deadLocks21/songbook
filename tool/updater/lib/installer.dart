@@ -182,6 +182,20 @@ class Installer {
   // ── Lancement de l'app ─────────────────────────────────────────────────────
 
   void launchApp() {
+    // macOS : lancer le bundle via `open` (LaunchServices) → l'app est ACTIVÉE
+    // et sa fenêtre passe au premier plan. Exécuter le binaire interne en direct
+    // la lance mais sans l'activer : on voit l'animation d'ouverture puis…
+    // aucune fenêtre. (`open` rend la main aussitôt, l'app reste détachée.)
+    if (Platform.isMacOS) {
+      final app = p.join(layout.currentLink, 'songbook.app');
+      if (!Directory(app).existsSync()) {
+        log.error('Bundle introuvable : $app');
+        return;
+      }
+      log('Lancement : open $app');
+      Process.runSync('open', [app]);
+      return;
+    }
     final exe = layout.appExecutable;
     if (!File(exe).existsSync()) {
       log.error('Exécutable introuvable : $exe');
