@@ -41,32 +41,39 @@ class Installer {
   Future<void> install({bool launch = true}) async {
     log('Installation dans ${layout.root}');
     // Retour visuel : la 1ʳᵉ install via le `.app` (double-clic) n'a pas de
-    // fenêtre, et le téléchargement dure quelques secondes → sans ça l'utilisateur
-    // a l'impression que « rien ne se passe ». macOS uniquement, best-effort.
-    _notify('Installation en cours…');
-    Directory(layout.versionsDir).createSync(recursive: true);
-    Directory(layout.updaterDir).createSync(recursive: true);
-    log.file ??= layout.logFile;
+    // fenêtre → sans ça l'utilisateur a l'impression que « rien ne se passe ».
+    // Un dialogue macOS (FIABLE, contrairement à une notification que macOS
+    // filtre souvent), fermé dès que l'app se lance. macOS uniquement, best-effort.
+    final feedback = await _startInstallFeedback();
+    try {
+      Directory(layout.versionsDir).createSync(recursive: true);
+      Directory(layout.updaterDir).createSync(recursive: true);
+      log.file ??= layout.logFile;
 
-    final release = await fetchLatestRelease();
-    final asset = release.appAsset;
-    if (asset == null) {
-      throw StateError('Aucun asset pour cette plateforme dans ${release.tag}');
+      final release = await fetchLatestRelease();
+      final asset = release.appAsset;
+      if (asset == null) {
+        throw StateError(
+          'Aucun asset pour cette plateforme dans ${release.tag}',
+        );
+      }
+
+      await _installVersion(release.version, asset);
+      swapCurrent(layout.currentLink, layout.versionDir(release.version), log);
+
+      _relocateUpdater();
+      Config(root: layout.root, installedVersion: release.version)
+        ..lastCheck = DateTime.now().toIso8601String()
+        ..save(layout);
+      layout.writePointer();
+      createShortcuts(layout, log);
+      _cleanupTmp();
+
+      log('Installation terminée : Songbook ${release.version}');
+      if (launch) launchApp();
+    } finally {
+      feedback?.kill(); // ferme le dialogue de progression
     }
-
-    await _installVersion(release.version, asset);
-    swapCurrent(layout.currentLink, layout.versionDir(release.version), log);
-
-    _relocateUpdater();
-    Config(root: layout.root, installedVersion: release.version)
-      ..lastCheck = DateTime.now().toIso8601String()
-      ..save(layout);
-    layout.writePointer();
-    createShortcuts(layout, log);
-    _cleanupTmp();
-
-    log('Installation terminée : Songbook ${release.version}');
-    if (launch) launchApp();
   }
 
   // ── Mise à jour silencieuse ────────────────────────────────────────────────
@@ -334,18 +341,25 @@ void _stripQuarantine(String path) {
   }
 }
 
-/// Affiche une notification macOS (best-effort). [message] est un littéral
-/// interne (pas d'entrée utilisateur) → pas d'échappement AppleScript nécessaire.
-/// Échoue en silence si `osascript` est indisponible ou les notifications
-/// refusées.
-void _notify(String message) {
-  if (!Platform.isMacOS) return;
+/// Ouvre un dialogue macOS « Installation en cours… » et renvoie le process
+/// `osascript` (à `kill()` dès l'app lancée). Retour visuel FIABLE : un dialogue
+/// s'affiche toujours, là où une notification est souvent filtrée par macOS.
+/// `giving up after` = filet si on oublie de le fermer. Best-effort : renvoie
+/// null hors macOS ou si `osascript` est indisponible.
+Future<Process?> _startInstallFeedback() async {
+  if (!Platform.isMacOS) return null;
   try {
-    Process.runSync('osascript', [
+    final p = await Process.start('osascript', [
       '-e',
-      'display notification "$message" with title "Songbook"',
+      'display dialog "Installation de Songbook en cours… (quelques secondes)" '
+          'buttons {"OK"} default button 1 giving up after 120 '
+          'with title "Songbook" with icon note',
     ]);
+    // On draine les flux pour ne pas bloquer, et on ignore le résultat.
+    p.stdout.drain<void>();
+    p.stderr.drain<void>();
+    return p;
   } catch (_) {
-    /* best-effort */
+    return null;
   }
 }
