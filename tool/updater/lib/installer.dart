@@ -40,6 +40,10 @@ class Installer {
   /// fin (cas du double-clic sur l'installateur).
   Future<void> install({bool launch = true}) async {
     log('Installation dans ${layout.root}');
+    // Retour visuel : la 1ʳᵉ install via le `.app` (double-clic) n'a pas de
+    // fenêtre, et le téléchargement dure quelques secondes → sans ça l'utilisateur
+    // a l'impression que « rien ne se passe ». macOS uniquement, best-effort.
+    _notify('Installation en cours…');
     Directory(layout.versionsDir).createSync(recursive: true);
     Directory(layout.updaterDir).createSync(recursive: true);
     log.file ??= layout.logFile;
@@ -327,5 +331,21 @@ void _stripQuarantine(String path) {
     Process.runSync('xattr', ['-d', 'com.apple.quarantine', path]);
   } catch (_) {
     /* xattr indisponible : best-effort */
+  }
+}
+
+/// Affiche une notification macOS (best-effort). [message] est un littéral
+/// interne (pas d'entrée utilisateur) → pas d'échappement AppleScript nécessaire.
+/// Échoue en silence si `osascript` est indisponible ou les notifications
+/// refusées.
+void _notify(String message) {
+  if (!Platform.isMacOS) return;
+  try {
+    Process.runSync('osascript', [
+      '-e',
+      'display notification "$message" with title "Songbook"',
+    ]);
+  } catch (_) {
+    /* best-effort */
   }
 }
