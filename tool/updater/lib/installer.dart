@@ -235,12 +235,12 @@ class Installer {
   /// Copie le binaire updater courant vers `<root>/updater/` (emplacement
   /// stable visé par les raccourcis). No-op s'il s'exécute déjà depuis là.
   ///
-  /// Sur macOS, `resolvedExecutable` est le binaire INTERNE du `.app`
-  /// installateur téléchargé : la copie peut hériter de la quarantaine → on la
+  /// Sur macOS, on NE copie PAS `resolvedExecutable` : voir
+  /// [_relocatableBinary]. La copie peut hériter de la quarantaine → on la
   /// purge, sinon le lanceur `.app` local se ferait tuer par Gatekeeper en
   /// l'exécutant.
   void _relocateUpdater() {
-    final src = Platform.resolvedExecutable;
+    final src = _relocatableBinary(Platform.resolvedExecutable);
     final dst = layout.updaterExe;
     if (p.equals(src, dst)) return;
     File(src).copySync(dst);
@@ -255,8 +255,9 @@ class Installer {
   /// définitif ; le `.old` est purgé au lancement suivant.
   ///
   /// Sur macOS l'asset est un `.app` zippé (notarisé + staplé) : on en extrait
-  /// le binaire interne. Le téléchargement passe par curl (jamais de
-  /// quarantaine), donc la copie relocalisée s'exécute sans souci Gatekeeper.
+  /// la copie relocalisable (cf. [_relocatableBinary]). Le téléchargement passe
+  /// par curl (jamais de quarantaine), donc la copie s'exécute sans souci
+  /// Gatekeeper.
   Future<void> _selfUpdateUpdater(Release release) async {
     final asset = release.updaterAsset;
     if (asset == null) return;
@@ -279,8 +280,7 @@ class Installer {
   /// Résout le binaire updater à partir de l'asset téléchargé.
   ///  - Windows/Linux : l'asset EST déjà le binaire.
   ///  - macOS : l'asset est un `.app` zippé → on l'extrait via `ditto` (préserve
-  ///    la structure du bundle) et on renvoie le binaire interne
-  ///    `*.app/Contents/MacOS/<exe>`.
+  ///    la structure du bundle) et on renvoie la copie relocalisable du bundle.
   File _updaterBinaryFromAsset(File downloaded) {
     if (!Platform.isMacOS) return downloaded;
     final dir = Directory(p.join(_tmpDir, 'updater-app'));
@@ -307,7 +307,7 @@ class Installer {
     if (files.isEmpty) {
       throw StateError('Binaire introuvable dans ${app.path}');
     }
-    return files.first;
+    return File(_relocatableBinary(files.first.path));
   }
 
   /// Supprime les anciens dossiers de versions, en gardant [keep].
@@ -340,6 +340,38 @@ class Installer {
       } catch (_) {}
     }
   }
+}
+
+/// Nom de la copie relocalisable embarquée dans `Contents/Resources/` du `.app`
+/// installateur (cf. le job `build-updater` du CI).
+const _relocatableName = 'songbook-updater';
+
+/// Renvoie, pour [executable], le binaire qu'on peut copier AILLEURS et
+/// exécuter.
+///
+/// Hors macOS : [executable] lui-même.
+///
+/// Sur macOS, PAS l'exécutable principal du `.app` : signer un bundle re-signe
+/// son exécutable principal en y **scellant le hash de son `Info.plist`** (le
+/// `Info.plist entries=N` de `codesign -dv`). Copié hors de `Contents/MacOS/`,
+/// ce `../Info.plist` n'existe plus → signature invalide → le hardened runtime
+/// tue le process au démarrage (SIGKILL / CODESIGNING), exactement comme
+/// l'absence d'entitlement JIT. Le `.app` embarque donc une SECONDE copie du
+/// binaire dans `Contents/Resources/`, signée en autonome (hors contexte de
+/// bundle, donc sans `Info.plist` scellé) : c'est celle-là qui se relocalise.
+///
+/// Repli sur [executable] si la copie est absente : binaire nu Windows/Linux,
+/// build local (`dart compile exe` sans `.app`), ou updater déjà relocalisé.
+String _relocatableBinary(String executable) {
+  if (!Platform.isMacOS) return executable;
+  final macosDir = p.dirname(executable);
+  if (p.basename(macosDir) != 'MacOS') return executable;
+  final candidate = p.join(
+    p.dirname(macosDir),
+    'Resources',
+    _relocatableName,
+  );
+  return File(candidate).existsSync() ? candidate : executable;
 }
 
 /// Retire l'attribut de quarantaine Gatekeeper d'un fichier (macOS uniquement,

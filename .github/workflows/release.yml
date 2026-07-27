@@ -739,6 +739,15 @@ jobs:
           cp "${{ matrix.out }}" "$APP/Contents/MacOS/songbook-installer"
           chmod +x "$APP/Contents/MacOS/songbook-installer"
 
+          # SECONDE copie du MÊME binaire, signée en autonome plus bas. C'est
+          # elle que l'installateur relocalise dans `<root>/updater/` et que
+          # l'auto-MAJ extrait — cf. _relocatableBinary() dans lib/installer.dart.
+          # L'exécutable principal, lui, se fait sceller le hash de l'Info.plist
+          # par la signature du BUNDLE : copié hors de Contents/MacOS/ il devient
+          # invalide et le hardened runtime le tue au démarrage.
+          cp "${{ matrix.out }}" "$APP/Contents/Resources/songbook-updater"
+          chmod +x "$APP/Contents/Resources/songbook-updater"
+
           cat > "$APP/Contents/Info.plist" <<'PLIST'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -779,19 +788,39 @@ jobs:
           # Signer le binaire interne PUIS le bundle (hardened runtime +
           # entitlements). Le binaire interne DOIT porter les entitlements : à
           # l'auto-MAJ, l'updater l'extrait du .app et l'exécute nu.
+          # ORDRE IMPORTANT : la copie relocalisable D'ABORD et SEULE (contexte
+          # hors-bundle → aucun Info.plist scellé dans sa signature), puis
+          # l'exécutable principal, puis le bundle. Signer le bundle re-signe
+          # son exécutable principal mais PAS un Mach-O rangé dans Resources/ :
+          # la copie autonome survit donc intacte.
           ENT="macos/Installer.entitlements"
+          codesign --force --options runtime --timestamp \
+            --entitlements "$ENT" --sign "$IDENTITY" "$APP/Contents/Resources/songbook-updater"
           codesign --force --options runtime --timestamp \
             --entitlements "$ENT" --sign "$IDENTITY" "$APP/Contents/MacOS/songbook-installer"
           codesign --force --options runtime --timestamp \
             --entitlements "$ENT" --sign "$IDENTITY" "$APP"
-          codesign --verify --strict --verbose=2 "$APP"
+          codesign --verify --deep --strict --verbose=2 "$APP"
 
-          # Garde-fou : sans cet entitlement, le .app se fait tuer au lancement
-          # (icône qui rebondit puis rien) — et rien dans le CI ne le verrait.
+          # Garde-fous. Le CI restait vert avec un artefact mort-né parce qu'il
+          # ne lançait jamais rien : on exécute donc pour de vrai les DEUX
+          # chemins, chacun ayant son mode de mort propre.
+          #  1. le .app au double-clic (1re install) : tué sans l'entitlement.
+          #  2. la copie relocalisée hors du bundle (lancement quotidien via
+          #     ~/Applications/Songbook.app, et auto-MAJ) : tuée si elle porte
+          #     une signature de bundle.
           codesign -d --entitlements - --xml "$APP" 2>/dev/null \
             | grep -q 'allow-unsigned-executable-memory' \
             || { echo "ERROR: entitlement allow-unsigned-executable-memory absent"; exit 1; }
           "$APP/Contents/MacOS/songbook-installer" --check
+
+          RELOC="$RUNNER_TEMP/reloc-check/songbook-updater"
+          mkdir -p "$(dirname "$RELOC")"
+          cp "$APP/Contents/Resources/songbook-updater" "$RELOC"
+          chmod +x "$RELOC"
+          codesign --verify --strict "$RELOC" \
+            || { echo "ERROR: la copie relocalisée a une signature invalide hors bundle"; exit 1; }
+          "$RELOC" --check
 
           # Notariser le .app puis STAPLER le ticket → lancement hors-ligne OK.
           KEY="$RUNNER_TEMP/asc_key.p8"

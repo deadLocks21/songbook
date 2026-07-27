@@ -14,11 +14,17 @@ release GitHub : `songbook-updater-windows.exe`, `songbook-updater-linux`, et �
 sur macOS — emballé dans un **`.app` notarisé + staplé** (`Songbook Installer.app`,
 zippé dans `songbook-installer-macos-*.zip`) pour passer Gatekeeper au double-clic.
 
-> macOS : le `.app` **et** son binaire interne doivent être signés avec
-> `macos/Installer.entitlements`
-> (`com.apple.security.cs.allow-unsigned-executable-memory`). Sans ça, le
-> hardened runtime tue le binaire Dart AOT au démarrage — cf.
-> [MACOS_SETUP.md §5](MACOS_SETUP.md#5-points-de-vigilance-si-un-job-macos-échoue).
+> macOS, deux contraintes de signature à ne pas casser (cf.
+> [MACOS_SETUP.md §5](MACOS_SETUP.md#5-points-de-vigilance-si-un-job-macos-échoue),
+> points 5 et 6) :
+>
+> 1. tout est signé avec `macos/Installer.entitlements`
+>    (`allow-unsigned-executable-memory`), sans quoi le hardened runtime tue le
+>    binaire Dart AOT au démarrage ;
+> 2. le `.app` embarque une **seconde copie** du binaire dans
+>    `Contents/Resources/songbook-updater`, signée **en autonome** : c'est elle
+>    qu'on relocalise dans `<root>/updater/`. L'exécutable principal ne peut pas
+>    servir, sa signature étant liée à l'`Info.plist` du bundle.
 
 ## Ce qu'il fait
 
@@ -54,6 +60,7 @@ Garde-fous de version (basés sur la version RÉELLE pointée par `current`, pas
   versions/<v>/              contenu d'une version (songbook.exe + dll + data/, ou AppImage, ou songbook.app)
   current      ->  versions/<v>   jonction (Windows) / symlink (Linux & macOS)
   updater/songbook-updater[.exe]   le binaire relocalisé (cible stable des raccourcis)
+                                   macOS : copie issue de Contents/Resources/, pas de Contents/MacOS/
   config.json                { root, installedVersion, lastCheck }
   updater.log                trace (les lancements sont sans console)
   launch.vbs                 (Windows) wrapper de lancement caché

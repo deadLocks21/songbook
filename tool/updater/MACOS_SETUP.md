@@ -170,8 +170,26 @@ regarder :
    ```
    Le correctif est `tool/updater/macos/Installer.entitlements`
    (`allow-unsigned-executable-memory` — `allow-jit` seul ne suffit pas), passé
-   aux deux `codesign` du job `build-updater`. Le job fait désormais tourner
+   aux `codesign` du job `build-updater`. Le job fait désormais tourner
    `--check` sur le `.app` fraîchement signé pour attraper la régression.
+6. **La 1re install marche, mais `~/Applications/Songbook.app` ne fait rien**
+   (aucune ligne ajoutée à `updater.log`) — c'est le **second** piège, distinct
+   du précédent. Signer un `.app` re-signe son exécutable principal en y
+   **scellant le hash de son `Info.plist`** ; copié hors de `Contents/MacOS/`
+   par `_relocateUpdater()`, il devient invalide et se fait tuer pareil. Le
+   double-clic sur l'installateur marche (il tourne DANS son bundle), le
+   lancement quotidien non. Diagnostic :
+   ```bash
+   codesign --verify --strict "$HOME/Library/Application Support/Songbook/updater/songbook-updater"
+   # cassé : "invalid Info.plist (plist or signature have been modified)"
+   codesign -dv .../songbook-updater 2>&1 | grep Info.plist
+   # sain : "Info.plist=not bound"
+   ```
+   D'où la **seconde copie** du binaire dans `Contents/Resources/songbook-updater`,
+   signée en AUTONOME (avant le bundle, donc sans `Info.plist` scellé) : c'est
+   elle que `_relocatableBinary()` relocalise et que l'auto-MAJ extrait. Le job
+   vérifie la copie hors bundle (`codesign --verify` + `--check`), le seul test
+   qui aurait attrapé ça.
 
 ---
 
