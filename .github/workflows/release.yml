@@ -940,8 +940,12 @@ jobs:
     # dépendent (publish-* → needs: release). Les builds macOS exigent les
     # secrets DEVELOPER_ID_APPLICATION_* ; un échec macOS bloque le gate, donc
     # release ET les stores.
+    # NB : `prepare` DOIT rester dans needs — needs.<job>.outputs n'est exposé
+    # qu'aux dépendances directes ; sans lui, needs.prepare.outputs.version est
+    # vide et le titre devient « Songbook v ».
     needs:
       [
+        prepare,
         build-gate,
         build-updater,
       ]
