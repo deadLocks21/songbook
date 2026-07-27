@@ -143,14 +143,16 @@ raisons pour lesquelles Songbook n'est pas distribué sur le Mac App Store.
   - App Windows : `songbook-windows-<v>-<run>.zip` (contenu du dossier `Release/`).
   - App Linux : `Songbook-<v>-<run>-x86_64.AppImage`.
   - App macOS : `songbook-macos-<v>-<run>.zip` (`songbook.app` zippé via `ditto`).
-  - Updater : `songbook-updater-windows.exe`, `songbook-updater-linux`,
-    `songbook-updater-macos`.
+  - Updater : `songbook-updater-windows.exe`, `songbook-updater-linux`, et —
+    macOS — `songbook-installer-macos-<v>-<run>.zip` (un `.app`, cf. plus bas).
 - Jobs CI :
   - `build-updater` (matrice **Windows + Linux + macOS**) : `dart compile exe`,
     upload. Sur macOS, étapes supplémentaires (gardées par
-    `if: runner.os == 'macOS'`) : **signature Developer ID** + **notarisation**
-    du binaire (téléchargé une fois via le navigateur → sinon quarantaine
-    Gatekeeper).
+    `if: runner.os == 'macOS'`) : le binaire est **emballé dans un `.app`**
+    (`Songbook Installer.app`), signé **Developer ID**, **notarisé + STAPLÉ**,
+    zippé. Un binaire nu téléchargé via navigateur serait tué par Gatekeeper (et
+    ne peut pas être staplé) ; un `.app` staplé passe au double-clic, hors-ligne.
+    L'auto-MAJ de l'updater installé extrait le binaire interne du `.app`.
   - `build-macos` : build **non sandboxé**, re-signé **Developer ID** +
     hardened runtime (`DirectRelease.entitlements`), **notarisé + staplé**, zippé
     via `ditto` (qui préserve symlinks/signature, contrairement à un zip naïf).
@@ -273,9 +275,13 @@ CI :
   - Le canal direct exige un build **non sandboxé** (le sandbox interdirait l'IPC
     par fichiers de la fenêtre de MAJ) → signature **Developer ID** +
     **notarisation**. Songbook n'est donc pas sur le Mac App Store.
-  - Un binaire nu (l'updater) **ne peut pas être « staplé »** : Gatekeeper vérifie
-    son ticket de notarisation **en ligne** au 1er lancement (OK, l'updater a
-    besoin du réseau). Le `.app`, lui, est staplé → lancement hors-ligne possible.
+  - **L'updater est distribué en `.app` staplé**, pas en binaire nu : un
+    exécutable nu ne peut pas être « staplé », et téléchargé via navigateur
+    (quarantaine) il est **tué par Gatekeeper** (le contrôle en ligne n'est pas
+    honoré de façon fiable pour un CLI lancé depuis le Terminal). Un `.app`
+    staplé, lui, passe au double-clic même hors-ligne. L'auto-MAJ de l'updater
+    installé (téléchargement curl, jamais en quarantaine) extrait le binaire
+    interne du `.app`.
   - `DirectRelease.entitlements` **omet** `associated-domains` : les universal
     links https ne s'ouvrent pas dans le build direct (partage in-app OK). À
     compléter (App ID + profil Developer ID) si le besoin se confirme.

@@ -633,9 +633,13 @@ jobs:
   # Indépendant des builds d'app : c'est un petit CLI Dart (tool/updater)
   # attaché à la release pour que l'utilisateur le télécharge une seule fois.
   # Bootstrap : téléchargé UNE fois, ensuite il met à jour l'app ET lui-même.
-  # macOS : étapes supplémentaires (gardées par `if: runner.os == 'macOS'`) pour
-  # signer Developer ID + notariser le binaire (secrets DEVELOPER_ID_APPLICATION_*
-  # + APP_STORE_CONNECT_*), sinon Gatekeeper le bloque au 1er téléchargement.
+  #
+  # macOS : on ne distribue PAS le binaire nu (téléchargé via navigateur il
+  # serait tué par Gatekeeper — un exécutable nu ne peut pas être « staplé »).
+  # Étapes supplémentaires (gardées par `if: runner.os == 'macOS'`) : on l'emballe
+  # dans « Songbook Installer.app », signé Developer ID + notarisé + STAPLÉ, zippé
+  # via ditto. Un .app staplé passe Gatekeeper au double-clic, hors-ligne. Secrets
+  # DEVELOPER_ID_APPLICATION_* + APP_STORE_CONNECT_*.
   # ───────────────────────────────────────────────────────────────────────
 
   build-updater:
@@ -667,6 +671,7 @@ jobs:
       APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
       DEVELOPER_ID_APPLICATION_P12_BASE64: ${{ secrets.DEVELOPER_ID_APPLICATION_P12_BASE64 }}
       DEVELOPER_ID_APPLICATION_PASSWORD: ${{ secrets.DEVELOPER_ID_APPLICATION_PASSWORD }}
+      VERSION: ${{ needs.prepare.outputs.version }}
 
     steps:
       - uses: actions/checkout@v4
@@ -714,17 +719,52 @@ jobs:
         working-directory: tool/updater
         run: dart compile exe bin/songbook_updater.dart -o "${{ matrix.out }}"
 
-      # macOS uniquement : le binaire est téléchargé une fois via le navigateur
-      # → quarantaine Gatekeeper. Non signé, il serait durement bloqué ; on le
-      # signe Developer ID + on le notarise. (On ne peut PAS « stapler » un
-      # exécutable nu → Gatekeeper vérifie le ticket en ligne au 1er lancement,
-      # ce qui convient : l'updater a de toute façon besoin du réseau.)
-      - name: Sign & notarize (macOS)
+      # macOS : emballe le binaire dans « Songbook Installer.app », signé
+      # Developer ID + hardened runtime, notarisé ET STAPLÉ (possible sur un .app,
+      # pas sur un binaire nu). C'est l'artefact que l'utilisateur télécharge :
+      # un .app staplé passe Gatekeeper au double-clic, hors-ligne, sans `xattr`.
+      # `--options runtime` requis par notarytool ; un binaire Dart AOT n'a pas
+      # besoin d'entitlements JIT.
+      - name: Package installer .app (Developer ID + notarize + staple) (macOS)
         if: runner.os == 'macOS'
         working-directory: tool/updater
         run: |
           set -euo pipefail
-          OUT="${{ matrix.out }}"
+          APP="Songbook Installer.app"
+          rm -rf "$APP"
+          mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+          cp "${{ matrix.out }}" "$APP/Contents/MacOS/songbook-installer"
+          chmod +x "$APP/Contents/MacOS/songbook-installer"
+
+          cat > "$APP/Contents/Info.plist" <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+          <key>CFBundleName</key><string>Songbook Installer</string>
+          <key>CFBundleDisplayName</key><string>Songbook Installer</string>
+          <key>CFBundleIdentifier</key><string>fr.dtfh.songbook.installer</string>
+          <key>CFBundleExecutable</key><string>songbook-installer</string>
+          <key>CFBundlePackageType</key><string>APPL</string>
+          <key>CFBundleIconFile</key><string>AppIcon</string>
+          <key>CFBundleShortVersionString</key><string>1.0</string>
+          <key>CFBundleVersion</key><string>1</string>
+          <key>LSMinimumSystemVersion</key><string>11.0</string>
+          <key>NSHighResolutionCapable</key><true/>
+          </dict>
+          </plist>
+          PLIST
+
+          # Icône (best-effort) depuis l'icône de l'app.
+          ICON_SRC="$GITHUB_WORKSPACE/assets/icon/app_icon.png"
+          if [ -f "$ICON_SRC" ]; then
+            mkdir -p AppIcon.iconset
+            for s in 16 32 128 256 512; do
+              sips -z $s $s "$ICON_SRC" --out "AppIcon.iconset/icon_${s}x${s}.png" >/dev/null 2>&1 || true
+              d=$((s * 2)); sips -z $d $d "$ICON_SRC" --out "AppIcon.iconset/icon_${s}x${s}@2x.png" >/dev/null 2>&1 || true
+            done
+            iconutil -c icns AppIcon.iconset -o "$APP/Contents/Resources/AppIcon.icns" 2>/dev/null || true
+          fi
 
           IDENTITY=$(security find-identity -v -p codesigning \
             | grep "Developer ID Application" | head -1 \
@@ -733,25 +773,43 @@ jobs:
             echo "ERROR: no Developer ID Application identity"; security find-identity -v; exit 1
           fi
 
-          # `--options runtime` (hardened runtime) requis par notarytool. Un
-          # binaire Dart AOT n'a pas besoin d'entitlements JIT particuliers.
-          codesign --force --options runtime --timestamp --sign "$IDENTITY" "$OUT"
-          codesign --verify --strict --verbose=2 "$OUT"
+          # Signer le binaire interne PUIS le bundle (hardened runtime).
+          codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP/Contents/MacOS/songbook-installer"
+          codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP"
+          codesign --verify --strict --verbose=2 "$APP"
 
+          # Notariser le .app puis STAPLER le ticket → lancement hors-ligne OK.
           KEY="$RUNNER_TEMP/asc_key.p8"
           printf '%s' "$APP_STORE_CONNECT_PRIVATE_KEY" > "$KEY"
-          ditto -c -k "$OUT" "$OUT.zip"
-          xcrun notarytool submit "$OUT.zip" \
+          ditto -c -k --keepParent "$APP" "installer-unstapled.zip"
+          xcrun notarytool submit "installer-unstapled.zip" \
             --key "$KEY" \
             --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
             --issuer "$APP_STORE_CONNECT_ISSUER_ID" \
             --wait
+          xcrun stapler staple "$APP"
 
+          ZIP="songbook-installer-macos-${VERSION}-${{ github.run_number }}.zip"
+          ditto -c -k --keepParent "$APP" "$ZIP"
+          echo "INSTALLER_ZIP=tool/updater/$ZIP" >> "$GITHUB_ENV"
+
+      # Win/Linux : on attache le binaire nu (téléchargé via curl à l'auto-MAJ,
+      # jamais mis en quarantaine). macOS a son propre upload (.app) ci-dessous.
       - name: Upload updater artifact
+        if: runner.os != 'macOS'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
           path: tool/updater/${{ matrix.out }}
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Upload installer .app (macOS)
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: songbook-installer-macos
+          path: ${{ env.INSTALLER_ZIP }}
           retention-days: 14
           if-no-files-found: error
 
@@ -909,8 +967,6 @@ jobs:
 
       - name: Create GitHub Release
         run: |
-          BODY=$(jq -r '.[] | select(.language=="fr-FR") | .text' release_notes.json)
-
           # On n'attache que les assets réellement présents : `mapping.txt`
           # n'existe que si R8/minify est activé (ce n'est pas le cas ici), et
           # certaines plateformes peuvent être désactivées. Passer un argument
@@ -926,8 +982,7 @@ jobs:
                -o -name 'mapping.txt' \
                -o -name '*.zip' -o -name '*.AppImage' \
                -o -name 'songbook-updater-windows.exe' \
-               -o -name 'songbook-updater-linux' \
-               -o -name 'songbook-updater-macos' \) | sort)
+               -o -name 'songbook-updater-linux' \) | sort)
 
           if [ ${#ASSETS[@]} -eq 0 ]; then
             echo "ERROR: no release assets found"
@@ -938,14 +993,40 @@ jobs:
           # avec run_number pour éviter toute collision avec un tag git existant
           # et pour ne pas créer une release tagged sur un nom de branche
           # (ce qui serait invalide / source de confusion).
+          #
+          # Notes de la release = CHANGELOG auto-généré. Sur un vrai tag,
+          # semantic-release a commité "chore(release): X.Y.Z\n\n<changelog>" et
+          # posé le tag DESSUS → `git log -1 --pretty=%b` renvoie exactement ce
+          # changelog conventionnel (Markdown, groupé Features / Bug Fixes, avec
+          # liens de commits). En workflow_dispatch (pas de commit de release),
+          # on retombe sur les notes auto de GitHub (--generate-notes).
+          # NB : `release_notes.json` reste le "What's New" des stores (publish-*).
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             RELEASE_TAG="$GITHUB_REF_NAME"
+            echo "Release tag: $RELEASE_TAG"
+            CHANGELOG=$(git log -1 --pretty=%b)
+            # Le changelog est généré côté GitLab (dépôt canonique) → liens
+            # gitlab.com. Les SHAs sont identiques sur le miroir et la structure
+            # d'URL est la même (/commit/<sha>, /compare/a...b) : on réécrit juste
+            # l'hôte + le chemin du dépôt pour obtenir des liens GitHub natifs.
+            CHANGELOG=$(sed 's|https://gitlab\.com/my-song-book/app|https://github.com/deadLocks21/songbook|g' <<< "$CHANGELOG")
+            if [ -n "${CHANGELOG//[[:space:]]/}" ]; then
+              gh release create "$RELEASE_TAG" \
+                --title "Songbook v$VERSION" \
+                --notes "$CHANGELOG" \
+                "${ASSETS[@]}"
+            else
+              # Filet de sécurité si le corps du commit taggé est vide.
+              gh release create "$RELEASE_TAG" \
+                --title "Songbook v$VERSION" \
+                --generate-notes \
+                "${ASSETS[@]}"
+            fi
           else
             RELEASE_TAG="dispatch-v${VERSION}-${{ github.run_number }}"
+            echo "Release tag: $RELEASE_TAG"
+            gh release create "$RELEASE_TAG" \
+              --title "Songbook v$VERSION" \
+              --generate-notes \
+              "${ASSETS[@]}"
           fi
-          echo "Release tag: $RELEASE_TAG"
-
-          gh release create "$RELEASE_TAG" \
-            --title "Songbook v$VERSION" \
-            --notes "$BODY" \
-            "${ASSETS[@]}"

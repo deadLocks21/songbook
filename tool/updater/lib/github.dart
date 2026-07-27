@@ -37,17 +37,21 @@ class Release {
 
   /// Asset du binaire updater lui-même (pour l'auto-mise à jour de l'updater).
   ///  - Windows : `songbook-updater-windows.exe`
-  ///  - macOS   : `songbook-updater-macos`
   ///  - Linux   : `songbook-updater-linux`
+  ///  - macOS   : `songbook-installer-macos-<v>-<run>.zip` — un `.app` notarisé
+  ///    + staplé (pas un binaire nu, qui serait tué par Gatekeeper au 1ᵉʳ
+  ///    téléchargement). L'auto-MAJ en extrait le binaire interne (cf.
+  ///    Installer._selfUpdateUpdater). Téléchargé par curl, donc jamais mis en
+  ///    quarantaine côté install existante.
   ReleaseAsset? get updaterAsset {
-    final String wanted;
-    if (Platform.isWindows) {
-      wanted = 'songbook-updater-windows.exe';
-    } else if (Platform.isMacOS) {
-      wanted = 'songbook-updater-macos';
-    } else {
-      wanted = 'songbook-updater-linux';
+    if (Platform.isMacOS) {
+      final re = RegExp(r'^songbook-installer-macos-.*\.zip$',
+          caseSensitive: false);
+      return _firstWhereOrNull(assets, (a) => re.hasMatch(a.name));
     }
+    final wanted = Platform.isWindows
+        ? 'songbook-updater-windows.exe'
+        : 'songbook-updater-linux';
     return _firstWhereOrNull(assets, (a) => a.name == wanted);
   }
 }

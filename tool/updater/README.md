@@ -10,8 +10,9 @@ Store) : l'app y est signée **Developer ID** + **notarisée**, et distribuée e
 ni alerte Gatekeeper.
 
 Un seul binaire Dart compilé natif (`dart compile exe`), attaché à chaque
-release GitHub (`songbook-updater-windows.exe`, `songbook-updater-linux`,
-`songbook-updater-macos`).
+release GitHub : `songbook-updater-windows.exe`, `songbook-updater-linux`, et —
+sur macOS — emballé dans un **`.app` notarisé + staplé** (`Songbook Installer.app`,
+zippé dans `songbook-installer-macos-*.zip`) pour passer Gatekeeper au double-clic.
 
 ## Ce qu'il fait
 
@@ -100,7 +101,8 @@ dart compile exe bin/songbook_updater.dart -o songbook-updater
 Le CI (`.github/workflows/release.yml`) compile et attache les binaires à chaque
 release taggée `v*` :
 - `build-updater` (matrice **Windows + Linux + macOS** ; sur macOS, étapes
-  supplémentaires : signature Developer ID + notarisation du binaire) ;
+  supplémentaires : l'updater est emballé dans un `.app`, signé Developer ID,
+  **notarisé + staplé**, puis zippé) ;
 - `build-macos` (l'app macOS elle-même : `.app` Developer ID non-sandboxé,
   notarisé + staplé, zippé via `ditto`).
 
