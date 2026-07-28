@@ -20,9 +20,16 @@ class Release {
   final List<ReleaseAsset> assets;
 
   /// Asset correspondant à l'app pour la plateforme courante.
-  ///  - Windows : `songbook-windows-<v>-<run>.zip`
-  ///  - macOS   : `songbook-macos-<v>-<run>.zip` (.app signé Developer ID zippé)
-  ///  - Linux   : `Songbook-<v>-<run>-x86_64.AppImage`
+  ///  - Windows : `songbook-windows-<v>.zip`
+  ///  - macOS   : `songbook-macos-<v>.zip` (.app signé Developer ID zippé)
+  ///  - Linux   : `songbook-linux-<v>-x86_64.AppImage`
+  ///
+  /// Les regex restent volontairement larges : elles doivent continuer à matcher
+  /// les anciens noms (`songbook-windows-<v>-<run>.zip`,
+  /// `Songbook-<v>-<run>-x86_64.AppImage`) et, surtout, un updater déjà installé
+  /// applique les regex de SA version aux assets des releases futures. Le nom des
+  /// assets produits par la CI est donc un contrat : cf. le job `release` de
+  /// `.github/workflows/release.yml`.
   ReleaseAsset? get appAsset {
     final RegExp re;
     if (Platform.isWindows) {
@@ -38,11 +45,17 @@ class Release {
   /// Asset du binaire updater lui-même (pour l'auto-mise à jour de l'updater).
   ///  - Windows : `songbook-updater-windows.exe`
   ///  - Linux   : `songbook-updater-linux`
-  ///  - macOS   : `songbook-installer-macos-<v>-<run>.zip` — un `.app` notarisé
+  ///  - macOS   : `songbook-installer-macos-<v>.zip` — un `.app` notarisé
   ///    + staplé (pas un binaire nu, qui serait tué par Gatekeeper au 1ᵉʳ
   ///    téléchargement). L'auto-MAJ en extrait le binaire interne (cf.
   ///    Installer._selfUpdateUpdater). Téléchargé par curl, donc jamais mis en
   ///    quarantaine côté install existante.
+  ///
+  /// Deux noms à ne pas casser côté CI : l'installateur macOS doit garder le
+  /// préfixe `songbook-installer-macos-` (renommé en `songbook-macos-installer-*`
+  /// il matcherait la regex de [appAsset] et l'app s'installerait depuis
+  /// l'installateur), et les binaires updater doivent rester **non versionnés** —
+  /// les installations existantes les cherchent au nom exact.
   ReleaseAsset? get updaterAsset {
     if (Platform.isMacOS) {
       final re = RegExp(r'^songbook-installer-macos-.*\.zip$',

@@ -12,7 +12,7 @@ ni alerte Gatekeeper.
 Un seul binaire Dart compilé natif (`dart compile exe`), attaché à chaque
 release GitHub : `songbook-updater-windows.exe`, `songbook-updater-linux`, et —
 sur macOS — emballé dans un **`.app` notarisé + staplé** (`Songbook Installer.app`,
-zippé dans `songbook-installer-macos-*.zip`) pour passer Gatekeeper au double-clic.
+zippé dans `songbook-installer-macos-<v>.zip`) pour passer Gatekeeper au double-clic.
 
 > macOS, deux contraintes de signature à ne pas casser (cf.
 > [MACOS_SETUP.md §5](MACOS_SETUP.md#5-points-de-vigilance-si-un-job-macos-échoue),

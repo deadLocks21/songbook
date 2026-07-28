@@ -11,9 +11,10 @@
 #   1) prepare        Calcule la version (depuis le tag ou pubspec.yaml).
 #
 #   2) Builds parallèle (gate strict) :
-#        build-ios          → IPA signé (artifact) puis TestFlight
-#        build-android      → AAB signé (artifact, pas encore publié) + APK
-#                             universel (sideload, attaché à la GitHub Release)
+#        build-ios          → IPA signé (artifact) puis TestFlight — pas attaché
+#                             à la GitHub Release (signé App Store, non sideloadable)
+#        build-android      → AAB signé (artifact → Play Store, pas attaché à la
+#                             GitHub Release) + APK universel (sideload, attaché)
 #        build-windows      → .zip non signé
 #        build-linux        → .AppImage
 #        build-macos        → .app Developer ID notarisé (hors App Store)
@@ -24,9 +25,13 @@
 #                     dont l'app macOS (build-macos) et l'updater (build-updater,
 #                     matrice qui inclut macOS).
 #
-#   4) release        Crée la GitHub Release (assets desktop + updater attachés)
-#                     dès le gate franchi — sans attendre les stores. Skippée si
-#                     workflow_dispatch (pas de tag) pour tester sans polluer.
+#   4) release        Crée la GitHub Release dès le gate franchi — sans attendre
+#                     les stores. Assets attachés : apps desktop (Windows, Linux,
+#                     macOS), installateur + binaires updater, et l'APK universel.
+#                     PAS l'AAB ni l'IPA (non installables directement, déjà
+#                     publiés sur les stores) — cf. le contrat de nommage des
+#                     assets documenté dans le job. Skippée si workflow_dispatch
+#                     (pas de tag) pour tester sans polluer.
 #
 #   5) Publishes parallèle (déclenchés APRÈS la GitHub Release) :
 #        publish-ios     → TestFlight (groupe externe « Songbook Beta »)
@@ -292,6 +297,14 @@ jobs:
             --dart-define=SIGNOZ_INGESTION_KEY="$SIGNOZ_INGESTION_KEY" \
             --dart-define=SIGNOZ_ENV="$SIGNOZ_ENV"
 
+      # `flutter build apk` sort un `app-release.apk` générique : on le renomme
+      # au schéma d'assets de la Release (cf. job release) avant l'upload, pour
+      # que le nom de l'artifact soit déjà le nom final.
+      - name: Renomme l'APK au schéma songbook-android-<version>.apk
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk \
+             "build/app/outputs/flutter-apk/songbook-android-${VERSION}.apk"
+
       - name: Upload AAB + APK + mapping artifact
         uses: actions/upload-artifact@v4
         with:
@@ -444,7 +457,7 @@ jobs:
             --entitlements "$ENT" --sign "$IDENTITY" "$APP"
           codesign --verify --strict --verbose=2 "$APP"
 
-          ZIP="songbook-macos-${VERSION}-${{ github.run_number }}.zip"
+          ZIP="songbook-macos-${VERSION}.zip"
           ditto -c -k --keepParent "$APP" "$ZIP"
 
           # Notarisation via la clé App Store Connect (écrite dans un .p8 temporaire).
@@ -511,7 +524,7 @@ jobs:
         # → on zippe tout le dossier Release pour un archive autonome.
         shell: pwsh
         run: |
-          $zipName = "songbook-windows-$env:VERSION-${{ github.run_number }}.zip"
+          $zipName = "songbook-windows-$env:VERSION.zip"
           $sourceDir = "build/windows/x64/runner/Release"
           if (-not (Test-Path $sourceDir)) {
             Write-Error "Build output directory not found: $sourceDir"
@@ -616,7 +629,7 @@ jobs:
         # `--appimage-extract-and-run` : appimagetool est lui-même un AppImage
         # qui requiert FUSE2 pour s'auto-monter. Sur GHA, FUSE n'est pas dispo.
         run: |
-          APPIMAGE_NAME="Songbook-${VERSION}-${{ github.run_number }}-x86_64.AppImage"
+          APPIMAGE_NAME="songbook-linux-${VERSION}-x86_64.AppImage"
           ARCH=x86_64 ./appimagetool --appimage-extract-and-run AppDir "$APPIMAGE_NAME"
           echo "APPIMAGE_NAME=$APPIMAGE_NAME" >> "$GITHUB_ENV"
 
@@ -833,7 +846,7 @@ jobs:
             --wait
           xcrun stapler staple "$APP"
 
-          ZIP="songbook-installer-macos-${VERSION}-${{ github.run_number }}.zip"
+          ZIP="songbook-installer-macos-${VERSION}.zip"
           ditto -c -k --keepParent "$APP" "$ZIP"
           echo "INSTALLER_ZIP=tool/updater/$ZIP" >> "$GITHUB_ENV"
 
@@ -1015,6 +1028,27 @@ jobs:
 
       - name: Create GitHub Release
         run: |
+          # Schéma des assets : `songbook-<plateforme>-<version>.<ext>`, tout en
+          # minuscules, sans numéro de run (la version du tag suffit à situer le
+          # binaire). Ces noms sont un CONTRAT avec les updaters DÉJÀ INSTALLÉS,
+          # qui résolvent les assets de la release `latest` par nom
+          # (tool/updater/lib/github.dart) :
+          #   - app Windows           `^songbook-windows-.*\.zip$`
+          #   - app macOS             `^songbook-macos-.*\.zip$`
+          #   - app Linux             `x86_64\.AppImage$`
+          #   - installateur macOS    `^songbook-installer-macos-.*\.zip$`
+          #   - updater Win/Linux     nom EXACT, non versionné (cible mouvante)
+          # Deux pièges : ne jamais renommer l'installateur macOS en
+          # `songbook-macos-installer-*` (il matcherait la regex de l'app), et ne
+          # jamais versionner les binaires updater (les installations existantes
+          # les cherchent au nom exact pour s'auto-mettre à jour).
+          #
+          # AAB et IPA ne sont volontairement PAS attachés : ni l'un ni l'autre
+          # n'est installable par un utilisateur (l'AAB ne sert qu'au Play Store,
+          # l'IPA est signé App Store) et ils sont déjà publiés par les jobs
+          # publish-android / publish-ios. L'APK universel, lui, reste attaché
+          # pour le sideload.
+          #
           # On n'attache que les assets réellement présents : `mapping.txt`
           # n'existe que si R8/minify est activé (ce n'est pas le cas ici), et
           # certaines plateformes peuvent être désactivées. Passer un argument
@@ -1026,7 +1060,7 @@ jobs:
             echo "  - $f"
             ASSETS+=("$f")
           done < <(find artifacts -type f \
-            \( -name '*.ipa' -o -name '*.aab' -o -name '*.apk' \
+            \( -name '*.apk' \
                -o -name 'mapping.txt' \
                -o -name '*.zip' -o -name '*.AppImage' \
                -o -name 'songbook-updater-windows.exe' \

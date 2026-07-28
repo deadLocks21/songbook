@@ -139,12 +139,22 @@ raisons pour lesquelles Songbook n'est pas distribué sur le Mac App Store.
 
 - Les builds (app + updater) sont attachés à chaque **GitHub Release** taggée
   `v*`.
+- Schéma des assets : `songbook-<plateforme>-<version>.<ext>`, tout en minuscules,
+  sans numéro de run CI (la version du tag suffit).
 - Assets attendus par l'updater (à matcher par regex / nom) :
-  - App Windows : `songbook-windows-<v>-<run>.zip` (contenu du dossier `Release/`).
-  - App Linux : `Songbook-<v>-<run>-x86_64.AppImage`.
-  - App macOS : `songbook-macos-<v>-<run>.zip` (`songbook.app` zippé via `ditto`).
+  - App Windows : `songbook-windows-<v>.zip` (contenu du dossier `Release/`).
+  - App Linux : `songbook-linux-<v>-x86_64.AppImage`.
+  - App macOS : `songbook-macos-<v>.zip` (`songbook.app` zippé via `ditto`).
   - Updater : `songbook-updater-windows.exe`, `songbook-updater-linux`, et —
-    macOS — `songbook-installer-macos-<v>-<run>.zip` (un `.app`, cf. plus bas).
+    macOS — `songbook-installer-macos-<v>.zip` (un `.app`, cf. plus bas).
+- Ces noms sont un **contrat avec les installations existantes**, qui résolvent
+  les assets de la release `latest` par nom (`lib/github.dart`) : un updater déjà
+  déployé utilise les regex de SA version, pas celles du code actuel. D'où deux
+  règles : ne jamais renommer l'installateur macOS en `songbook-macos-installer-*`
+  (il matcherait `^songbook-macos-.*\.zip$`, la regex de l'app), et ne jamais
+  versionner les binaires updater (cibles mouvantes, cherchées au nom exact).
+- Ne sont **pas** attachés à la Release : l'AAB (Play Store uniquement) et l'IPA
+  (signé App Store, non sideloadable). L'APK universel, lui, est attaché.
 - Jobs CI :
   - `build-updater` (matrice **Windows + Linux + macOS**) : `dart compile exe`,
     upload. Sur macOS, étapes supplémentaires (gardées par

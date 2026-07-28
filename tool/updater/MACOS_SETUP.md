@@ -196,7 +196,7 @@ regarder :
 ## 6. Distribuer aux utilisateurs mac (une fois)
 
 Une fois la release verte, la GitHub Release contient
-`songbook-installer-macos-<v>-<run>.zip` — un **`Songbook Installer.app`**
+`songbook-installer-macos-<v>.zip` — un **`Songbook Installer.app`**
 notarisé **et staplé**.
 
 Côté utilisateur, **première fois seulement** :
@@ -233,8 +233,8 @@ MAJ (fenêtre de progression + prompt), puis démarre — **sans terminal**. L'a
   s'ouvrent pas automatiquement dans le build direct ; le partage in-app reste
   fonctionnel. À compléter si le besoin se confirme.
 - **Pas de Mac App Store** : macOS n'est distribué qu'en direct (plus de `.pkg`).
-  L'utilisateur télécharge `songbook-installer-macos-<v>-<run>.zip` (le `.app`
-  installateur) ; l'app elle-même (`songbook-macos-<v>-<run>.zip`) est récupérée
+  L'utilisateur télécharge `songbook-installer-macos-<v>.zip` (le `.app`
+  installateur) ; l'app elle-même (`songbook-macos-<v>.zip`) est récupérée
   par l'updater.
 
 ---
@@ -247,5 +247,5 @@ MAJ (fenêtre de progression + prompt), puis démarre — **sans terminal**. L'a
 - [ ] Secret GitHub `DEVELOPER_ID_APPLICATION_PASSWORD`.
 - [ ] Clé App Store Connect : rôle OK + contrat développeur accepté.
 - [ ] `git push` du commit `feat` sur `main` → release → jobs macOS verts.
-- [ ] `Songbook Installer.app` (dans `songbook-installer-macos-*.zip`) récupéré
+- [ ] `Songbook Installer.app` (dans `songbook-installer-macos-<v>.zip`) récupéré
       depuis la GitHub Release et testé au double-clic sur un Mac.
