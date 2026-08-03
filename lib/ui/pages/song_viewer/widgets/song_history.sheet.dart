@@ -60,6 +60,12 @@ class SongHistorySheet extends StatelessWidget {
             songName,
             style: theme.textTheme.bodyMedium?.copyWith(color: muted),
           ),
+          const SizedBox(height: 12.0),
+          Text(
+            key: const Key('songHistoryRecentCount'),
+            _recentCount(schedule.recentCount(reference)),
+            style: theme.textTheme.bodyMedium,
+          ),
           const SizedBox(height: 16.0),
           if (schedule.isEmpty)
             Text(
@@ -84,6 +90,20 @@ class SongHistorySheet extends StatelessWidget {
       ),
     );
   }
+}
+
+/// La fréquence de reprise, toujours donnée ici — même à zéro.
+///
+/// Le signal compact du sélecteur, lui, se tait en dessous de deux reprises :
+/// il n'a la place que pour ce qui fait hésiter. Le panneau, qu'on ouvre
+/// exprès, doit répondre à la question dans tous les cas.
+String _recentCount(int count) {
+  const months = SongSchedule.recentMonths;
+  return switch (count) {
+    0 => 'Pas repris ces $months derniers mois',
+    1 => 'Pris une fois ces $months derniers mois',
+    _ => 'Pris $count fois ces $months derniers mois',
+  };
 }
 
 class _SectionTitle extends StatelessWidget {

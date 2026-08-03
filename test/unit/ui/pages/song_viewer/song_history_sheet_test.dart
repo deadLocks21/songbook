@@ -26,6 +26,31 @@ void main() {
     await pump(tester, SongSchedule.never);
 
     expect(find.byKey(const Key('songHistoryEmpty')), findsOneWidget);
+    expect(find.text('Pas repris ces 3 derniers mois'), findsOneWidget);
+  });
+
+  testWidgets('donne la fréquence des trois derniers mois', (tester) async {
+    await pump(
+      tester,
+      SongSchedule.from([
+        DateTime(2026, 7, 13, 10, 0),
+        DateTime(2026, 6, 8, 10, 0),
+        // Hors fenêtre : ne doit pas entrer dans le compte, mais reste listée.
+        DateTime(2026, 2, 9, 10, 0),
+      ], now: now),
+    );
+
+    expect(find.text('Pris 2 fois ces 3 derniers mois'), findsOneWidget);
+    expect(find.text('Lun 9 fév 2026, 10:00'), findsOneWidget);
+  });
+
+  testWidgets('accorde le compte au singulier', (tester) async {
+    await pump(
+      tester,
+      SongSchedule.from([DateTime(2026, 7, 13, 10, 0)], now: now),
+    );
+
+    expect(find.text('Pris une fois ces 3 derniers mois'), findsOneWidget);
   });
 
   testWidgets('déroule les dates passées, la plus récente d\'abord', (

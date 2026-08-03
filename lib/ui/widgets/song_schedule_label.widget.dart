@@ -26,6 +26,7 @@ class SongScheduleLabel extends StatelessWidget {
     final theme = Theme.of(context);
     final reference = now ?? DateTime.now();
     final signal = _signal(theme, reference);
+    final repeats = _repeats(reference);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -34,7 +35,7 @@ class SongScheduleLabel extends StatelessWidget {
         const SizedBox(width: 4.0),
         Flexible(
           child: Text(
-            signal.text,
+            repeats == null ? signal.text : '${signal.text} · $repeats',
             style: theme.textTheme.bodySmall?.copyWith(color: signal.color),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -42,6 +43,17 @@ class SongScheduleLabel extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  /// « 3 fois en 3 mois », ou `null` quand il n'y a rien à ajouter.
+  ///
+  /// N'apparaît qu'à partir de deux reprises : une seule, la dernière date l'a
+  /// déjà dit, et l'afficher sur chaque chant noierait ceux qui reviennent
+  /// vraiment souvent — les seuls que cette ligne cherche à faire ressortir.
+  String? _repeats(DateTime reference) {
+    final count = schedule.recentCount(reference);
+    if (count < 2) return null;
+    return '$count fois en ${SongSchedule.recentMonths} mois';
   }
 
   ({IconData icon, String text, Color color}) _signal(

@@ -31,6 +31,35 @@ class SongSchedule {
 
   bool get isEmpty => past.isEmpty && upcoming.isEmpty;
 
+  /// Sur combien de mois se compte la fréquence de reprise.
+  ///
+  /// Assez long pour qu'un chant repris tous les mois s'y voie, assez court
+  /// pour parler du répertoire d'en ce moment plutôt que de toute l'histoire de
+  /// l'assemblée.
+  static const recentMonths = 3;
+
+  /// Combien de fois ce chant a été pris ces [recentMonths] derniers mois.
+  ///
+  /// La dernière date dit « c'était il y a trois semaines » ; celui-ci dit
+  /// « et c'était la troisième fois » — un chant repris souvent ne se repère
+  /// pas autrement.
+  ///
+  /// Ne compte que le passé : ce qui est déjà prévu se signale à part, et n'a
+  /// pas encore été chanté.
+  int recentCount(DateTime now) => timesSince(windowStart(now));
+
+  /// Combien de fois ce chant a été pris depuis [from], celle-ci comprise.
+  int timesSince(DateTime from) {
+    final since = wallClock(from);
+    return past.where((date) => !date.isBefore(since)).length;
+  }
+
+  /// Le début de la fenêtre de comptage : le même jour, [recentMonths] mois
+  /// plus tôt. Un mois calendaire, pas trente jours — c'est ainsi que se compte
+  /// « ces trois derniers mois ».
+  static DateTime windowStart(DateTime now) =>
+      DateTime(now.year, now.month - recentMonths, now.day);
+
   /// Répartit [dates] de part et d'autre de [now].
   ///
   /// Les doublons sont écartés : un même chant peut figurer deux fois dans une

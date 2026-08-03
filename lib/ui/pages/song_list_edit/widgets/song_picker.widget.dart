@@ -97,16 +97,19 @@ class _SongPickerSheetState extends ConsumerState<_SongPickerSheet> {
                     final song = filtered[index];
                     return ListTile(
                       title: Text(song.name),
-                      subtitle: Row(
+                      // L'historique prend sa ligne : sur la meme que le code,
+                      // « chante il y a 3 semaines · 3 fois en 3 mois » se fait
+                      // couper en deux, et c'est la frequence qui saute.
+                      isThreeLine: true,
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(song.code),
-                          const Text(' · '),
-                          Flexible(
-                            child: SongScheduleLabel(
-                              key: Key('songSchedule_${song.id}'),
-                              schedule:
-                                  schedules[song.id] ?? SongSchedule.never,
-                            ),
+                          const SizedBox(height: 2.0),
+                          SongScheduleLabel(
+                            key: Key('songSchedule_${song.id}'),
+                            schedule: schedules[song.id] ?? SongSchedule.never,
                           ),
                         ],
                       ),

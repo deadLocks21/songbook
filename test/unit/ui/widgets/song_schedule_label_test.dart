@@ -33,6 +33,53 @@ void main() {
     expect(find.text('Chanté il y a 3 semaines'), findsOneWidget);
   });
 
+  testWidgets('ajoute la fréquence dès la deuxième reprise', (tester) async {
+    await pump(
+      tester,
+      SongSchedule.from([
+        DateTime(2026, 7, 13, 10, 0),
+        DateTime(2026, 6, 8, 10, 0),
+        DateTime(2026, 5, 4, 10, 0),
+      ], now: now),
+    );
+
+    expect(
+      find.text('Chanté il y a 3 semaines · 3 fois en 3 mois'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('tait la fréquence quand le chant n\'a été pris qu\'une fois', (
+    tester,
+  ) async {
+    // « Il y a 3 semaines » le dit déjà ; l'écrire deux fois noierait les
+    // chants qui reviennent vraiment souvent.
+    await pump(
+      tester,
+      SongSchedule.from([DateTime(2026, 7, 13, 10, 0)], now: now),
+    );
+
+    expect(find.text('Chanté il y a 3 semaines'), findsOneWidget);
+  });
+
+  testWidgets('compte les reprises même quand le chant est déjà prévu', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      SongSchedule.from([
+        DateTime(2026, 7, 13, 10, 0),
+        DateTime(2026, 6, 8, 10, 0),
+        DateTime(2026, 8, 9, 10, 0),
+      ], now: now),
+    );
+
+    expect(
+      find.text('Déjà prévu Dim 9 août · 2 fois en 3 mois'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('annonce d\'abord qu\'un chant est déjà prévu', (tester) async {
     await pump(
       tester,
