@@ -96,22 +96,15 @@ class _SongPickerSheetState extends ConsumerState<_SongPickerSheet> {
                   itemBuilder: (context, index) {
                     final song = filtered[index];
                     return ListTile(
-                      title: Text(song.name),
-                      // L'historique prend sa ligne : sur la meme que le code,
-                      // « chante il y a 3 semaines · 3 fois en 3 mois » se fait
-                      // couper en deux, et c'est la frequence qui saute.
-                      isThreeLine: true,
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(song.code),
-                          const SizedBox(height: 2.0),
-                          SongScheduleLabel(
-                            key: Key('songSchedule_${song.id}'),
-                            schedule: schedules[song.id] ?? SongSchedule.never,
-                          ),
-                        ],
+                      // Le code passe devant le titre, en plus petit : il sert
+                      // a reperer le chant, pas a le nommer. Il laisse ainsi
+                      // toute la deuxieme ligne a l'historique, qui a besoin de
+                      // sa largeur — « chante il y a 3 semaines · 3 fois en
+                      // 3 mois » se faisait couper en partageant sa ligne.
+                      title: _SongTitle(code: song.code, name: song.name),
+                      subtitle: SongScheduleLabel(
+                        key: Key('songSchedule_${song.id}'),
+                        schedule: schedules[song.id] ?? SongSchedule.never,
                       ),
                       onTap: () => _previewSong(song),
                       trailing: IconButton(
@@ -155,6 +148,41 @@ class _SongPickerSheetState extends ConsumerState<_SongPickerSheet> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Le code puis le nom d'un chant, sur une ligne.
+///
+/// Le code garde sa place devant, mais en plus petit et en retrait : c'est un
+/// repere, pas le nom du chant. Aligne sur la meme ligne de base pour que les
+/// deux tailles ne donnent pas l'impression de flotter l'une par rapport a
+/// l'autre.
+class _SongTitle extends StatelessWidget {
+  final String code;
+  final String name;
+
+  const _SongTitle({required this.code, required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        Text(
+          code,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(width: 8.0),
+        Expanded(
+          child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
+        ),
+      ],
     );
   }
 }
