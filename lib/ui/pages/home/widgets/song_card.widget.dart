@@ -60,6 +60,14 @@ class SongCard extends StatelessWidget {
                 nameStyle: Theme.of(context).textTheme.bodyLarge,
               ),
               const SizedBox(height: 12.0),
+              // L'historique juste sous le titre : c'est lui qui fait choisir un
+              // chant plutôt qu'un autre. Ce que le chant embarque comme
+              // partitions se regarde après, une fois le choix arrêté.
+              SongScheduleLabel(
+                key: Key('songSchedule_${song.id}'),
+                schedule: schedule,
+              ),
+              const SizedBox(height: 6.0),
               Row(
                 children: [
                   if (song.hasImage) _ResourceIcon(icon: Icons.music_note),
@@ -71,11 +79,6 @@ class SongCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                 ],
-              ),
-              const SizedBox(height: 6.0),
-              SongScheduleLabel(
-                key: Key('songSchedule_${song.id}'),
-                schedule: schedule,
               ),
             ],
           ),
