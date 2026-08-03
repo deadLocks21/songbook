@@ -115,9 +115,9 @@ class _SongsTabState extends ConsumerState<SongsTab> {
             key: const Key('songGridView'),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
-              // Une ligne de plus depuis que la carte dit quand le chant a été
-              // pris pour la dernière fois.
-              mainAxisExtent: 136.0,
+              // La carte a gagné la ligne d'historique, mais le code a rejoint
+              // le titre : au total, la hauteur d'avant.
+              mainAxisExtent: 114.0,
               crossAxisSpacing: 8.0,
               mainAxisSpacing: 8.0,
             ),

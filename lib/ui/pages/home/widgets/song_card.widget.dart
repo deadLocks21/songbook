@@ -4,6 +4,7 @@ import 'package:songbook/core/application/dtos/song.dto.dart';
 import 'package:songbook/core/domain/model/song_schedule.dart';
 import 'package:songbook/ui/pages/song_viewer/song_viewer.page.dart';
 import 'package:songbook/ui/widgets/song_schedule_label.widget.dart';
+import 'package:songbook/ui/widgets/song_title.widget.dart';
 
 /// Extension pour ajouter des propriétés calculées à SongDto.
 extension SongDtoExtension on SongDto {
@@ -50,13 +51,13 @@ class SongCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(song.code, style: Theme.of(context).textTheme.bodyMedium),
-              const SizedBox(height: 2.0),
-              Text(
-                song.name,
-                style: Theme.of(context).textTheme.bodyLarge,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              // Même présentation que dans le sélecteur : le code devant le
+              // titre, en plus petit. Il ne prend plus sa propre ligne, ce qui
+              // laisse la place à l'historique sans agrandir la carte.
+              SongTitle(
+                code: song.code,
+                name: song.name,
+                nameStyle: Theme.of(context).textTheme.bodyLarge,
               ),
               const SizedBox(height: 12.0),
               Row(
