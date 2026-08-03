@@ -55,7 +55,10 @@ void main() {
           .toList();
 
       expect(boxes.any((b) => b.value == false), isTrue);
-      expect(find.text('Remplace la tonalité que vous aviez choisie'), findsOneWidget);
+      expect(
+        find.text('Remplace la tonalité que vous aviez choisie'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('propose de ne rien reprendre quand tout est décoché', (
@@ -73,13 +76,14 @@ void main() {
       expect(find.text('Ne rien reprendre'), findsOneWidget);
     });
 
-    testWidgets('arrive déjà à « ne rien reprendre » quand tout est conflictuel', (
-      tester,
-    ) async {
-      await pumpReview(tester, preview(mineSemitones: -1));
+    testWidgets(
+      'arrive déjà à « ne rien reprendre » quand tout est conflictuel',
+      (tester) async {
+        await pumpReview(tester, preview(mineSemitones: -1));
 
-      expect(find.text('Ne rien reprendre'), findsOneWidget);
-    });
+        expect(find.text('Ne rien reprendre'), findsOneWidget);
+      },
+    );
 
     testWidgets('annonce une comparaison approchée', (tester) async {
       // Sans instantané de base, les modifications de l'utilisateur passent

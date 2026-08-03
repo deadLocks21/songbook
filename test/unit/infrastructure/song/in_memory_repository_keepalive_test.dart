@@ -16,24 +16,26 @@ void main() {
 
   setUp(() => SharedPreferences.setMockInitialValues({})); // aucune URL → démo
 
-  test('songRepository (in-memory) garde la même instance malgré l\'auto-dispose',
-      () async {
-    final container = ProviderContainer();
-    addTearDown(container.dispose);
+  test(
+    'songRepository (in-memory) garde la même instance malgré l\'auto-dispose',
+    () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
 
-    final repo1 = container.read(songRepositoryProvider);
-    expect(repo1, isA<InMemorySongRepository>());
+      final repo1 = container.read(songRepositoryProvider);
+      expect(repo1, isA<InMemorySongRepository>());
 
-    // Laisse tourner un éventuel cycle d'auto-dispose (aucun listener attaché).
-    await Future<void>.delayed(const Duration(milliseconds: 20));
+      // Laisse tourner un éventuel cycle d'auto-dispose (aucun listener attaché).
+      await Future<void>.delayed(const Duration(milliseconds: 20));
 
-    final repo2 = container.read(songRepositoryProvider);
-    expect(
-      identical(repo1, repo2),
-      isTrue,
-      reason: 'keepAlive doit conserver la même instance (état des chants)',
-    );
-  });
+      final repo2 = container.read(songRepositoryProvider);
+      expect(
+        identical(repo1, repo2),
+        isTrue,
+        reason: 'keepAlive doit conserver la même instance (état des chants)',
+      );
+    },
+  );
 
   test('songListRepository (in-memory) garde la même instance', () async {
     final container = ProviderContainer();

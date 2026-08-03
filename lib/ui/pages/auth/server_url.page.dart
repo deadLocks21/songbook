@@ -102,10 +102,7 @@ class _ServerUrlSheetState extends ConsumerState<_ServerUrlSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'URL du backend',
-            style: theme.textTheme.titleMedium,
-          ),
+          Text('URL du backend', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           TextField(
             key: const Key('serverUrlField'),
@@ -129,9 +126,7 @@ class _ServerUrlSheetState extends ConsumerState<_ServerUrlSheet> {
             'Saisissez uniquement le domaine de votre serveur '
             '(ex : https://songbook.dtfh.fr), sans chemin',
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.textTheme.bodySmall?.color?.withValues(
-                alpha: 0.7,
-              ),
+              color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 24),

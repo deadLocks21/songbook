@@ -70,7 +70,8 @@ class SongBuilder {
         id: id ?? '00000000-0000-4000-a000-00000000000${_resources.length + 1}',
         name: name ?? 'PDF Resource ${_resources.length + 1}',
         pdfUrl:
-            pdfUrl ?? 'https://example.com/document${_resources.length + 1}.pdf',
+            pdfUrl ??
+            'https://example.com/document${_resources.length + 1}.pdf',
       ),
     );
     return this;

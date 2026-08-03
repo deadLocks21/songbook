@@ -82,6 +82,7 @@ class ShareLinkParser {
         uri.port == configured.port;
   }
 
-  static String _originOf(Uri uri) =>
-      uri.hasPort ? '${uri.scheme}://${uri.host}:${uri.port}' : '${uri.scheme}://${uri.host}';
+  static String _originOf(Uri uri) => uri.hasPort
+      ? '${uri.scheme}://${uri.host}:${uri.port}'
+      : '${uri.scheme}://${uri.host}';
 }

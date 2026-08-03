@@ -36,7 +36,9 @@ class RemoteSongListDto {
       version: json['version'] as int,
       createdAt: DateTime.parse(json['createdAt'] as String),
       entries: (json['entries'] as List<dynamic>? ?? const [])
-          .map((e) => RemoteSongListEntryDto.fromJson(e as Map<String, dynamic>))
+          .map(
+            (e) => RemoteSongListEntryDto.fromJson(e as Map<String, dynamic>),
+          )
           .toList(),
       sourceListId: json['sourceListId'] as String?,
       sourceVersion: json['sourceVersion'] as int?,
@@ -60,7 +62,10 @@ class RemoteSongListDto {
   /// [baseVersion] n'est renseigne que pour une mise a jour : c'est la version
   /// sur laquelle l'edition se base, que le serveur compare a la sienne. La
   /// creation ne l'envoie pas — il n'y a encore rien a comparer.
-  static Map<String, dynamic> writePayload(SongList songList, {int? baseVersion}) {
+  static Map<String, dynamic> writePayload(
+    SongList songList, {
+    int? baseVersion,
+  }) {
     final upstream = songList.upstream;
 
     return {

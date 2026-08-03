@@ -19,11 +19,8 @@ class ImageResource extends Resource {
   final String name;
   final List<String> imageUrls;
 
-  ImageResource({
-    required this.id,
-    required this.name,
-    required this.imageUrls,
-  }) : assert(imageUrls.isNotEmpty, 'imageUrls cannot be empty');
+  ImageResource({required this.id, required this.name, required this.imageUrls})
+    : assert(imageUrls.isNotEmpty, 'imageUrls cannot be empty');
 
   ImageResource copyWith({
     UuidValue? id,
@@ -95,7 +92,11 @@ class ChordProResource extends Resource {
     required this.chordProUrl,
   });
 
-  ChordProResource copyWith({UuidValue? id, String? name, String? chordProUrl}) {
+  ChordProResource copyWith({
+    UuidValue? id,
+    String? name,
+    String? chordProUrl,
+  }) {
     return ChordProResource(
       id: id ?? this.id,
       name: name ?? this.name,

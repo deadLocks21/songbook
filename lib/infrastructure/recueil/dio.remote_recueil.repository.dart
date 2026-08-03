@@ -21,7 +21,9 @@ class DioRemoteRecueilRepository implements RemoteRecueilRepository {
   @override
   Future<List<Recueil>> fetchRecueils(String baseUrl) async {
     final url = BackendUrl.join(baseUrl, BackendEndpoints.recueils);
-    final response = await _dio.get<Map<String, dynamic>>(url).timeout(
+    final response = await _dio
+        .get<Map<String, dynamic>>(url)
+        .timeout(
           _requestTimeout,
           onTimeout: () => throw DioException(
             requestOptions: RequestOptions(path: url),

@@ -41,25 +41,19 @@ class SongListPullNotifier extends _$SongListPullNotifier {
     PullPreview preview,
     Set<String> selected,
   ) async {
-    return _run(
-      (service, _) async {
-        await service.applyReviewed(preview, selected);
-        return PulledAutomatically(selected.length);
-      },
-      operation: 'song_list.pull.apply',
-    );
+    return _run((service, _) async {
+      await service.applyReviewed(preview, selected);
+      return PulledAutomatically(selected.length);
+    }, operation: 'song_list.pull.apply');
   }
 
   /// Cesse de suivre la source. La copie reste, elle devient une liste
   /// ordinaire.
   Future<bool> unfollow(String copyId) async {
-    final result = await _run(
-      (service, _) async {
-        await service.unfollow(UuidValue.parse(copyId));
-        return const NothingToPull();
-      },
-      operation: 'song_list.unfollow',
-    );
+    final result = await _run((service, _) async {
+      await service.unfollow(UuidValue.parse(copyId));
+      return const NothingToPull();
+    }, operation: 'song_list.unfollow');
 
     return result is! PullFailed;
   }

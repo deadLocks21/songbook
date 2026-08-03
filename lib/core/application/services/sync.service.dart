@@ -18,9 +18,9 @@ class SyncService {
   SyncService(
     SongRepository songRepository,
     RemoteSongRepository remoteSongRepository,
-  )   : _remoteSongRepository = remoteSongRepository,
-        _computeSyncDiff = ComputeSyncDiffUseCase(songRepository),
-        _executeSync = ExecuteSyncUseCase(songRepository);
+  ) : _remoteSongRepository = remoteSongRepository,
+      _computeSyncDiff = ComputeSyncDiffUseCase(songRepository),
+      _executeSync = ExecuteSyncUseCase(songRepository);
 
   /// Synchronise la liste locale des chants avec le serveur distant.
   ///

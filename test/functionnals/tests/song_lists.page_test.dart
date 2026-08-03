@@ -86,10 +86,10 @@ void main() {
           aSongList().withId('list-2').build(),
         ]).build();
 
-        await (await startInSongListsPage(tester, app: app))
-            .expectSongListCount(2)
-            .expectFollowedBadgeCount(1)
-            .execute();
+        await (await startInSongListsPage(
+          tester,
+          app: app,
+        )).expectSongListCount(2).expectFollowedBadgeCount(1).execute();
       });
 
       testWidgets('should offer sharing from the context menu', (tester) async {
@@ -97,10 +97,10 @@ void main() {
           aSongList().withId('list-1').build(),
         ]).build();
 
-        await (await startInSongListsPage(tester, app: app))
-            .longPressSongListCard('list-1')
-            .expectShareActionVisible()
-            .execute();
+        await (await startInSongListsPage(
+          tester,
+          app: app,
+        )).longPressSongListCard('list-1').expectShareActionVisible().execute();
       });
 
       testWidgets('should not offer re-sharing a followed list', (
@@ -112,10 +112,10 @@ void main() {
           aSongList().withId('list-1').following().build(),
         ]).build();
 
-        await (await startInSongListsPage(tester, app: app))
-            .longPressSongListCard('list-1')
-            .expectShareActionAbsent()
-            .execute();
+        await (await startInSongListsPage(
+          tester,
+          app: app,
+        )).longPressSongListCard('list-1').expectShareActionAbsent().execute();
       });
 
       testWidgets('should open the follow dialog from the FAB', (tester) async {

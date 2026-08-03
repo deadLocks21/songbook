@@ -54,7 +54,10 @@ class MigrationRunner {
         );
         _logger.info(
           'migration.applied',
-          attrs: {'migration.id': id, 'migration.duration_ms': sw.elapsedMilliseconds},
+          attrs: {
+            'migration.id': id,
+            'migration.duration_ms': sw.elapsedMilliseconds,
+          },
         );
       } catch (e, stack) {
         sw.stop();

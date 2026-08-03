@@ -150,23 +150,26 @@ void main() {
       expect(finalOnA.scheduledAt, DateTime(2026, 8, 23));
     });
 
-    test('n\'écrase pas une modification locale non poussée par le canon', () async {
-      await deviceA.addSongList(songList(scheduledAt: DateTime(2026, 8, 2)));
-      await syncA.sync(baseUrl);
-      await syncB.sync(baseUrl);
+    test(
+      'n\'écrase pas une modification locale non poussée par le canon',
+      () async {
+        await deviceA.addSongList(songList(scheduledAt: DateTime(2026, 8, 2)));
+        await syncA.sync(baseUrl);
+        await syncB.sync(baseUrl);
 
-      // B modifie sans pouvoir pousser : un pull seul ne doit rien perdre.
-      final onB = (await deviceB.getAllSongLists()).single;
-      await deviceB.updateSongList(
-        onB.copyWith(scheduledAt: DateTime(2026, 8, 30)),
-      );
+        // B modifie sans pouvoir pousser : un pull seul ne doit rien perdre.
+        final onB = (await deviceB.getAllSongLists()).single;
+        await deviceB.updateSongList(
+          onB.copyWith(scheduledAt: DateTime(2026, 8, 30)),
+        );
 
-      await pullOnly(deviceB, server, baseUrl);
+        await pullOnly(deviceB, server, baseUrl);
 
-      final stillOnB = (await deviceB.getAllSongLists()).single;
-      expect(stillOnB.scheduledAt, DateTime(2026, 8, 30));
-      expect(await deviceB.getPendingPush(), hasLength(1));
-    });
+        final stillOnB = (await deviceB.getAllSongLists()).single;
+        expect(stillOnB.scheduledAt, DateTime(2026, 8, 30));
+        expect(await deviceB.getPendingPush(), hasLength(1));
+      },
+    );
 
     test(
       'garde à pousser une modification enregistrée pendant l\'envoi',

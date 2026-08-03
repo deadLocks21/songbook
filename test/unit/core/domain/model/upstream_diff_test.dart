@@ -82,7 +82,9 @@ void main() {
         source: source([alpha, beta.transposed(2)]),
       );
 
-      final change = diff.changes.whereType<TranspositionChangedUpstream>().single;
+      final change = diff.changes
+          .whereType<TranspositionChangedUpstream>()
+          .single;
       expect(change.semitones, 2);
       expect(change.overridesMine, isFalse);
     });
@@ -94,7 +96,9 @@ void main() {
         source: source([alpha, beta.transposed(2)]),
       );
 
-      final change = diff.changes.whereType<TranspositionChangedUpstream>().single;
+      final change = diff.changes
+          .whereType<TranspositionChangedUpstream>()
+          .single;
       expect(change.overridesMine, isTrue);
       expect(change.undoesMyWork, isTrue);
     });
@@ -189,13 +193,21 @@ void main() {
       final diff = UpstreamDiff.between(
         base: snapshot([alpha, beta]),
         mine: mine,
-        source: source([alpha, beta, gamma], scheduledAt: DateTime(2026, 9, 6, 10)),
+        source: source([
+          alpha,
+          beta,
+          gamma,
+        ], scheduledAt: DateTime(2026, 9, 6, 10)),
       );
 
       final added = diff.changes.whereType<SongAddedUpstream>().single;
       final merged = diff.applyTo(mine, selected: {added.id});
 
-      expect(merged.entries.map((e) => e.songId), [alpha.id, beta.id, gamma.id]);
+      expect(merged.entries.map((e) => e.songId), [
+        alpha.id,
+        beta.id,
+        gamma.id,
+      ]);
       // La date n'était pas cochée : elle ne bouge pas.
       expect(merged.scheduledAt, mine.scheduledAt);
     });
@@ -229,7 +241,11 @@ void main() {
       final order = diff.changes.whereType<OrderChangedUpstream>().single;
       final merged = diff.applyTo(mine, selected: {order.id});
 
-      expect(merged.entries.map((e) => e.songId), [beta.id, alpha.id, delta.id]);
+      expect(merged.entries.map((e) => e.songId), [
+        beta.id,
+        alpha.id,
+        delta.id,
+      ]);
     });
 
     test('conserve le lien amont', () {

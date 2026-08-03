@@ -61,32 +61,41 @@ void main() {
       expect(fakeDio.downloadCount, 1);
     });
 
-    test('returns the cached path without re-downloading on a cache hit', () async {
-      const url = 'https://example.com/image.jpg';
+    test(
+      'returns the cached path without re-downloading on a cache hit',
+      () async {
+        const url = 'https://example.com/image.jpg';
 
-      final first = await repository.getCachedResource(url, songId);
-      final second = await repository.getCachedResource(url, songId);
+        final first = await repository.getCachedResource(url, songId);
+        final second = await repository.getCachedResource(url, songId);
 
-      expect(second, first);
-      // Un seul téléchargement malgré deux appels : le cache est réutilisé.
-      expect(fakeDio.downloadCount, 1);
-    });
+        expect(second, first);
+        // Un seul téléchargement malgré deux appels : le cache est réutilisé.
+        expect(fakeDio.downloadCount, 1);
+      },
+    );
 
-    test('stores resources of different songs in separate directories', () async {
-      final songId2 = UuidValue.parse('00000000-0000-4000-a000-000000000002');
+    test(
+      'stores resources of different songs in separate directories',
+      () async {
+        final songId2 = UuidValue.parse('00000000-0000-4000-a000-000000000002');
 
-      await repository.getCachedResource('https://example.com/a.jpg', songId);
-      await repository.getCachedResource('https://example.com/b.jpg', songId2);
+        await repository.getCachedResource('https://example.com/a.jpg', songId);
+        await repository.getCachedResource(
+          'https://example.com/b.jpg',
+          songId2,
+        );
 
-      expect(
-        File('${tmpDir.path}/${songId.value}/a.jpg').existsSync(),
-        isTrue,
-      );
-      expect(
-        File('${tmpDir.path}/${songId2.value}/b.jpg').existsSync(),
-        isTrue,
-      );
-    });
+        expect(
+          File('${tmpDir.path}/${songId.value}/a.jpg').existsSync(),
+          isTrue,
+        );
+        expect(
+          File('${tmpDir.path}/${songId2.value}/b.jpg').existsSync(),
+          isTrue,
+        );
+      },
+    );
 
     test('getCacheDirectory returns the base directory', () {
       expect(repository.getCacheDirectory(), tmpDir.path);

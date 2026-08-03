@@ -84,7 +84,8 @@ class InMemoryRemoteSongListRepository implements RemoteSongListRepository {
     // Idempotent comme le serveur : le lien est permanent, en émettre un
     // nouveau casserait celui déjà transmis.
     final secrets = _shares[id.value] ??= (
-      token: 'DEMO${_shares.length}${id.value.replaceAll('-', '').toUpperCase()}',
+      token:
+          'DEMO${_shares.length}${id.value.replaceAll('-', '').toUpperCase()}',
       code: 'DEMO${_shares.length.toString().padLeft(4, '0')}',
     );
 

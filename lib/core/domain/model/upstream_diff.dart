@@ -262,7 +262,9 @@ class UpstreamDiff {
 
   static Iterable<UuidValue> _singleOccurrenceSongs(
     List<SongListEntry> entries,
-  ) => _countBySong(entries).entries.where((e) => e.value == 1).map((e) => e.key);
+  ) => _countBySong(
+    entries,
+  ).entries.where((e) => e.value == 1).map((e) => e.key);
 
   static bool _occursOnce(List<SongListEntry> entries, UuidValue songId) =>
       entries.where((e) => e.songId == songId).length == 1;

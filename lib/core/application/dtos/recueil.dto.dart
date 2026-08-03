@@ -7,11 +7,7 @@ class RecueilDto {
   final String code;
   final String name;
 
-  const RecueilDto({
-    required this.id,
-    required this.code,
-    required this.name,
-  });
+  const RecueilDto({required this.id, required this.code, required this.name});
 
   factory RecueilDto.fromJson(Map<String, dynamic> json) {
     return RecueilDto(
@@ -22,10 +18,6 @@ class RecueilDto {
   }
 
   Recueil toDomain() {
-    return Recueil(
-      id: UuidValue.parse(id),
-      code: code,
-      name: name,
-    );
+    return Recueil(id: UuidValue.parse(id), code: code, name: name);
   }
 }

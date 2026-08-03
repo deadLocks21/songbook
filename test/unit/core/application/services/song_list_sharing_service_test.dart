@@ -72,33 +72,39 @@ void main() {
       expect(snapshot.entries.map((e) => e.id), [entryId, otherEntryId]);
     });
 
-    test('rouvre la copie existante plutôt que d\'en empiler une seconde',
-        () async {
-      server.subscription = subscription(source());
-      final first = await service.follow(baseUrl, code: 'K7Q2M9XZ');
+    test(
+      'rouvre la copie existante plutôt que d\'en empiler une seconde',
+      () async {
+        server.subscription = subscription(source());
+        final first = await service.follow(baseUrl, code: 'K7Q2M9XZ');
 
-      final second = await service.follow(baseUrl, code: 'K7Q2M9XZ');
+        final second = await service.follow(baseUrl, code: 'K7Q2M9XZ');
 
-      expect(second.status, FollowStatus.alreadyFollowing);
-      expect(second.listId, first.listId);
-      expect(await local.getAllSongLists(), hasLength(1));
-    });
+        expect(second.status, FollowStatus.alreadyFollowing);
+        expect(second.listId, first.listId);
+        expect(await local.getAllSongLists(), hasLength(1));
+      },
+    );
 
-    test('ne duplique pas quand la copie a été faite sur un autre appareil',
-        () async {
-      // Elle arrivera par la synchro. En créer une ici laisserait
-      // l'utilisateur avec deux copies de la même source.
-      server.subscription = subscription(
-        source(),
-        existingCopyId: UuidValue.parse('55555555-5555-4555-8555-555555555555'),
-      );
+    test(
+      'ne duplique pas quand la copie a été faite sur un autre appareil',
+      () async {
+        // Elle arrivera par la synchro. En créer une ici laisserait
+        // l'utilisateur avec deux copies de la même source.
+        server.subscription = subscription(
+          source(),
+          existingCopyId: UuidValue.parse(
+            '55555555-5555-4555-8555-555555555555',
+          ),
+        );
 
-      final outcome = await service.follow(baseUrl, code: 'K7Q2M9XZ');
+        final outcome = await service.follow(baseUrl, code: 'K7Q2M9XZ');
 
-      expect(outcome.status, FollowStatus.alreadyFollowing);
-      expect(outcome.listId, isNull);
-      expect(await local.getAllSongLists(), isEmpty);
-    });
+        expect(outcome.status, FollowStatus.alreadyFollowing);
+        expect(outcome.listId, isNull);
+        expect(await local.getAllSongLists(), isEmpty);
+      },
+    );
 
     test('ouvre l\'originale quand le lien revient à son auteur', () async {
       server.subscription = subscription(source(), alreadyOwner: true);
@@ -134,7 +140,12 @@ SongList source() {
     title: 'Dimanche',
     version: 7,
     entries: [
-      SongListEntry(id: entryId, songId: songId, position: 0, savedSemitones: 2),
+      SongListEntry(
+        id: entryId,
+        songId: songId,
+        position: 0,
+        savedSemitones: 2,
+      ),
       SongListEntry(id: otherEntryId, songId: songId, position: 1),
     ],
   );

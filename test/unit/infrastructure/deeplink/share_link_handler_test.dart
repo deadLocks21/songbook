@@ -71,10 +71,15 @@ void main() {
       final handler = container.read(shareLinkHandlerProvider.notifier);
       await handler.handle(Uri.parse('https://songbook.dtfh.fr/l/JETON'));
 
-      container.read(authNotifierProvider.notifier).state = AuthAuthenticated('+33600000001');
+      container.read(authNotifierProvider.notifier).state = AuthAuthenticated(
+        '+33600000001',
+      );
       await _settle();
 
-      expect(container.read(shareLinkHandlerProvider), isA<ShareLinkFollowed>());
+      expect(
+        container.read(shareLinkHandlerProvider),
+        isA<ShareLinkFollowed>(),
+      );
       expect(server.subscribeCalls, 1);
     });
 
@@ -127,7 +132,8 @@ void main() {
 }
 
 /// Laisse passer les `ref.listen` et les futures enchaînées.
-Future<void> _settle() => Future<void>.delayed(const Duration(milliseconds: 20));
+Future<void> _settle() =>
+    Future<void>.delayed(const Duration(milliseconds: 20));
 
 final sourceId = UuidValue.parse('11111111-1111-4111-8111-111111111111');
 

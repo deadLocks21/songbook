@@ -77,10 +77,13 @@ void main() {
         whereArgs: ['table', 'song_list_upstream%'],
       );
 
-      expect(tables.map((r) => r['name']), containsAll([
-        'song_list_upstream_snapshots',
-        'song_list_upstream_snapshot_entries',
-      ]));
+      expect(
+        tables.map((r) => r['name']),
+        containsAll([
+          'song_list_upstream_snapshots',
+          'song_list_upstream_snapshot_entries',
+        ]),
+      );
     });
   });
 }

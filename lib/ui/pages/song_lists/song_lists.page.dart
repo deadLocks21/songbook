@@ -108,9 +108,7 @@ class SongListsPage extends ConsumerWidget {
   /// Le rafraîchissement de l'affichage est déclenché par la synchro elle-même ;
   /// on ne signale que l'échec, un succès se voit dans la liste.
   Future<void> _refresh(BuildContext context, WidgetRef ref) async {
-    final succeeded = await ref
-        .read(songListSyncProvider.notifier)
-        .sync();
+    final succeeded = await ref.read(songListSyncProvider.notifier).sync();
 
     if (succeeded || !context.mounted) return;
 
@@ -238,7 +236,8 @@ class SongListsPage extends ConsumerWidget {
     }
 
     final message = switch (outcome.status) {
-      FollowStatus.copied => 'Liste copiée. Elle est à vous, modifiez-la comme vous voulez.',
+      FollowStatus.copied =>
+        'Liste copiée. Elle est à vous, modifiez-la comme vous voulez.',
       FollowStatus.alreadyOwner => 'Cette liste est déjà la vôtre.',
       FollowStatus.alreadyFollowing => 'Vous suivez déjà cette liste.',
     };

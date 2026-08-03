@@ -32,7 +32,8 @@ class ExpectThemeSelectedCommand extends FluentCommand {
     expect(segmentedButton, findsOneWidget);
 
     final widget =
-        segmentedButton.evaluate().first.widget as SegmentedButton<AppThemeMode>;
+        segmentedButton.evaluate().first.widget
+            as SegmentedButton<AppThemeMode>;
     expect(
       widget.selected,
       equals({expectedMode}),
@@ -161,8 +162,8 @@ class ExpectSaveButtonEnabledCommand extends FluentCommand {
 
   @override
   Future<void> execute() async {
-    final button = finders.backendUrlSaveButton.evaluate().first.widget
-        as TextButton;
+    final button =
+        finders.backendUrlSaveButton.evaluate().first.widget as TextButton;
     expect(
       button.onPressed,
       isNotNull,
@@ -179,13 +180,9 @@ class ExpectSaveButtonDisabledCommand extends FluentCommand {
 
   @override
   Future<void> execute() async {
-    final button = finders.backendUrlSaveButton.evaluate().first.widget
-        as TextButton;
-    expect(
-      button.onPressed,
-      isNull,
-      reason: 'Save button should be disabled',
-    );
+    final button =
+        finders.backendUrlSaveButton.evaluate().first.widget as TextButton;
+    expect(button.onPressed, isNull, reason: 'Save button should be disabled');
   }
 }
 

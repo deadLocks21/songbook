@@ -87,7 +87,9 @@ class AppDatabase {
       // n'ont jamais ete poussees, elles partiront donc au premier push. Avec
       // `serverVersion` a NULL, ce push sera une creation.
       await db.execute('ALTER TABLE song_lists ADD COLUMN title TEXT');
-      await db.execute('ALTER TABLE song_lists ADD COLUMN serverVersion INTEGER');
+      await db.execute(
+        'ALTER TABLE song_lists ADD COLUMN serverVersion INTEGER',
+      );
       await db.execute(
         'ALTER TABLE song_lists ADD COLUMN dirty INTEGER NOT NULL DEFAULT 1',
       );
@@ -100,7 +102,9 @@ class AppDatabase {
       // autre. Les colonnes restent NULL sur l'existant, qui n'est constitue
       // que d'originales.
       await db.execute('ALTER TABLE song_lists ADD COLUMN sourceListId TEXT');
-      await db.execute('ALTER TABLE song_lists ADD COLUMN sourceVersion INTEGER');
+      await db.execute(
+        'ALTER TABLE song_lists ADD COLUMN sourceVersion INTEGER',
+      );
       await _createUpstreamSnapshotTables(db);
     }
   }

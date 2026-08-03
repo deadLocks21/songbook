@@ -146,7 +146,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final recueilsAsync = ref.watch(availableRecueilsProvider);
     final selectedAsync = ref.watch(selectedRecueilsProvider);
     final selected = selectedAsync.value ?? const <String>[];
-    final songStats = ref.watch(recueilSongStatsProvider).value ??
+    final songStats =
+        ref.watch(recueilSongStatsProvider).value ??
         const <String, RecueilSongStats>{};
 
     // Le bouton reste toujours affiché ; il est désactivé quand il n'y a rien à
@@ -210,8 +211,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     ),
                   ),
                   TextButton(
-                    onPressed: () =>
-                        ref.invalidate(availableRecueilsProvider),
+                    onPressed: () => ref.invalidate(availableRecueilsProvider),
                     child: const Text('Réessayer'),
                   ),
                 ],
@@ -238,8 +238,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           key: const Key('downloadRecueilsButton'),
           onPressed: (inProgress || !canDownload)
               ? null
-              : () =>
-                    ref.read(recueilDownloadNotifierProvider.notifier).download(),
+              : () => ref
+                    .read(recueilDownloadNotifierProvider.notifier)
+                    .download(),
           icon: inProgress
               ? const SizedBox(
                   height: 18,

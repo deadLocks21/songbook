@@ -29,7 +29,10 @@ void main() {
 
   /// Publie la source côté serveur et enregistre la copie locale qui la suit,
   /// avec l'instantané pris au moment de l'abonnement.
-  Future<void> subscribe(List<UuidValue> songs, {bool withBaseline = true}) async {
+  Future<void> subscribe(
+    List<UuidValue> songs, {
+    bool withBaseline = true,
+  }) async {
     await server.create(baseUrl, sourceList(songs));
     final source = await server.fetchOne(baseUrl, sourceId);
 
@@ -89,26 +92,33 @@ void main() {
       expect(diff.changes.whereType<SongAddedUpstream>(), hasLength(1));
     });
 
-    test('fait avancer le repère même quand on écarte des changements', () async {
-      // Refuser, c'est décider : le changement écarté ne doit pas revenir
-      // solliciter au tirage suivant.
-      await subscribe([alpha]);
-      final mine = (await local.getSongListById(copyId))!;
-      await local.updateSongList(mine.copyWith(scheduledAt: DateTime(2027, 1, 1)));
-      await authorSets([alpha, beta]);
+    test(
+      'fait avancer le repère même quand on écarte des changements',
+      () async {
+        // Refuser, c'est décider : le changement écarté ne doit pas revenir
+        // solliciter au tirage suivant.
+        await subscribe([alpha]);
+        final mine = (await local.getSongListById(copyId))!;
+        await local.updateSongList(
+          mine.copyWith(scheduledAt: DateTime(2027, 1, 1)),
+        );
+        await authorSets([alpha, beta]);
 
-      final review = await service.pull(baseUrl, copyId) as NeedsReview;
-      await service.applyReviewed(review.preview, const {}); // rien retenu
+        final review = await service.pull(baseUrl, copyId) as NeedsReview;
+        await service.applyReviewed(review.preview, const {}); // rien retenu
 
-      final copy = (await local.getSongListById(copyId))!;
-      expect(copy.entries.map((e) => e.songId), [alpha]);
-      expect(await service.pull(baseUrl, copyId), isA<NothingToPull>());
-    });
+        final copy = (await local.getSongListById(copyId))!;
+        expect(copy.entries.map((e) => e.songId), [alpha]);
+        expect(await service.pull(baseUrl, copyId), isA<NothingToPull>());
+      },
+    );
 
     test('n\'applique que ce qui a été retenu', () async {
       await subscribe([alpha]);
       final mine = (await local.getSongListById(copyId))!;
-      await local.updateSongList(mine.copyWith(scheduledAt: DateTime(2027, 1, 1)));
+      await local.updateSongList(
+        mine.copyWith(scheduledAt: DateTime(2027, 1, 1)),
+      );
       await authorSets([alpha, beta]);
 
       final review = await service.pull(baseUrl, copyId) as NeedsReview;
@@ -129,7 +139,9 @@ void main() {
       // l'auteur. L'écran doit le dire.
       await subscribe([alpha], withBaseline: false);
       final mine = (await local.getSongListById(copyId))!;
-      await local.updateSongList(mine.copyWith(scheduledAt: DateTime(2027, 1, 1)));
+      await local.updateSongList(
+        mine.copyWith(scheduledAt: DateTime(2027, 1, 1)),
+      );
       await authorSets([alpha, beta]);
 
       final result = await service.pull(baseUrl, copyId);

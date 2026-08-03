@@ -23,11 +23,9 @@ class BackendUrlNotifier extends _$BackendUrlNotifier {
     try {
       return await service.getBackendUrl();
     } catch (e, stack) {
-      ref.read(loggerProvider).warn(
-        'settings.backend_url.load_failed',
-        error: e,
-        stack: stack,
-      );
+      ref
+          .read(loggerProvider)
+          .warn('settings.backend_url.load_failed', error: e, stack: stack);
       return null;
     }
   }
@@ -38,11 +36,9 @@ class BackendUrlNotifier extends _$BackendUrlNotifier {
       await service.setBackendUrl(url);
       state = AsyncData(url);
     } catch (e, stack) {
-      ref.read(loggerProvider).error(
-        'settings.backend_url.save_failed',
-        error: e,
-        stack: stack,
-      );
+      ref
+          .read(loggerProvider)
+          .error('settings.backend_url.save_failed', error: e, stack: stack);
       state = AsyncError(e, StackTrace.current);
     }
   }
@@ -57,11 +53,13 @@ class SelectedRecueilsNotifier extends _$SelectedRecueilsNotifier {
     try {
       return await service.getSelectedRecueils();
     } catch (e, stack) {
-      ref.read(loggerProvider).warn(
-        'settings.selected_recueils.load_failed',
-        error: e,
-        stack: stack,
-      );
+      ref
+          .read(loggerProvider)
+          .warn(
+            'settings.selected_recueils.load_failed',
+            error: e,
+            stack: stack,
+          );
       return const [];
     }
   }
@@ -81,11 +79,13 @@ class SelectedRecueilsNotifier extends _$SelectedRecueilsNotifier {
       await service.setSelectedRecueils(codes);
       state = AsyncData(codes);
     } catch (e, stack) {
-      ref.read(loggerProvider).error(
-        'settings.selected_recueils.save_failed',
-        error: e,
-        stack: stack,
-      );
+      ref
+          .read(loggerProvider)
+          .error(
+            'settings.selected_recueils.save_failed',
+            error: e,
+            stack: stack,
+          );
       state = AsyncError(e, StackTrace.current);
     }
   }
@@ -99,11 +99,9 @@ class ThemeModeNotifier extends _$ThemeModeNotifier {
     try {
       return await service.getThemeMode();
     } catch (e, stack) {
-      ref.read(loggerProvider).warn(
-        'settings.theme_mode.load_failed',
-        error: e,
-        stack: stack,
-      );
+      ref
+          .read(loggerProvider)
+          .warn('settings.theme_mode.load_failed', error: e, stack: stack);
       return AppThemeMode.system;
     }
   }
@@ -114,11 +112,9 @@ class ThemeModeNotifier extends _$ThemeModeNotifier {
       await service.setThemeMode(mode);
       state = AsyncData(mode);
     } catch (e, stack) {
-      ref.read(loggerProvider).error(
-        'settings.theme_mode.save_failed',
-        error: e,
-        stack: stack,
-      );
+      ref
+          .read(loggerProvider)
+          .error('settings.theme_mode.save_failed', error: e, stack: stack);
       state = AsyncError(e, StackTrace.current);
     }
   }
@@ -138,11 +134,13 @@ class ResourceDisplayOrderNotifier extends _$ResourceDisplayOrderNotifier {
     try {
       return await service.getResourceDisplayOrder();
     } catch (e, stack) {
-      ref.read(loggerProvider).warn(
-        'settings.resource_display_order.load_failed',
-        error: e,
-        stack: stack,
-      );
+      ref
+          .read(loggerProvider)
+          .warn(
+            'settings.resource_display_order.load_failed',
+            error: e,
+            stack: stack,
+          );
       return _default;
     }
   }
@@ -162,11 +160,13 @@ class ResourceDisplayOrderNotifier extends _$ResourceDisplayOrderNotifier {
       await service.setResourceDisplayOrder(current);
       state = AsyncData(current);
     } catch (e, stack) {
-      ref.read(loggerProvider).error(
-        'settings.resource_display_order.save_failed',
-        error: e,
-        stack: stack,
-      );
+      ref
+          .read(loggerProvider)
+          .error(
+            'settings.resource_display_order.save_failed',
+            error: e,
+            stack: stack,
+          );
       state = AsyncError(e, StackTrace.current);
     }
   }

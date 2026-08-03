@@ -99,7 +99,9 @@ class _SongListDetailPageState extends ConsumerState<SongListDetailPage> {
 
     // Après la frame : on est en plein build, et la suite met à jour l'état de
     // l'écran puis ouvre éventuellement une feuille modale.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _runUpstreamCheck(songList));
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _runUpstreamCheck(songList),
+    );
   }
 
   Future<void> _runUpstreamCheck(SongListDto songList) async {
@@ -111,7 +113,9 @@ class _SongListDetailPageState extends ConsumerState<SongListDetailPage> {
 
     if (!mounted) return;
     setState(() {
-      _check = result is PullFailed ? _UpstreamCheck.failed : _UpstreamCheck.done;
+      _check = result is PullFailed
+          ? _UpstreamCheck.failed
+          : _UpstreamCheck.done;
     });
 
     // Après le dévoilement, pour que l'arbitrage se pose sur la liste plutôt
@@ -284,27 +288,27 @@ class _SongListDetailPageState extends ConsumerState<SongListDetailPage> {
     return songList.entries.isEmpty
         ? _buildEmptyState(context, colorScheme)
         : ListView.builder(
-              key: const Key('songListDetailListView'),
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
-              itemCount: songList.entries.length + 1,
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  return _buildHeader(context, songList);
-                }
-                final entry = songList.entries[index - 1];
-                final chordProUrl = songsById[entry.songId]?.resources
-                    .whereType<ChordProResourceDto>()
-                    .firstOrNull
-                    ?.chordProUrl;
-                return _buildSongTile(
-                  context,
-                  songList,
-                  entry,
-                  index - 1,
-                  chordProUrl,
-                );
-              },
-            );
+            key: const Key('songListDetailListView'),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+            itemCount: songList.entries.length + 1,
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return _buildHeader(context, songList);
+              }
+              final entry = songList.entries[index - 1];
+              final chordProUrl = songsById[entry.songId]?.resources
+                  .whereType<ChordProResourceDto>()
+                  .firstOrNull
+                  ?.chordProUrl;
+              return _buildSongTile(
+                context,
+                songList,
+                entry,
+                index - 1,
+                chordProUrl,
+              );
+            },
+          );
   }
 
   Widget _buildHeader(BuildContext context, SongListDto songList) {

@@ -24,7 +24,8 @@ class DriftSongListRepository implements SongListRepository {
 
   const DriftSongListRepository([this._database0]);
 
-  Future<Database> get _database async => _database0 ?? await AppDatabase.database;
+  Future<Database> get _database async =>
+      _database0 ?? await AppDatabase.database;
 
   @override
   Future<List<SongList>> getAllSongLists() async {
@@ -131,8 +132,7 @@ class DriftSongListRepository implements SongListRepository {
       where: 'id = ?',
       whereArgs: [id.value],
     );
-    final neverPushed =
-        rows.isEmpty || rows.first['serverVersion'] == null;
+    final neverPushed = rows.isEmpty || rows.first['serverVersion'] == null;
 
     // Une liste jamais poussee n'existe que sur cet appareil : rien a propager,
     // on peut l'effacer pour de bon. Sinon on garde la ligne comme rappel qu'il

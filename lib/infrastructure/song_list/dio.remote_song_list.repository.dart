@@ -240,7 +240,9 @@ class DioRemoteSongListRepository implements RemoteSongListRepository {
       // Jamais émis, mal recopié, ou pointant une liste supprimée depuis : le
       // serveur ne les distingue pas, et l'utilisateur n'a qu'une chose à
       // faire dans les trois cas — redemander un lien.
-      if (e.response?.statusCode == 404) throw const ShareLinkNotFoundException();
+      if (e.response?.statusCode == 404) {
+        throw const ShareLinkNotFoundException();
+      }
       rethrow;
     }
   }

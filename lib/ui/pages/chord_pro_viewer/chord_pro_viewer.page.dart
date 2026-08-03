@@ -103,9 +103,7 @@ class ChordProView extends StatelessWidget {
             lines[end - 1].kind == LineKind.comment &&
             nextIsTitleable(index + 1)) {
           copyrightLines.addAll(
-            lines
-                .sublist(0, end - 1)
-                .where((l) => l.kind == LineKind.comment),
+            lines.sublist(0, end - 1).where((l) => l.kind == LineKind.comment),
           );
           pendingHeading = lines[end - 1].comment;
           continue;

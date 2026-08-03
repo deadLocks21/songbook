@@ -49,20 +49,22 @@ void main() {
   });
 
   group('CacheRecueilPartitionsUseCase', () {
-    test('met en cache uniquement les chants des recueils sélectionnés',
-        () async {
-      final songs = [
-        songIn(id1, ['REC-001'], ['a.jpg', 'b.jpg']),
-        songIn(id2, ['REC-002'], ['c.jpg']),
-        songIn(id3, ['REC-001', 'REC-003'], ['d.jpg']),
-      ];
+    test(
+      'met en cache uniquement les chants des recueils sélectionnés',
+      () async {
+        final songs = [
+          songIn(id1, ['REC-001'], ['a.jpg', 'b.jpg']),
+          songIn(id2, ['REC-002'], ['c.jpg']),
+          songIn(id3, ['REC-001', 'REC-003'], ['d.jpg']),
+        ];
 
-      await useCase.execute(songs, {'REC-001'});
+        await useCase.execute(songs, {'REC-001'});
 
-      final urls = cache.requested.map((r) => r.url).toList();
-      expect(urls, containsAll(['a.jpg', 'b.jpg', 'd.jpg']));
-      expect(urls, isNot(contains('c.jpg')));
-    });
+        final urls = cache.requested.map((r) => r.url).toList();
+        expect(urls, containsAll(['a.jpg', 'b.jpg', 'd.jpg']));
+        expect(urls, isNot(contains('c.jpg')));
+      },
+    );
 
     test('ne télécharge rien si aucun recueil sélectionné', () async {
       final songs = [
@@ -82,11 +84,9 @@ void main() {
       ];
 
       final progress = <({int done, int total})>[];
-      await useCase.execute(
-        songs,
-        {'REC-001'},
-        onProgress: (done, total) => progress.add((done: done, total: total)),
-      );
+      await useCase.execute(songs, {
+        'REC-001',
+      }, onProgress: (done, total) => progress.add((done: done, total: total)));
 
       expect(progress.first, (done: 0, total: 2));
       expect(progress.last, (done: 2, total: 2));

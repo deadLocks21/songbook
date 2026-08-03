@@ -14,10 +14,7 @@ import 'package:songbook/ui/utils/date_format.dart';
 /// sans rien décider — et cette distinction compte : refermer n'est pas
 /// décider, le repère ne bouge pas et la question se reposera. « Ne rien
 /// reprendre », en revanche, est une décision et fait avancer le repère.
-Future<PullResult?> showPullReview(
-  BuildContext context,
-  PullPreview preview,
-) {
+Future<PullResult?> showPullReview(BuildContext context, PullPreview preview) {
   return showModalBottomSheet<PullResult>(
     context: context,
     isScrollControlled: true,
@@ -199,7 +196,8 @@ class _PullReviewSheetState extends ConsumerState<PullReviewSheet> {
 
   String _warningFor(UpstreamChange change) => switch (change) {
     SongRemovedUpstream() => 'Vous aviez transposé ce chant',
-    TranspositionChangedUpstream() => 'Remplace la tonalité que vous aviez choisie',
+    TranspositionChangedUpstream() =>
+      'Remplace la tonalité que vous aviez choisie',
     OrderChangedUpstream() => 'Remplace l\'ordre que vous aviez mis',
     _ => '',
   };

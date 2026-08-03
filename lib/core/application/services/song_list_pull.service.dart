@@ -105,10 +105,8 @@ class SongListPullService {
   }
 
   /// Applique les changements retenus après revue.
-  Future<void> applyReviewed(
-    PullPreview preview,
-    Set<String> selected,
-  ) => _apply(preview.copy, preview.source, preview.diff, selected);
+  Future<void> applyReviewed(PullPreview preview, Set<String> selected) =>
+      _apply(preview.copy, preview.source, preview.diff, selected);
 
   /// Coupe le lien amont sans toucher à la copie : elle redevient une liste
   /// ordinaire, à son propriétaire.

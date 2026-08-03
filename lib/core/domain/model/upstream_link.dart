@@ -14,10 +14,7 @@ class UpstreamLink {
   final UuidValue sourceListId;
   final int sourceVersion;
 
-  const UpstreamLink({
-    required this.sourceListId,
-    required this.sourceVersion,
-  });
+  const UpstreamLink({required this.sourceListId, required this.sourceVersion});
 
   /// Le lien tel qu'il arrive du serveur : les deux champs, ou aucun parce que
   /// la liste est une originale.

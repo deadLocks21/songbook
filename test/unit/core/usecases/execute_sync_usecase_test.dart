@@ -67,9 +67,7 @@ void main() {
         'https://example.com/page2.jpg',
       ]);
 
-      final pdfResource = songs.first.resources
-          .whereType<PdfResource>()
-          .single;
+      final pdfResource = songs.first.resources.whereType<PdfResource>().single;
       expect(pdfResource.pdfUrl, 'https://example.com/doc.pdf');
     });
 

@@ -9,23 +9,21 @@ void main() {
       testWidgets('should display theme selector with system mode by default', (
         tester,
       ) async {
-        await (await startInSettingsPage(tester))
-            .expectThemeSelected(AppThemeMode.system)
-            .execute();
+        await (await startInSettingsPage(
+          tester,
+        )).expectThemeSelected(AppThemeMode.system).execute();
       });
 
       testWidgets('should switch to dark theme', (tester) async {
-        await (await startInSettingsPage(tester))
-            .tapThemeDark()
-            .expectThemeSelected(AppThemeMode.dark)
-            .execute();
+        await (await startInSettingsPage(
+          tester,
+        )).tapThemeDark().expectThemeSelected(AppThemeMode.dark).execute();
       });
 
       testWidgets('should switch to light theme', (tester) async {
-        await (await startInSettingsPage(tester))
-            .tapThemeLight()
-            .expectThemeSelected(AppThemeMode.light)
-            .execute();
+        await (await startInSettingsPage(
+          tester,
+        )).tapThemeLight().expectThemeSelected(AppThemeMode.light).execute();
       });
 
       testWidgets('should switch back to auto theme', (tester) async {
@@ -83,13 +81,14 @@ void main() {
     });
 
     group('Base de données', () {
-      testWidgets('should show confirmation dialog when tapping clear database',
-          (tester) async {
-        await (await startInSettingsPage(tester))
-            .tapClearDatabase()
-            .expectClearDatabaseDialogVisible()
-            .execute();
-      });
+      testWidgets(
+        'should show confirmation dialog when tapping clear database',
+        (tester) async {
+          await (await startInSettingsPage(
+            tester,
+          )).tapClearDatabase().expectClearDatabaseDialogVisible().execute();
+        },
+      );
 
       testWidgets('should dismiss dialog when cancelling clear database', (
         tester,

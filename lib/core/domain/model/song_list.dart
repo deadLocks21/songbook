@@ -81,10 +81,7 @@ class SongList {
           .map((entry) => entry.copyWith(id: UuidValue.generate()))
           .toList(),
       title: source.title,
-      upstream: UpstreamLink(
-        sourceListId: source.id,
-        sourceVersion: version,
-      ),
+      upstream: UpstreamLink(sourceListId: source.id, sourceVersion: version),
     );
   }
 
