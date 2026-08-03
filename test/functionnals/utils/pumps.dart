@@ -72,11 +72,14 @@ Future<SongViewerPageActions> startInSongViewerPage(
   app ??= anApp().build();
   final mockSongs = app.songs;
   final mockSong = app.song;
+  final mockSongLists = app.songLists;
 
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         songsProvider.overrideWith((ref) async => mockSongs),
+        // La page lit les listes pour dire quand le chant a déjà été pris.
+        songListsProvider.overrideWith((ref) async => mockSongLists),
         remoteRecueilRepositoryProvider.overrideWithValue(
           InMemoryRemoteRecueilRepository(),
         ),

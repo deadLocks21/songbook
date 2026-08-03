@@ -73,6 +73,12 @@ class SongListEditPageActions extends FluentActionsBase {
     return this;
   }
 
+  /// Vérifie qu'un texte contenant [text] est visible.
+  SongListEditPageActions expectTextContaining(String text) {
+    addCommand(ExpectEditTextContainingCommand(text));
+    return this;
+  }
+
   /// Vérifie qu'un texte n'est pas visible.
   SongListEditPageActions expectTextNotVisible(String text) {
     addCommand(ExpectEditTextNotVisibleCommand(text));

@@ -67,6 +67,25 @@ class ExpectEditTextVisibleCommand extends FluentCommand {
   }
 }
 
+/// Vérifie qu'un texte visible commence par un début donné.
+///
+/// Pour ce qui se termine par une date : l'exiger en entier obligerait le test
+/// à refabriquer le format d'affichage, qui a ses propres tests.
+class ExpectEditTextContainingCommand extends FluentCommand {
+  final String text;
+
+  ExpectEditTextContainingCommand(this.text);
+
+  @override
+  Future<void> execute() async {
+    expect(
+      find.textContaining(text),
+      findsWidgets,
+      reason: 'Text containing "$text" should be visible',
+    );
+  }
+}
+
 /// Vérifie qu'un texte n'est pas visible.
 class ExpectEditTextNotVisibleCommand extends FluentCommand {
   final String text;

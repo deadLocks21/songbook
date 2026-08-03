@@ -1,26 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/dtos/song.dto.dart';
+import 'package:songbook/core/domain/model/song_schedule.dart';
 import 'package:songbook/infrastructure/song/providers/song.service_provider.dart';
+import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
 import 'package:songbook/ui/pages/song_viewer/song_viewer.page.dart';
+import 'package:songbook/ui/widgets/song_schedule_label.widget.dart';
 
 /// Affiche un bottom sheet permettant de choisir des chants a ajouter.
+///
+/// [excludingListId] est la liste en cours d'edition : elle ne doit pas se
+/// compter dans l'historique affiche, sans quoi chacun de ses chants
+/// s'annoncerait « deja prevu » en pointant cette liste-la.
 Future<void> showSongPicker(
   BuildContext context, {
   required void Function(SongDto song) onSongAdded,
+  String? excludingListId,
 }) async {
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    builder: (context) => _SongPickerSheet(onSongAdded: onSongAdded),
+    builder: (context) => _SongPickerSheet(
+      onSongAdded: onSongAdded,
+      excludingListId: excludingListId,
+    ),
   );
 }
 
 class _SongPickerSheet extends ConsumerStatefulWidget {
   final void Function(SongDto song) onSongAdded;
+  final String? excludingListId;
 
-  const _SongPickerSheet({required this.onSongAdded});
+  const _SongPickerSheet({required this.onSongAdded, this.excludingListId});
 
   @override
   ConsumerState<_SongPickerSheet> createState() => _SongPickerSheetState();
@@ -32,6 +44,15 @@ class _SongPickerSheetState extends ConsumerState<_SongPickerSheet> {
   @override
   Widget build(BuildContext context) {
     final songsAsync = ref.watch(songsProvider);
+    // L'historique se fait attendre le temps d'un chargement de listes : les
+    // chants s'affichent sans, plutot que de retenir tout le selecteur.
+    final schedules =
+        ref
+            .watch(
+              songSchedulesProvider(excludingListId: widget.excludingListId),
+            )
+            .value ??
+        const <String, SongSchedule>{};
 
     return DraggableScrollableSheet(
       expand: false,
@@ -76,7 +97,19 @@ class _SongPickerSheetState extends ConsumerState<_SongPickerSheet> {
                     final song = filtered[index];
                     return ListTile(
                       title: Text(song.name),
-                      subtitle: Text(song.code),
+                      subtitle: Row(
+                        children: [
+                          Text(song.code),
+                          const Text(' · '),
+                          Flexible(
+                            child: SongScheduleLabel(
+                              key: Key('songSchedule_${song.id}'),
+                              schedule:
+                                  schedules[song.id] ?? SongSchedule.never,
+                            ),
+                          ),
+                        ],
+                      ),
                       onTap: () => _previewSong(song),
                       trailing: IconButton(
                         icon: const Icon(Icons.add),

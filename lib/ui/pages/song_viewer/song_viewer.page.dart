@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:songbook/core/application/dtos/resource.dto.dart';
 import 'package:songbook/core/application/dtos/song.dto.dart';
 import 'package:songbook/core/domain/model/display_resource_type.dart';
+import 'package:songbook/core/domain/model/song_schedule.dart';
 import 'package:songbook/infrastructure/settings/providers/settings.service_provider.dart';
+import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
 import 'package:songbook/ui/pages/chord_pro_viewer/widgets/chord_pro_zoom_view.widget.dart';
 import 'package:songbook/ui/pages/song_viewer/widgets/cached_image_viewer.widget.dart';
+import 'package:songbook/ui/pages/song_viewer/widgets/song_history.sheet.dart';
 import 'package:songbook/ui/pages/song_viewer/widgets/zoomable_image_viewer.widget.dart';
 import 'package:songbook/ui/widgets/save_key_dialog.dart';
 import 'package:songbook/ui/widgets/song_options_sheet.dart';
@@ -125,6 +128,12 @@ class _SongViewerPageState extends ConsumerState<SongViewerPage> {
     final index = views.isEmpty ? 0 : _index.clamp(0, views.length - 1);
     final current = views.isEmpty ? null : views[index].type;
 
+    // Suivi ici plutôt que lu au clic : l'historique arrive de façon
+    // asynchrone, et le panneau doit s'ouvrir avec la réponse déjà en main.
+    final schedule =
+        ref.watch(songSchedulesProvider()).value?[widget.song.id] ??
+        SongSchedule.never;
+
     final theme = Theme.of(context);
     return PopScope(
       canPop: !_isKeyDirty,
@@ -152,6 +161,12 @@ class _SongViewerPageState extends ConsumerState<SongViewerPage> {
             ],
           ),
           actions: [
+            IconButton(
+              key: const Key('songHistoryButton'),
+              tooltip: 'Historique',
+              icon: const Icon(Icons.history),
+              onPressed: () => _openHistory(schedule),
+            ),
             // Un seul bouton « Options » : choix de la vue (si plusieurs) et
             // transposition (en vue Accords) sont regroupés dans un panneau.
             if (views.length > 1 || current == DisplayResourceType.chordPro)
@@ -165,6 +180,19 @@ class _SongViewerPageState extends ConsumerState<SongViewerPage> {
         ),
         body: _buildBody(current, image, chordPro),
       ),
+    );
+  }
+
+  /// Ouvre l'historique de programmation du chant.
+  ///
+  /// Derrière un bouton plutôt qu'affiché en permanence : cette page sert
+  /// d'abord à lire une partition, et l'historique n'intéresse qu'au moment de
+  /// choisir. Il n'est jamais absent pour autant — un chant jamais pris le dit.
+  void _openHistory(SongSchedule schedule) {
+    showSongHistorySheet(
+      context,
+      songName: widget.song.name,
+      schedule: schedule,
     );
   }
 

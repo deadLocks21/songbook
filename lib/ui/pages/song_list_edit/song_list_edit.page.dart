@@ -233,6 +233,7 @@ class _SongListEditPageState extends ConsumerState<SongListEditPage> {
   Future<void> _addSongs() async {
     await showSongPicker(
       context,
+      excludingListId: widget.songList.id,
       onSongAdded: (song) {
         setState(() {
           _entries.add(

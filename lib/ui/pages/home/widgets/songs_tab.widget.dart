@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:songbook/core/application/dtos/song.dto.dart';
 import 'package:songbook/core/application/services/error_message.service.dart';
+import 'package:songbook/core/domain/model/song_schedule.dart';
+import 'package:songbook/infrastructure/song_list/providers/song_list.service_provider.dart';
 import 'package:songbook/ui/pages/home/providers/search_provider.dart';
 import 'package:songbook/ui/pages/home/widgets/song_card.widget.dart';
 
@@ -85,7 +88,14 @@ class _SongsTabState extends ConsumerState<SongsTab> {
     );
   }
 
-  Widget _buildSongGrid(List<dynamic> songs) {
+  Widget _buildSongGrid(List<SongDto> songs) {
+    // L'historique arrive avec les listes, donc un instant après le catalogue :
+    // les cartes s'affichent sans en attendant, plutôt que de retarder la
+    // grille entière.
+    final schedules =
+        ref.watch(songSchedulesProvider()).value ??
+        const <String, SongSchedule>{};
+
     if (songs.isEmpty) {
       return const Center(
         key: Key('emptyMessage'),
@@ -105,12 +115,20 @@ class _SongsTabState extends ConsumerState<SongsTab> {
             key: const Key('songGridView'),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
-              mainAxisExtent: 114.0,
+              // Une ligne de plus depuis que la carte dit quand le chant a été
+              // pris pour la dernière fois.
+              mainAxisExtent: 136.0,
               crossAxisSpacing: 8.0,
               mainAxisSpacing: 8.0,
             ),
             itemCount: songs.length,
-            itemBuilder: (context, index) => SongCard(song: songs[index]),
+            itemBuilder: (context, index) {
+              final song = songs[index];
+              return SongCard(
+                song: song,
+                schedule: schedules[song.id] ?? SongSchedule.never,
+              );
+            },
           ),
         );
       },

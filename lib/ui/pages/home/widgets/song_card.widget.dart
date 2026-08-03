@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:songbook/core/application/dtos/resource.dto.dart';
 import 'package:songbook/core/application/dtos/song.dto.dart';
+import 'package:songbook/core/domain/model/song_schedule.dart';
 import 'package:songbook/ui/pages/song_viewer/song_viewer.page.dart';
+import 'package:songbook/ui/widgets/song_schedule_label.widget.dart';
 
 /// Extension pour ajouter des propriétés calculées à SongDto.
 extension SongDtoExtension on SongDto {
@@ -21,7 +23,15 @@ extension SongDtoExtension on SongDto {
 class SongCard extends StatelessWidget {
   final SongDto song;
 
-  const SongCard({super.key, required this.song});
+  /// Ce que les listes de l'appareil disent de ce chant. Reçu d'en haut plutôt
+  /// que lu ici : la grille le lit une fois pour toutes ses cartes.
+  final SongSchedule schedule;
+
+  const SongCard({
+    super.key,
+    required this.song,
+    this.schedule = SongSchedule.never,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -60,6 +70,11 @@ class SongCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                 ],
+              ),
+              const SizedBox(height: 6.0),
+              SongScheduleLabel(
+                key: Key('songSchedule_${song.id}'),
+                schedule: schedule,
               ),
             ],
           ),
